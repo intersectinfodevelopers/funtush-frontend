@@ -1,0 +1,29 @@
+[
+  {
+    "id": "tier-free",
+    "name": "Free",
+    "max_staff": 1,
+    "max_guides": 2,
+    "monthly_price": 0,
+    "annual_price": 0,
+    "features": ["Basic listing", "Limited visibility"]
+  },
+  {
+    "id": "tier-medium",
+    "name": "Medium",
+    "max_staff": 5,
+    "max_guides": 20,
+    "monthly_price": 49,
+    "annual_price": 499,
+    "features": ["Priority listing", "Booking management", "Basic analytics"]
+  },
+  {
+    "id": "tier-large",
+    "name": "Large",
+    "max_staff": 20,
+    "max_guides": 100,
+    "monthly_price": 199,
+    "annual_price": 1999,
+    "features": ["Featured placement", "Advanced analytics", "Priority support"]
+  }
+]

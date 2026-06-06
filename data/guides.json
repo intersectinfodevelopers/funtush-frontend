@@ -1,0 +1,44 @@
+[
+  {
+    "id": "gd-001",
+    "name": "Suresh Tamang",
+    "photo": "/images/guides/suresh.jpg",
+    "languages": ["Nepali","English"],
+    "status": "available",
+    "certifications": [
+      {"name":"Wilderness First Aid","number":"WFA-234","expiry":"2026-11-01"}
+    ],
+    "rating": 4.8
+  },
+  {
+    "id": "gd-002",
+    "name": "Karma Lama",
+    "photo": "/images/guides/karma.jpg",
+    "languages": ["Nepali","English","Tibetan"],
+    "status": "on_trek",
+    "certifications": [
+      {"name":"Mountaineering Level 1","number":"MNT-101","expiry":"2027-06-15"}
+    ],
+    "rating": 4.7
+  },
+  {
+    "id": "gd-003",
+    "name": "Anita Gurung",
+    "photo": "/images/guides/anita.jpg",
+    "languages": ["Nepali","English","German"],
+    "status": "available",
+    "certifications": [
+      {"name":"Guide License","number":"GL-908","expiry":"2026-08-20"}
+    ],
+    "rating": 4.5
+  },
+  {
+    "id": "gd-004",
+    "name": "Ramesh Shrestha",
+    "photo": "/images/guides/ramesh.jpg",
+    "languages": ["Nepali","English"],
+    "status": "unavailable",
+    "certifications": [],
+    "rating": 4.2
+  }
+]

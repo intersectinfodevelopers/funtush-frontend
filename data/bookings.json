@@ -1,0 +1,38 @@
+[
+  {
+    "id": "bk-1001",
+    "package_id": "pkg-001",
+    "trekker_id": "user-003",
+    "agency_id": "ag-001",
+    "departure_date": "2026-10-05",
+    "group_size": 2,
+    "add_ons": [],
+    "total_price": 2400,
+    "status": "confirmed",
+    "created_at": "2026-05-20T10:15:00Z"
+  },
+  {
+    "id": "bk-1002",
+    "package_id": "pkg-002",
+    "trekker_id": "user-004",
+    "agency_id": "ag-002",
+    "departure_date": "2026-09-20",
+    "group_size": 1,
+    "add_ons": [{"name":"Hot Shower","price":20}],
+    "total_price": 970,
+    "status": "inquiry",
+    "created_at": "2026-05-22T14:00:00Z"
+  },
+  {
+    "id": "bk-1003",
+    "package_id": "pkg-003",
+    "trekker_id": "user-005",
+    "agency_id": "ag-003",
+    "departure_date": "2026-08-01",
+    "group_size": 4,
+    "add_ons": [],
+    "total_price": 1680,
+    "status": "completed",
+    "created_at": "2025-11-11T09:30:00Z"
+  }
+]

@@ -1,0 +1,67 @@
+[
+  {
+    "id": "ag-001",
+    "slug": "everest-treks",
+    "name": "Everest Treks Co.",
+    "logo": "/images/agencies/everest-treks.png",
+    "rating": 4.9,
+    "tier": "large",
+    "destinations": ["everest-region", "khumbu-valley"],
+    "description": "Specialist operator for high-altitude treks in the Everest region.",
+    "joined_date": "2018-06-15",
+    "status": "active",
+    "subdomain": "everest"
+  },
+  {
+    "id": "ag-002",
+    "slug": "annapurna-adventures",
+    "name": "Annapurna Adventures",
+    "logo": "/images/agencies/annapurna.png",
+    "rating": 4.6,
+    "tier": "medium",
+    "destinations": ["annapurna-region"],
+    "description": "Guided experiences around the Annapurna circuit and short treks.",
+    "joined_date": "2019-03-02",
+    "status": "active",
+    "subdomain": "annapurna"
+  },
+  {
+    "id": "ag-003",
+    "slug": "gosaikunda-treks",
+    "name": "Gosaikunda Treks",
+    "logo": "/images/agencies/gosaikunda.png",
+    "rating": 4.4,
+    "tier": "small",
+    "destinations": ["langtang", "gosainkunda"],
+    "description": "Family-run operator for Langtang and nearby regions.",
+    "joined_date": "2020-09-10",
+    "status": "active",
+    "subdomain": "gosaikunda"
+  },
+  {
+    "id": "ag-004",
+    "slug": "pioneer-treks",
+    "name": "Pioneer Treks",
+    "logo": "/images/agencies/pioneer.png",
+    "rating": 4.2,
+    "tier": "free",
+    "destinations": ["manaslu", "nepal-west"],
+    "description": "Budget-friendly treks with a local touch.",
+    "joined_date": "2021-11-05",
+    "status": "trial",
+    "subdomain": "pioneer"
+  },
+  {
+    "id": "ag-005",
+    "slug": "himalayan-explore",
+    "name": "Himalayan Explore",
+    "logo": "/images/agencies/himalayan-explore.png",
+    "rating": 4.7,
+    "tier": "medium",
+    "destinations": ["mustang", "muktinath"],
+    "description": "Custom itineraries across remote Himalayan regions.",
+    "joined_date": "2017-01-20",
+    "status": "active",
+    "subdomain": "himalayan"
+  }
+]

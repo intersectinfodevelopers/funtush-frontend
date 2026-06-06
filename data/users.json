@@ -1,0 +1,36 @@
+[
+  {
+    "id": "user-001",
+    "role": "super_admin",
+    "name": "Platform Admin",
+    "email": "admin@example.com"
+  },
+  {
+    "id": "user-002",
+    "role": "agency_admin",
+    "agency_id": "ag-001",
+    "name": "Laxmi Sherpa",
+    "email": "laxmi@everesttreks.com"
+  },
+  {
+    "id": "user-003",
+    "role": "trekker",
+    "name": "John Walker",
+    "email": "john.walker@example.com",
+    "country": "UK"
+  },
+  {
+    "id": "user-004",
+    "role": "trekker",
+    "name": "Aisha Khan",
+    "email": "aisha.k@example.com",
+    "country": "USA"
+  },
+  {
+    "id": "user-005",
+    "role": "trekker",
+    "name": "Rajesh Thapa",
+    "email": "rajesh.thapa@example.com",
+    "country": "Nepal"
+  }
+]

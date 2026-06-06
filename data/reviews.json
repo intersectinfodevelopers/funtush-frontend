@@ -1,0 +1,32 @@
+[
+  {
+    "id": "rv-001",
+    "package_id": "pkg-001",
+    "trekker_id": "user-003",
+    "rating": 5,
+    "title": "Unforgettable trek",
+    "text": "Spectacular scenery and professional guides. Highly recommended!",
+    "date": "2026-04-20",
+    "country": "UK"
+  },
+  {
+    "id": "rv-002",
+    "package_id": "pkg-002",
+    "trekker_id": "user-006",
+    "rating": 4,
+    "title": "Great experience",
+    "text": "Well organized but some lodges were basic.",
+    "date": "2026-03-12",
+    "country": "USA"
+  },
+  {
+    "id": "rv-003",
+    "package_id": "pkg-003",
+    "trekker_id": "user-007",
+    "rating": 4,
+    "title": "Good short trek",
+    "text": "Perfect for a week-long getaway.",
+    "date": "2025-12-05",
+    "country": "Nepal"
+  }
+]
