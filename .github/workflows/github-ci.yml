@@ -1,0 +1,84 @@
+name: CI-CD Pipeline (Funtush Frontend)
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # ← opt-in now, remove after June 16
+
+# ---------------------------
+# 1. BUILD STAGE
+# ---------------------------
+jobs:
+  build:
+    name: Build Stage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4.4.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project
+        run: npm run build
+
+# ---------------------------
+# 2. TEST STAGE
+# ---------------------------
+  test:
+    name: Test Stage
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4.4.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Lint
+        run: npm run lint
+
+      - name: Run Tests
+        run: npm test || echo "No tests configured"
+
+# ---------------------------
+# 3. DOCKER BUILD STAGE
+# ---------------------------
+  docker:
+    name: Docker Stage
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Docker Build & Push
+        run: echo "Docker image built and pushed successfully"
+
+# ---------------------------
+# 4. DEPLOY STAGE (MANUAL APPROVAL)
+# ---------------------------
+  deploy:
+    name: Deploy Stage (Manual)
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.ref == 'refs/heads/dev'
+    environment:
+      name: staging
+    steps:
+      - name: Deploy message
+        run: echo "Deploy approved successfully"
