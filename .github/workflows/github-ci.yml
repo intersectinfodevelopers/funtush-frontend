@@ -3,6 +3,7 @@ name: CI-CD Pipeline (Production Style - No Push, No Deploy)
 on:
   push:
     branches:
+      - "feature/**"
       - dev
       - main
   pull_request:
