@@ -4,7 +4,7 @@ import {useMemo,useState} from 'react';
 import reviewsData from "../../../../../data/reviews.json";
 
 type Review={
-  id:String;
+  id:string;
   package_id:string;
   trekker_id:string;
   rating:number;
@@ -116,7 +116,7 @@ export default function Page() {
 
           <tbody className='text-gray-700'>
             {filtered.map((r) => (
-              <tr  className="border-t">
+              <tr key={r.id} className="border-t">
                 <td className="p-3 font-medium">{r.package_id}</td>
                 <td className="p-3">{r.trekker_id}</td>
                 <td className="p-3">{r.date}</td>
