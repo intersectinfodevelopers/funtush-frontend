@@ -3,14 +3,10 @@ name: CI-CD Pipeline (Production Style - No Push, No Deploy)
 on:
   push:
     branches:
-      - replace-main
-      - "feature/**"
-      - develop
-      - main
+      - '**'
   pull_request:
     branches:
-      - develop
-      - main
+      - '**'
 
 jobs:
   build:
