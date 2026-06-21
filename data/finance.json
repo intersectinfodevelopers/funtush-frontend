@@ -1,0 +1,349 @@
+{
+    "income": [
+        {
+            "id": "inc-001",
+            "agency_id": "ag-001",
+            "amount": 2400,
+            "date": "2026-05-20",
+            "category": "Booking Payment",
+            "source": "Everest Base Camp Trek",
+            "booking_ref": "bk-1001",
+            "payment_method": "Credit Card",
+            "notes": "Group booking payment received"
+        },
+        {
+            "id": "inc-002",
+            "agency_id": "ag-002",
+            "amount": 970,
+            "date": "2026-05-22",
+            "category": "Booking Payment",
+            "source": "Annapurna Circuit Classic",
+            "booking_ref": "bk-1002",
+            "payment_method": "Bank Transfer",
+            "notes": "Partial payment received"
+        },
+        {
+            "id": "inc-003",
+            "agency_id": "ag-003",
+            "amount": 1680,
+            "date": "2025-11-11",
+            "category": "Completed Trek Payment",
+            "source": "Langtang Valley Trek",
+            "booking_ref": "bk-1003",
+            "payment_method": "Cash",
+            "notes": "Final settlement after trek completion"
+        },
+        {
+            "id": "inc-004",
+            "agency_id": "ag-001",
+            "amount": 1200,
+            "date": "2026-06-01",
+            "category": "Booking Payment",
+            "source": "Everest Base Camp Trek",
+            "booking_ref": "bk-1004",
+            "payment_method": "Credit Card",
+            "notes": "Single trekker booking"
+        },
+        {
+            "id": "inc-005",
+            "agency_id": "ag-002",
+            "amount": 1800,
+            "date": "2026-06-05",
+            "category": "Group Booking",
+            "source": "Annapurna Circuit Classic",
+            "booking_ref": "bk-1005",
+            "payment_method": "Bank Transfer",
+            "notes": "Family group booking"
+        },
+        {
+            "id": "inc-006",
+            "agency_id": "ag-003",
+            "amount": 900,
+            "date": "2026-06-10",
+            "category": "Advance Payment",
+            "source": "Langtang Valley Trek",
+            "booking_ref": "bk-1006",
+            "payment_method": "Cash",
+            "notes": "Advance booking confirmation"
+        },
+        {
+            "id": "inc-007",
+            "agency_id": "ag-004",
+            "amount": 1100,
+            "date": "2026-06-12",
+            "category": "Booking Payment",
+            "source": "Manaslu Circuit Trek",
+            "booking_ref": "bk-1007",
+            "payment_method": "Bank Transfer",
+            "notes": "Budget trek booking"
+        },
+        {
+            "id": "inc-008",
+            "agency_id": "ag-005",
+            "amount": 1400,
+            "date": "2026-06-14",
+            "category": "Booking Payment",
+            "source": "Upper Mustang Cultural Trek",
+            "booking_ref": "bk-1008",
+            "payment_method": "Credit Card",
+            "notes": "Cultural trek booking"
+        }
+    ],
+
+    "expenses": [
+        {
+            "id": "exp-001",
+            "agency_id": "ag-001",
+            "amount": 600,
+            "date": "2026-05-21",
+            "category": "Guide Fee",
+            "description": "Guide payment for Everest trek",
+            "payment_method": "Bank Transfer",
+            "notes": "Paid to assigned guide"
+        },
+        {
+            "id": "exp-002",
+            "agency_id": "ag-002",
+            "amount": 450,
+            "date": "2026-05-23",
+            "category": "Porter Fee",
+            "description": "Porter payment for Annapurna trek",
+            "payment_method": "Cash",
+            "notes": "Field payment"
+        },
+        {
+            "id": "exp-003",
+            "agency_id": "ag-003",
+            "amount": 300,
+            "date": "2025-11-12",
+            "category": "Logistics",
+            "description": "Transport and permits",
+            "payment_method": "Bank Transfer",
+            "notes": "Langtang trek logistics"
+        },
+        {
+            "id": "exp-004",
+            "agency_id": "ag-001",
+            "amount": 700,
+            "date": "2026-06-02",
+            "category": "Guide Fee",
+            "description": "Extra guide support",
+            "payment_method": "Bank Transfer",
+            "notes": "High altitude support"
+        },
+        {
+            "id": "exp-005",
+            "agency_id": "ag-002",
+            "amount": 520,
+            "date": "2026-06-06",
+            "category": "Food Supplies",
+            "description": "Food and accommodation setup",
+            "payment_method": "Cash",
+            "notes": "Circuit trek supplies"
+        },
+        {
+            "id": "exp-006",
+            "agency_id": "ag-003",
+            "amount": 200,
+            "date": "2026-06-11",
+            "category": "Permit Fees",
+            "description": "National park permits",
+            "payment_method": "Bank Transfer",
+            "notes": "Official fees"
+        },
+        {
+            "id": "exp-007",
+            "agency_id": "ag-004",
+            "amount": 400,
+            "date": "2026-06-13",
+            "category": "Guide Fee",
+            "description": "Budget guide support",
+            "payment_method": "Cash",
+            "notes": "Trial agency expenses"
+        },
+        {
+            "id": "exp-008",
+            "agency_id": "ag-005",
+            "amount": 800,
+            "date": "2026-06-15",
+            "category": "Horse Support",
+            "description": "Mustang horse logistics",
+            "payment_method": "Bank Transfer",
+            "notes": "Remote region support"
+        }
+    ],
+
+    "invoices": [
+        {
+            "id": "inv-001",
+            "agency_id": "ag-001",
+            "invoice_number": "INV-2026-001",
+            "trekker_name": "John Walker",
+            "package_name": "Everest Base Camp Trek",
+            "amount": 2400,
+            "issue_date": "2026-05-20",
+            "due_date": "2026-06-01",
+            "status": "Paid"
+        },
+        {
+            "id": "inv-002",
+            "agency_id": "ag-002",
+            "invoice_number": "INV-2026-002",
+            "trekker_name": "Aisha Khan",
+            "package_name": "Annapurna Circuit Classic",
+            "amount": 970,
+            "issue_date": "2026-05-22",
+            "due_date": "2026-06-05",
+            "status": "Pending"
+        },
+        {
+            "id": "inv-003",
+            "agency_id": "ag-003",
+            "invoice_number": "INV-2026-003",
+            "trekker_name": "Rajesh Thapa",
+            "package_name": "Langtang Valley Trek",
+            "amount": 1680,
+            "issue_date": "2025-11-11",
+            "due_date": "2025-11-20",
+            "status": "Paid"
+        },
+        {
+            "id": "inv-004",
+            "agency_id": "ag-001",
+            "invoice_number": "INV-2026-004",
+            "trekker_name": "Sarah Johnson",
+            "package_name": "Everest Base Camp Trek",
+            "amount": 1200,
+            "issue_date": "2026-06-01",
+            "due_date": "2026-06-10",
+            "status": "Pending"
+        },
+        {
+            "id": "inv-005",
+            "agency_id": "ag-002",
+            "invoice_number": "INV-2026-005",
+            "trekker_name": "Michael Brown",
+            "package_name": "Annapurna Circuit Classic",
+            "amount": 1800,
+            "issue_date": "2026-06-05",
+            "due_date": "2026-06-15",
+            "status": "Paid"
+        },
+        {
+            "id": "inv-006",
+            "agency_id": "ag-003",
+            "invoice_number": "INV-2026-006",
+            "trekker_name": "Anna Müller",
+            "package_name": "Langtang Valley Trek",
+            "amount": 900,
+            "issue_date": "2026-06-10",
+            "due_date": "2026-06-20",
+            "status": "Pending"
+        },
+        {
+            "id": "inv-007",
+            "agency_id": "ag-004",
+            "invoice_number": "INV-2026-007",
+            "trekker_name": "Carlos Reyes",
+            "package_name": "Manaslu Circuit Trek",
+            "amount": 1100,
+            "issue_date": "2026-06-12",
+            "due_date": "2026-06-22",
+            "status": "Pending"
+        },
+        {
+            "id": "inv-008",
+            "agency_id": "ag-005",
+            "invoice_number": "INV-2026-008",
+            "trekker_name": "Emma Wilson",
+            "package_name": "Upper Mustang Cultural Trek",
+            "amount": 1400,
+            "issue_date": "2026-06-14",
+            "due_date": "2026-06-25",
+            "status": "Pending"
+        }
+    ],
+
+    "payroll": [
+        {
+            "id": "pay-001",
+            "agency_id": "ag-001",
+            "employee_name": "Ram Bahadur",
+            "role": "Guide",
+            "period": "June 2026",
+            "amount": 700,
+            "payment_date": "2026-06-30",
+            "status": "Pending"
+        },
+        {
+            "id": "pay-002",
+            "agency_id": "ag-002",
+            "employee_name": "Pemba Sherpa",
+            "role": "Guide",
+            "period": "June 2026",
+            "amount": 800,
+            "payment_date": "2026-06-30",
+            "status": "Paid"
+        },
+        {
+            "id": "pay-003",
+            "agency_id": "ag-003",
+            "employee_name": "Karma Lama",
+            "role": "Senior Guide",
+            "period": "June 2026",
+            "amount": 750,
+            "payment_date": "2026-06-30",
+            "status": "Pending"
+        },
+        {
+            "id": "pay-004",
+            "agency_id": "ag-001",
+            "employee_name": "Dawa Sherpa",
+            "role": "Porter",
+            "period": "June 2026",
+            "amount": 400,
+            "payment_date": "2026-06-30",
+            "status": "Paid"
+        },
+        {
+            "id": "pay-005",
+            "agency_id": "ag-002",
+            "employee_name": "Maya Gurung",
+            "role": "Cook",
+            "period": "June 2026",
+            "amount": 500,
+            "payment_date": "2026-06-30",
+            "status": "Pending"
+        },
+        {
+            "id": "pay-006",
+            "agency_id": "ag-003",
+            "employee_name": "Anita Gurung",
+            "role": "Guide",
+            "period": "June 2026",
+            "amount": 650,
+            "payment_date": "2026-06-30",
+            "status": "Paid"
+        },
+        {
+            "id": "pay-007",
+            "agency_id": "ag-004",
+            "employee_name": "Ramesh Shrestha",
+            "role": "Guide",
+            "period": "June 2026",
+            "amount": 400,
+            "payment_date": "2026-06-30",
+            "status": "Pending"
+        },
+        {
+            "id": "pay-008",
+            "agency_id": "ag-005",
+            "employee_name": "Tsering Dorje",
+            "role": "Guide",
+            "period": "June 2026",
+            "amount": 900,
+            "payment_date": "2026-06-30",
+            "status": "Pending"
+        }
+    ]
+}
