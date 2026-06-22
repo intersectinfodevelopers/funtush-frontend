@@ -46,7 +46,7 @@
     "name": "Milan Gurung",
     "photo": "/images/guides/milan.jpg",
     "languages": ["Nepali","English","French"],
-    "status": "unavailable",
+    "status": "available",
     "certifications": [
       {"name":"Mountaineering Level 1","number":"MNT-109","expiry":"2026-10-21"}
     ],

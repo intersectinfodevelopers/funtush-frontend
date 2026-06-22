@@ -120,7 +120,7 @@ export default function GuidesPage(){
             >
               <Card className="h-full flex flex-col">
                 <CardHeader className="flex flex-row items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-neutral-200 flex-shrink-0 overflow-hidden">
+                  <div className="w-12 h-12 rounded-full bg-neutral-200 shrink-0 overflow-hidden">
                     {guide.photo && (
                       <img src={guide.photo} alt={guide.name} className="w-full h-full object-cover" />
                     )}
@@ -156,7 +156,7 @@ export default function GuidesPage(){
   );
 }
 
-// ------- Helper: Stat Card -------
+//Stat Card
 function StatCard({ label, value, color = '' }: { label: string; value: number; color?: string }) {
   return (
     <div className="bg-white border border-neutral-200 rounded-lg p-4 text-center shadow-sm">
