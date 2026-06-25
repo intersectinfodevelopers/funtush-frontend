@@ -18,8 +18,12 @@ const getRoleLabel = (roleValue: string) => {
 };
 
 export default function StaffPage() {
-  const { staff, toggleActive } = useStaff();
+  const { staff, toggleActive, addStaff } = useStaff();
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleAddStaff = (data: any) => {
+    addStaff(data);
+  }
 
   return (
     <div className="p-4">
@@ -104,13 +108,9 @@ export default function StaffPage() {
       <AddStaffModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onAdd={(data) => {
-          // We'll add the staff using the hook
-          // For now, we need to import addStaff from the hook
-          // But we can't call hooks inside callbacks like this
-          // We'll handle this differently - let's fix in the next step
-        }}
+        onAdd={handleAddStaff}
       />
     </div>
   );
 }
+
