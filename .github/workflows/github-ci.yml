@@ -1,4 +1,4 @@
-name: CI-CD Pipeline (Production Style - No Push, No Deploy)
+name: CI-CD Pipeline
 
 on:
   push:
