@@ -1,4 +1,9 @@
-import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios, {
+  AxiosError,
+  AxiosInstance,
+  AxiosRequestConfig,
+  InternalAxiosRequestConfig,
+} from 'axios';
 
 /**
  * Axios API Client Configuration
@@ -53,7 +58,7 @@ apiClient.interceptors.request.use(
  */
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError<ApiErrorResponse>) => {
+  async (error: AxiosError<ApiErrorData>) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
     // Handle token refresh on 401
@@ -63,7 +68,7 @@ apiClient.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refreshToken');
         if (refreshToken) {
-          const response = await axios.post(
+          const response = await axios.post<{ token: string }>(
             `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
             { refreshToken }
           );
@@ -75,7 +80,7 @@ apiClient.interceptors.response.use(
           originalRequest.headers.Authorization = `Bearer ${token}`;
           return apiClient(originalRequest);
         }
-      } catch (refreshError) {
+      } catch {
         // Clear auth and redirect to login
         if (typeof window !== 'undefined') {
           localStorage.removeItem('authToken');
@@ -93,6 +98,12 @@ apiClient.interceptors.response.use(
 /**
  * Error Response Format
  */
+interface ApiErrorData {
+  message?: string;
+  code?: string;
+  details?: Record<string, unknown>;
+}
+
 export interface ApiErrorResponse {
   success: false;
   error: {
@@ -129,15 +140,17 @@ export interface ApiPaginatedResponse<T = unknown> {
 /**
  * Format error response into standardized format
  */
-function formatErrorResponse(error: AxiosError<any>): ApiErrorResponse {
-  if (error.response?.data) {
+function formatErrorResponse(error: AxiosError<ApiErrorData>): ApiErrorResponse {
+  const responseData = error.response?.data;
+
+  if (responseData) {
     return {
       success: false,
       error: {
-        message: error.response.data.message || error.message,
-        code: error.response.data.code,
-        statusCode: error.response.status || 500,
-        details: error.response.data.details,
+        message: responseData.message || error.message,
+        code: responseData.code,
+        statusCode: error.response?.status || 500,
+        details: responseData.details,
       },
     };
   }
@@ -165,43 +178,43 @@ export const api = {
   /**
    * GET request
    */
-  get<T = any>(url: string, config?: any) {
-    return apiClient.get<any, ApiSuccessResponse<T>>(url, config);
+  get<T = unknown>(url: string, config?: AxiosRequestConfig) {
+    return apiClient.get<unknown, ApiSuccessResponse<T>>(url, config);
   },
 
   /**
    * POST request
    */
-  post<T = any>(url: string, data?: any, config?: any) {
-    return apiClient.post<any, ApiSuccessResponse<T>>(url, data, config);
+  post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) {
+    return apiClient.post<unknown, ApiSuccessResponse<T>>(url, data, config);
   },
 
   /**
    * PUT request
    */
-  put<T = any>(url: string, data?: any, config?: any) {
-    return apiClient.put<any, ApiSuccessResponse<T>>(url, data, config);
+  put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) {
+    return apiClient.put<unknown, ApiSuccessResponse<T>>(url, data, config);
   },
 
   /**
    * PATCH request
    */
-  patch<T = any>(url: string, data?: any, config?: any) {
-    return apiClient.patch<any, ApiSuccessResponse<T>>(url, data, config);
+  patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) {
+    return apiClient.patch<unknown, ApiSuccessResponse<T>>(url, data, config);
   },
 
   /**
    * DELETE request
    */
-  delete<T = any>(url: string, config?: any) {
-    return apiClient.delete<any, ApiSuccessResponse<T>>(url, config);
+  delete<T = unknown>(url: string, config?: AxiosRequestConfig) {
+    return apiClient.delete<unknown, ApiSuccessResponse<T>>(url, config);
   },
 
   /**
    * File upload with FormData
    */
-  upload<T = any>(url: string, formData: FormData, config?: any) {
-    return apiClient.post<any, ApiSuccessResponse<T>>(url, formData, {
+  upload<T = unknown>(url: string, formData: FormData, config?: AxiosRequestConfig) {
+    return apiClient.post<unknown, ApiSuccessResponse<T>>(url, formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

@@ -2,31 +2,111 @@
   {
     "id": "rv-001",
     "package_id": "pkg-001",
-    "trekker_id": "user-003",
+    "agency_id": "ag-001",
+    "trekker_name": "Sarah Jenkins",
     "rating": 5,
-    "title": "Unforgettable trek",
-    "text": "Spectacular scenery and professional guides. Highly recommended!",
-    "date": "2026-04-20",
-    "country": "UK"
+    "title": "Unforgettable Annapurna Circuit Experience!",
+    "text": "The entire trip was perfectly organized from start to finish. Our guide was incredibly knowledgeable about the trails and local culture. Reaching Thorong La Pass was tough but worth every step!",
+    "guide_rating": 5,
+    "created_at": "2026-05-15T10:30:00Z"
   },
   {
     "id": "rv-002",
-    "package_id": "pkg-002",
-    "trekker_id": "user-006",
+    "package_id": "pkg-001",
+    "agency_id": "ag-001",
+    "trekker_name": "David Miller",
     "rating": 4,
-    "title": "Great experience",
-    "text": "Well organized but some lodges were basic.",
-    "date": "2026-03-12",
-    "country": "USA"
+    "title": "Breathtaking views, tough high-altitude terrain",
+    "text": "Amazing scenery and great teahouse accommodations. The itinerary was a bit rushed during the acclimatization days, but the support team handled everything beautifully.",
+    "guide_rating": 5,
+    "created_at": "2026-05-20T14:15:00Z"
   },
   {
     "id": "rv-003",
+    "package_id": "pkg-002",
+    "agency_id": "ag-001",
+    "trekker_name": "Liam Johnston",
+    "rating": 5,
+    "title": "Everest Base Camp - A Dream Come True",
+    "text": "Everything was top-notch! Seeing Everest up close was magical. Our guide checked our oxygen levels every evening, making us feel completely safe throughout the high altitude trek.",
+    "guide_rating": 5,
+    "created_at": "2026-06-01T08:00:00Z"
+  },
+  {
+    "id": "rv-004",
+    "package_id": "pkg-002",
+    "agency_id": "ag-001",
+    "trekker_name": "Emma Watson",
+    "rating": 3,
+    "title": "Great views but overcrowded teahouses",
+    "text": "The trail itself is magnificent. However, the teahouses booked for us were very crowded and noisy. The guide did his best to shift our rooms, but the management could be better.",
+    "guide_rating": 4,
+    "created_at": "2026-06-05T11:45:00Z"
+  },
+  {
+    "id": "rv-005",
     "package_id": "pkg-003",
-    "trekker_id": "user-007",
+    "agency_id": "ag-001",
+    "trekker_name": "Carlos Gomez",
+    "rating": 2,
+    "title": "Disorganized transport and delays",
+    "text": "The trek layout was beautiful, but our private jeep was delayed by 4 hours on Day 1, cutting our walking window short. Porter assignments were also quite messy at the start.",
+    "guide_rating": 3,
+    "created_at": "2026-06-10T09:20:00Z"
+  },
+  {
+    "id": "rv-006",
+    "package_id": "pkg-003",
+    "agency_id": "ag-001",
+    "trekker_name": "Yuki Tanaka",
+    "rating": 5,
+    "title": "Langtang Valley is a hidden gem!",
+    "text": "Beautiful culture and peaceful trails compared to Everest. The local cheese factory visit was an amazing addition. Guide was super friendly and translated perfectly.",
+    "guide_rating": 5,
+    "created_at": "2026-06-12T16:50:00Z"
+  },
+  {
+    "id": "rv-007",
+    "package_id": "pkg-004",
+    "agency_id": "ag-001",
+    "trekker_name": "Anna Schmidt",
     "rating": 4,
-    "title": "Good short trek",
-    "text": "Perfect for a week-long getaway.",
-    "date": "2025-12-05",
-    "country": "Nepal"
+    "title": "Beautiful Poon Hill Sunrise",
+    "text": "Short but beautiful trek! The view from Poon Hill at dawn is something I will never forget. Perfect option for beginners or those short on time.",
+    "guide_rating": 4,
+    "created_at": "2026-06-14T07:10:00Z"
+  },
+  {
+    "id": "rv-008",
+    "package_id": "pkg-004",
+    "agency_id": "ag-001",
+    "trekker_name": "Tom Radcliffe",
+    "rating": 1,
+    "title": "Terrible weather management",
+    "text": "We ran straight into heavy rainfall and landslides. The agency didn't provide clear safety updates or alternative routing options beforehand. Felt very unsafe.",
+    "guide_rating": 2,
+    "created_at": "2026-06-18T13:05:00Z"
+  },
+  {
+    "id": "rv-009",
+    "package_id": "pkg-005",
+    "agency_id": "ag-001",
+    "trekker_name": "Sofia Rossi",
+    "rating": 5,
+    "title": "Manaslu Circuit was pristine and remote",
+    "text": "If you want an authentic, uncrowded wild tea-house trek, choose Manaslu. The pass crossing was breathtaking. The agency took care of all restricted area permits flawlessly.",
+    "guide_rating": 5,
+    "created_at": "2026-06-20T17:40:00Z"
+  },
+  {
+    "id": "rv-010",
+    "package_id": "pkg-005",
+    "agency_id": "ag-001",
+    "trekker_name": "John Doe",
+    "rating": 4,
+    "title": "Excellent guidance through rough trails",
+    "text": "The paths around Manaslu can be tricky and narrow, but our guide was extremely careful and helpful. Food choices were simple but hot and fresh.",
+    "guide_rating": 5,
+    "created_at": "2026-06-22T12:00:00Z"
   }
 ]

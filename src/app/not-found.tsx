@@ -36,7 +36,7 @@ export default function NotFound() {
         <div className="space-y-4">
           <h1 className="text-3xl font-bold text-neutral-900">Page not found</h1>
           <p className="text-neutral-600">
-            Sorry, we couldn't find the page you're looking for. It might have been moved or deleted.
+            Sorry, we couldn&apos;t find the page you&apos;re looking for. It might have been moved or deleted.
           </p>
         </div>
 
