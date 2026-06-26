@@ -1,9 +1,13 @@
-import React from 'react';
+"use client";
+import { use } from "react";
+import { BlogFormShared } from "@/components/agency/blog/BlogFormShared";
 
-export default function Page() {
-  return (
-    <div className="min-h-screen flex items-center justify-center p-8 text-center text-slate-700">
-      Placeholder for app/(agency)/dashboard/blog/[id]/edit/page.tsx
-    </div>
-  );
+interface EditPostPageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default function EditPostPage({ params }: EditPostPageProps) {
+  const unwrappedParams = use(params);
+  
+  return <BlogFormShared postId={unwrappedParams.id} />;
 }
