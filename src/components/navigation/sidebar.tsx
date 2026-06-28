@@ -1,5 +1,5 @@
 import React from 'react';
-import { Compass, Layers, ShieldCheck, Milestone, Users, CreditCard } from 'lucide-react';
+import { Compass, Layers, ShieldCheck, Milestone, Users } from 'lucide-react';
 import { cn } from '@/lib/utils/cn';
 
 export const Sidebar: React.FC = () => {

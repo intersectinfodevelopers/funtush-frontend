@@ -1,8 +1,7 @@
 import type { NextConfig } from 'next';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const nextConfig: NextConfig = {
-  /* ... keeping any other existing config options here ... */
-  
   experimental: {
     turbopack: {
       root: __dirname,

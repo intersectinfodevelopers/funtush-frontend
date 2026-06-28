@@ -1,59 +1,29 @@
+/* eslint-disable @next/next/no-img-element */
 import React, { useState } from 'react';
-import { clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
 
-export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
-  src?: string | null;
+interface AvatarProps {
+  src?: string;
+  fallback: string;
   alt?: string;
-  fallbackText: string;
-  size?: 'sm' | 'md' | 'lg';
 }
 
-export const Avatar = React.forwardRef<HTMLDivElement, AvatarProps>(
-  ({ className, src, alt = '', fallbackText, size = 'md', ...props }, ref) => {
-    const [hasError, setHasError] = useState(false);
+export const Avatar: React.FC<AvatarProps> = ({ src, fallback, alt }) => {
+  const [hasError, setHasError] = useState(false);
 
-    const sizes = {
-      sm: 'h-8 w-8 text-xs',
-      md: 'h-10 w-10 text-sm',
-      lg: 'h-12 w-12 text-base',
-    };
-
-    const getInitials = (text: string) => {
-      return text
-        .trim()
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2);
-    };
-
-    return (
-      <div
-        ref={ref}
-        className={twMerge(
-          clsx(
-            'relative flex shrink-0 overflow-hidden rounded-full bg-gray-100 font-medium text-gray-600 items-center justify-center select-none border border-gray-200',
-            sizes[size]
-          ),
-          className
-        )}
-        {...props}
-      >
-        {src && !hasError ? (
-          <img
-            src={src}
-            alt={alt}
-            onError={() => setHasError(true)}
-            className="h-full w-full object-cover aspect-square"
-          />
-        ) : (
-          <span>{getInitials(fallbackText)}</span>
-        )}
-      </div>
-    );
-  }
-);
-
-Avatar.displayName = 'Avatar';
+  return (
+    <div className="relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-neutral-200 bg-neutral-100">
+      {src && !hasError ? (
+        <img 
+          src={src} 
+          alt={alt || "Avatar"} 
+          className="h-full w-full object-cover"
+          onError={() => setHasError(true)}
+        />
+      ) : (
+        <div className="flex h-full w-full items-center justify-center bg-blue-600 text-sm font-semibold text-white">
+          {fallback}
+        </div>
+      )}
+    </div>
+  );
+};
