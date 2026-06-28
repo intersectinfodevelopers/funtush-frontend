@@ -23,7 +23,7 @@ export default function UpcomingDepartures({ agencyId }: Props) {
       packageName: pkg?.title,
       departureDate: booking.departure_date,
       groupSize: booking.group_size,
-      assignedGuide: 'Processing...',
+      assignedGuide: 'Currently unassigned', // Placeholder for guide assignment
     };
   });
 

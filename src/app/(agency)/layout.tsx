@@ -5,11 +5,7 @@
 
 import Link from 'next/link';
 
-export default function AgencyLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AgencyLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex h-screen flex-col">
       {/* Top Navigation */}
@@ -38,6 +34,12 @@ export default function AgencyLayout({
               className="block rounded-lg px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200"
             >
               Bookings
+            </Link>
+            <Link
+              href="/dashboard/finance"
+              className="block rounded-lg px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-200"
+            >
+              Finance
             </Link>
             <Link
               href="/dashboard/analytics"
