@@ -4,7 +4,13 @@
 FROM node:24-alpine AS builder
 WORKDIR /app
 COPY package*.json ./
-RUN npm install --omit=optional
+RUN node -e " \
+  const fs = require('fs'); \
+  const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8')); \
+  delete lock.packages['node_modules/@next/swc-win32-x64-msvc']; \
+  fs.writeFileSync('package-lock.json', JSON.stringify(lock, null, 2)); \
+  "
+RUN npm ci
 COPY . .
 RUN npm run build
 
@@ -21,4 +27,4 @@ COPY --from=builder --chown=appuser:appgroup /app/public ./public
 COPY --from=builder --chown=appuser:appgroup /app/next.config.* ./
 EXPOSE 3000
 USER appuser
-CMD ["npm", "start"]
+CMD ["node_modules/.bin/next", "start"]
