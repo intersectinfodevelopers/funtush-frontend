@@ -1,0 +1,116 @@
+[
+  {
+    "id": "st-001",
+    "name": "Priya Sharma",
+    "email": "priya@agency.com",
+    "phone": "+977-9841234567",
+    "role": "admin",
+    "avatar": "/images/staff/priya.jpg",
+    "active": true,
+    "lastActive": "2026-06-24T10:30:00Z",
+    "activityLog": [
+      {
+        "action": "login",
+        "description": "User logged in",
+        "timestamp": "2026-06-24T10:30:00Z",
+        "ip": "192.168.1.1"
+      },
+      {
+        "action": "update_guide",
+        "description": "Updated guide: Suresh Tamang",
+        "timestamp": "2026-06-24T09:15:00Z",
+        "ip": "192.168.1.1"
+      }
+    ]
+  },
+  {
+    "id": "st-002",
+    "name": "Ramesh Thapa",
+    "email": "ramesh@agency.com",
+    "phone": "+977-9842345678",
+    "role": "manager",
+    "avatar": "/images/staff/ramesh.jpg",
+    "active": true,
+    "lastActive": "2026-06-23T16:45:00Z",
+    "activityLog": [
+      {
+        "action": "login",
+        "description": "User logged in",
+        "timestamp": "2026-06-23T16:45:00Z",
+        "ip": "192.168.1.5"
+      }
+    ]
+  },
+  {
+    "id": "st-003",
+    "name": "Sunita Gurung",
+    "email": "sunita@agency.com",
+    "phone": "+977-9843456789",
+    "role": "guide_coordinator",
+    "avatar": "/images/staff/sunita.jpg",
+    "active": true,
+    "lastActive": "2026-06-24T08:20:00Z",
+    "activityLog": [
+      {
+        "action": "login",
+        "description": "User logged in",
+        "timestamp": "2026-06-24T08:20:00Z",
+        "ip": "192.168.1.3"
+      },
+      {
+        "action": "assign_trek",
+        "description": "Assigned guide to Everest Base Camp trek",
+        "timestamp": "2026-06-23T14:00:00Z",
+        "ip": "192.168.1.3"
+      }
+    ]
+  },
+  {
+    "id": "st-004",
+    "name": "Kiran Adhikari",
+    "email": "kiran@agency.com",
+    "phone": "+977-9844567890",
+    "role": "finance",
+    "avatar": "/images/staff/kiran.jpg",
+    "active": false,
+    "lastActive": "2026-06-20T11:30:00Z",
+    "activityLog": [
+      {
+        "action": "login",
+        "description": "User logged in",
+        "timestamp": "2026-06-20T11:30:00Z",
+        "ip": "192.168.1.2"
+      },
+      {
+        "action": "process_payment",
+        "description": "Processed payment for booking #BK-001",
+        "timestamp": "2026-06-20T10:00:00Z",
+        "ip": "192.168.1.2"
+      }
+    ]
+  },
+  {
+    "id": "st-005",
+    "name": "Sita Rai",
+    "email": "sita@agency.com",
+    "phone": "+977-9845678901",
+    "role": "receptionist",
+    "avatar": "/images/staff/sita.jpg",
+    "active": true,
+    "lastActive": "2026-06-24T09:00:00Z",
+    "activityLog": [
+      {
+        "action": "login",
+        "description": "User logged in",
+        "timestamp": "2026-06-24T09:00:00Z",
+        "ip": "192.168.1.4"
+      },
+      {
+        "action": "create_booking",
+        "description": "Created new booking for client: John Doe",
+        "timestamp": "2026-06-23T15:30:00Z",
+        "ip": "192.168.1.4"
+      }
+    ]
+  }
+]

@@ -114,6 +114,12 @@ export interface ApiErrorResponse {
   };
 }
 
+interface ApiErrorData {
+  message?: string;
+  code?: string;
+  details?: Record<string, unknown>;
+}
+
 /**
  * Success Response Format
  */

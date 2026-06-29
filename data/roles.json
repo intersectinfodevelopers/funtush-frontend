@@ -1,0 +1,10 @@
+[
+  { "value": "admin", "label": "Administrator" },
+  { "value": "manager", "label": "Manager" },
+  { "value": "guide_coordinator", "label": "Guide Coordinator" },
+  { "value": "finance", "label": "Finance" },
+  { "value": "receptionist", "label": "Receptionist" },
+  { "value": "operations", "label": "Operations" },
+  { "value": "marketing", "label": "Marketing" },
+  { "value": "support", "label": "Customer Support" }
+]

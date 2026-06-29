@@ -40,5 +40,69 @@
     "status": "unavailable",
     "certifications": [],
     "rating": 4.2
+  },
+  {
+    "id": "gd-005",
+    "name": "Milan Gurung",
+    "photo": "/images/guides/milan.jpg",
+    "languages": ["Nepali","English","French"],
+    "status": "available",
+    "certifications": [
+      {"name":"Mountaineering Level 1","number":"MNT-109","expiry":"2026-10-21"}
+    ],
+    "rating": 4.4
+  },
+  {
+    "id": "gd-006",
+    "name": "Sonam Sherpa",
+    "photo": "/images/guides/sonam.jpg",
+    "languages": ["Nepali","English","Spanish", "German"],
+    "status": "on_trek",
+    "certifications": [],
+    "rating": 3.7
+  },
+  {
+    "id": "gd-007",
+    "name": "Eva Nepal",
+    "photo": "/images/guides/eva.jpg",
+    "languages": ["Nepali","English"],
+    "status": "available",
+    "certifications": [
+      {"name":"Guide License","number":"GL-988","expiry":"2027-08-20"}
+    ],
+    "rating": 4.5
+  },
+  {
+    "id": "gd-008",
+    "name": "Sunita Sunuwar",
+    "photo": "/images/guides/sunita.jpg",
+    "languages": ["Nepali","English","Tibetan"],
+    "status": "on_trek",
+    "certifications": [
+      {"name":"Guide License","number":"GL-958","expiry":"2026-09-02"}
+    ],
+    "rating": 4.8
+  },
+  {
+    "id": "gd-009",
+    "name": "Purna Magar",
+    "photo": "/images/guides/purna.jpg",
+    "languages": ["Nepali","English","French"],
+    "status": "available",
+    "certifications": [
+      {"name":"Mountaineering Level 2","number":"MNT-199","expiry":"2026-10-20"}
+    ],
+    "rating": 5
+  },
+ {
+    "id": "gd-010",
+    "name": "Barun Giri",
+    "photo": "/images/guides/barun.jpg",
+    "languages": ["Nepali","English","German"],
+    "status": "unavailable",
+    "certifications": [
+      {"name":"Guide License","number":"GL-956","expiry":"2027-01-20"}
+    ],
+    "rating": 4.6
   }
 ]
