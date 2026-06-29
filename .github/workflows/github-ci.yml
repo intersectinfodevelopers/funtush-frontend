@@ -84,3 +84,6 @@ jobs:
     if: github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch'
     environment:
       name: staging
+    steps:
+      - name: Awaiting Approval
+        run: echo "Approved for staging"
