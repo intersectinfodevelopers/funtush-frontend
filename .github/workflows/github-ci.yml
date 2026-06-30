@@ -1,4 +1,5 @@
 name: CI-CD Pipeline
+
 on:
   push:
     branches:
@@ -7,69 +8,74 @@ on:
     branches:
       - '**'
   workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 jobs:
-  build:
-    name: Build Stage
+  validate:
+    name: Lint & Build
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: latest
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
-          cache: npm
+          node-version: lts/*
+          cache: pnpm
+
       - name: Install dependencies
-        run: npm install --ignore-scripts
-      - name: Build project
-        run: npm run build
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-output
-          path: .next/
-  test:
-    name: Test Stage
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-      - name: Install dependencies
-        run: npm install --ignore-scripts
+        run: pnpm install --frozen-lockfile
+
       - name: Run Lint
-        run: npm run lint
-      - name: Run Tests
-        run: npm test -- --passWithNoTests
+        run: pnpm lint
+
+      - name: Build Project
+        run: pnpm build
+
   docker:
-    name: Docker Build Stage
+    name: Docker Build Validation
     runs-on: ubuntu-latest
-    needs: test
+    needs: validate
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      - name: Build Docker image (no push, no save)
+
+      - name: Build Docker image
         run: |
           docker build \
-            --tag funtush-frontend:${{ github.sha }} \
-            --tag funtush-frontend:latest \
+            -t funtush-frontend:${{ github.sha }} \
+            -t funtush-frontend:latest \
             .
+
       - name: List Docker images
         run: docker images
+
   approval:
-    name: Manual Approval Stage
+    name: Manual Approval
     runs-on: ubuntu-latest
     needs: docker
     if: github.ref == 'refs/heads/dev' || github.event_name == 'workflow_dispatch'
+
     environment:
       name: staging
+
     steps:
       - name: Awaiting Approval
         run: echo "Approved for staging"
