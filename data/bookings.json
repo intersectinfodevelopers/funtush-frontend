@@ -89,5 +89,89 @@
     "total_price": 1680,
     "status": "completed",
     "created_at": "2025-11-11T09:30:00Z"
+  },
+  {
+    "id": "bk-1004",
+    "package_id": "pkg-004",
+    "trekker_id": "user-006",
+    "agency_id": "ag-004",
+    "departure_date": "2026-10-12",
+    "group_size": 2,
+    "add_ons": [{"name":"Extra Porter","price":150}],
+    "total_price": 3740,
+    "status": "confirmed",
+    "created_at": "2026-06-01T11:45:00Z"
+  },
+  {
+    "id": "bk-1005",
+    "package_id": "pkg-005",
+    "trekker_id": "user-007",
+    "agency_id": "ag-007",
+    "departure_date": "2026-09-02",
+    "group_size": 1,
+    "add_ons": [],
+    "total_price": 3500,
+    "status": "cancelled",
+    "created_at": "2026-07-15T08:20:00Z"
+  },
+  {
+    "id": "bk-1006",
+    "package_id": "pkg-006",
+    "trekker_id": "user-008",
+    "agency_id": "ag-006",
+    "departure_date": "2026-11-10",
+    "group_size": 3,
+    "add_ons": [{"name":"Gokyo Lake Boat Ride","price":50}],
+    "total_price": 2550,
+    "status": "inquiry",
+    "created_at": "2026-08-05T13:10:00Z"
+  },
+  {
+    "id": "bk-1007",
+    "package_id": "pkg-001",
+    "trekker_id": "user-009",
+    "agency_id": "ag-001",
+    "departure_date": "2026-10-05",
+    "group_size": 1,
+    "add_ons": [{"name":"Private Guide Upgrade","price":300}],
+    "total_price": 2700,
+    "status": "confirmed",
+    "created_at": "2026-09-01T12:00:00Z"
+  },
+  {
+    "id": "bk-1008",
+    "package_id": "pkg-002",
+    "trekker_id": "user-010",
+    "agency_id": "ag-002",
+    "departure_date": "2026-09-20",
+    "group_size": 2,
+    "add_ons": [{"name":"Hot Shower","price":20},{"name":"Extra Porter","price":150}],
+    "total_price": 2140,
+    "status": "inquiry",
+    "created_at": "2026-09-05T15:30:00Z"
+  },
+  {
+    "id": "bk-1009",
+    "package_id": "pkg-003",
+    "trekker_id": "user-011",
+    "agency_id": "ag-003",
+    "departure_date": "2026-08-01",
+    "group_size": 3,
+    "add_ons": [],
+    "total_price": 1260,
+    "status": "completed",
+    "created_at": "2025-12-01T10:00:00Z"
+  },
+  {
+    "id": "bk-1010",
+    "package_id": "pkg-004",
+    "trekker_id": "user-012",
+    "agency_id": "ag-004",
+    "departure_date": "2026-10-12",
+    "group_size": 4,
+    "add_ons": [{"name":"Extra Porter","price":150}],
+    "total_price": 7160,
+    "status": "confirmed",
+    "created_at": "2026-09-10T14:20:00Z"
   }
 ]

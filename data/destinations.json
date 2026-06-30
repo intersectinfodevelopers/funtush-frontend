@@ -2,46 +2,81 @@
   {
     "id": "dest-001",
     "slug": "everest-region",
-    "name": "Everest Region",
-    "description": "Home to the world's highest peaks and classic high-altitude treks.",
-    "altitude_m": 8848,
-    "best_season": ["March", "April", "October", "November"],
-    "image": "/images/destinations/everest.jpg"
+    "title": "Everest Base Camp",
+    "region": "Khumbu",
+    "difficulty": "Hard",
+    "maxAltitude": "5,364m",
+    "bestSeason": "Autumn/Spring",
+    "featured": true
   },
   {
     "id": "dest-002",
     "slug": "annapurna-region",
-    "name": "Annapurna Region",
-    "description": "Diverse landscapes, from low hills to high alpine passes.",
-    "altitude_m": 8091,
-    "best_season": ["September", "October", "March", "April"],
-    "image": "/images/destinations/annapurna.jpg"
+    "title": "Annapurna Circuit",
+    "region": "Annapurna",
+    "difficulty": "Medium",
+    "maxAltitude": "5,416m",
+    "bestSeason": "Autumn/Spring",
+    "featured": true
   },
   {
     "id": "dest-003",
     "slug": "langtang",
-    "name": "Langtang",
-    "description": "Shorter treks, close to Kathmandu, culturally rich valleys.",
-    "altitude_m": 7246,
-    "best_season": ["October", "November", "March", "April"],
-    "image": "/images/destinations/langtang.jpg"
+    "title": "Langtang Valley Trek",
+    "region": "Langtang",
+    "difficulty": "Medium",
+    "maxAltitude": "3,870m",
+    "bestSeason": "Spring/Autumn",
+    "featured": false
   },
   {
     "id": "dest-004",
-    "slug": "mustang",
-    "name": "Upper Mustang",
-    "description": "Rain-shadow desert valleys, Tibetan-influenced culture.",
-    "altitude_m": 4166,
-    "best_season": ["May", "October"],
-    "image": "/images/destinations/mustang.jpg"
+    "slug": "manaslu",
+    "title": "Manaslu Circuit",
+    "region": "Gorkha",
+    "difficulty": "Hard",
+    "maxAltitude": "5,106m",
+    "bestSeason": "Autumn",
+    "featured": true
   },
   {
     "id": "dest-005",
-    "slug": "manaslu",
-    "name": "Manaslu",
-    "description": "Remote trekking and challenging high passes.",
-    "altitude_m": 8163,
-    "best_season": ["September", "October"],
-    "image": "/images/destinations/manaslu.jpg"
+    "slug": "mardi-himal",
+    "title": "Mardi Himal Base Camp",
+    "region": "Annapurna",
+    "difficulty": "Easy",
+    "maxAltitude": "4,500m",
+    "bestSeason": "Year-round",
+    "featured": false
+  },
+  {
+    "id": "dest-006",
+    "slug": "gokyo-lakes",
+    "title": "Gokyo Lakes Trek",
+    "region": "Khumbu",
+    "difficulty": "Hard",
+    "maxAltitude": "4,790m",
+    "bestSeason": "Autumn/Spring",
+    "featured": false
+  },
+  {
+    "id": "dest-007",
+    "slug": "mustang",
+    "title": "Upper Mustang Kingdom",
+    "region": "Mustang",
+    "difficulty": "Medium",
+    "maxAltitude": "3,810m",
+    "bestSeason": "Summer Monsoon",
+    "featured": true
+  },
+  {
+    "id": "dest-008",
+    "slug": "rara-lake",
+    "title": "Rara Lake Wilderness",
+    "region": "Mugu",
+    "difficulty": "Medium",
+    "maxAltitude": "2,990m",
+    "bestSeason": "Spring",
+    "featured": false
   }
 ]
