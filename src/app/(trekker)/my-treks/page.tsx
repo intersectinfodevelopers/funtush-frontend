@@ -23,7 +23,7 @@ import guidesData from '../../../../data/guides.json';
 
 // Cast JSON
 const bookings = bookingsData as RawBooking[];
-const packages = packagesData as RawPackage[];
+const packages = packagesData as unknown as RawPackage[];
 const agencies = agenciesData as RawAgency[];
 const guides = guidesData as RawGuide[];
 

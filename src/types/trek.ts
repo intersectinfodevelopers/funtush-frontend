@@ -23,22 +23,25 @@ export interface RawBooking {
 
 export interface RawPackage {
   id: string;
-  slug: string;
+  slug?: string;
+  destination_slug?: string;
   agency_id: string;
   title: string;
-  destination: string;
+  destination?: string;
   duration_days: number;
-  price_per_person: number;
-  difficulty: string;
-  max_group_size: number;
-  rating: number;
-  review_count: number;
-  status: string;
-  images: string[];
-  highlights: string[];
-  best_season: string[];
-  departure_dates: string[];
-  add_ons: Array<{ name: string; price: number }>;
+  price_per_person?: number;
+  price_usd?: number;
+  difficulty?: string;
+  max_group_size?: number;
+  group_size_max?: number;
+  rating?: number;
+  review_count?: number;
+  status?: string;
+  images?: string[];
+  highlights?: string[];
+  best_season?: string[];
+  departure_dates?: string[];
+  add_ons?: Array<{ name: string; price: number }>;
 }
 
 export interface RawAgency {

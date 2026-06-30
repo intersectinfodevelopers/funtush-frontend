@@ -10,8 +10,7 @@
  * Saved to localStorage on submit
  */
 
-import { useState, useEffect, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Save, Shield, User as UserIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -25,33 +24,18 @@ import {
 import type { EmergencyContact } from '@/types/user';
 
 export default function ProfileEditPage() {
-  const router = useRouter();
   const { user } = useAuth();
 
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [country, setCountry] = useState('');
+  const [name, setName] = useState(() => user?.name ?? '');
+  const [phone, setPhone] = useState(() => user?.phone || '');
+  const [country, setCountry] = useState(() => user?.country || '');
   const [profileSaving, setProfileSaving] = useState(false);
 
-  const [emName, setEmName] = useState('');
-  const [emPhone, setEmPhone] = useState('');
-  const [emRelationship, setEmRelationship] = useState('');
+  const existingEmergency = getEmergencyContact();
+  const [emName, setEmName] = useState(() => existingEmergency?.name ?? '');
+  const [emPhone, setEmPhone] = useState(() => existingEmergency?.phone ?? '');
+  const [emRelationship, setEmRelationship] = useState(() => existingEmergency?.relationship ?? '');
   const [emSaving, setEmSaving] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      setName(user.name);
-      setPhone(user.phone || '');
-      setCountry(user.country || '');
-    }
-
-    const existing = getEmergencyContact();
-    if (existing) {
-      setEmName(existing.name);
-      setEmPhone(existing.phone);
-      setEmRelationship(existing.relationship);
-    }
-  }, [user]);
 
   function handleProfileSubmit(e: FormEvent) {
     e.preventDefault();

@@ -1,12 +1,5 @@
 import type { NextConfig } from 'next';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-const nextConfig: NextConfig = {
-  experimental: {
-    turbopack: {
-      root: __dirname,
-    },
-  } as any,
-};
+const nextConfig: NextConfig = {};
 
 export default nextConfig;

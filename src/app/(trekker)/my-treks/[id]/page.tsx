@@ -38,7 +38,7 @@ import agenciesData from '../../../../../data/agencies.json';
 import guidesData from '../../../../../data/guides.json';
 
 const bookings = bookingsData as RawBooking[];
-const packages = packagesData as RawPackage[];
+const packages = packagesData as unknown as RawPackage[];
 const agencies = agenciesData as RawAgency[];
 const guides = guidesData as RawGuide[];
 
@@ -88,11 +88,6 @@ export default function TrekDetailPage({ params }: PageProps) {
 
   const guide = useMemo(
     () => guides.find((g) => g.id === booking?.guide_id),
-    [booking]
-  );
-
-  const agency = useMemo(
-    () => agencies.find((a) => a.id === booking?.agency_id),
     [booking]
   );
 

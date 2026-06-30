@@ -4,16 +4,32 @@ import { useState } from "react";
 import Image from "next/image";
 import packages from "../../../../../data/packages.json";
 
-interface Package {
+interface RawPackage {
   id: string;
+  destination_slug: string;
   agency_id: string;
   title: string;
-  destination: string;
   duration_days: number;
+  price_usd: number;
+  group_size_max: number;
+  included: string[];
+  start_date: string;
+}
+
+interface Package extends RawPackage {
+  destination: string;
   price_per_person: number;
   status: "published" | "draft" | "unlisted" | "archived";
   images: string[];
 }
+
+const packagesWithDefaults: Package[] = (packages as RawPackage[]).map((pkg) => ({
+  ...pkg,
+  destination: pkg.destination_slug.replace(/-/g, " "),
+  price_per_person: pkg.price_usd,
+  status: "published",
+  images: [],
+}));
 
 export default function PackagesPage() {
   const agencyId = "ag-001";
@@ -21,7 +37,7 @@ export default function PackagesPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  const filteredPackages = (packages as Package[]).filter((pkg) => {
+  const filteredPackages = packagesWithDefaults.filter((pkg) => {
     return (
       pkg.agency_id === agencyId &&
       pkg.title.toLowerCase().includes(search.toLowerCase()) &&

@@ -17,13 +17,10 @@ interface UseAuthReturn {
 
 export function useAuth(): UseAuthReturn {
   const router = useRouter();
-  const [user, setUser] = useState<SessionUser | null>(null);
+  const [user, setUser] = useState<SessionUser | null>(() => getSession());
 
 
   useEffect(() => {
-    setUser(getSession());
-
-
     function handleStorageChange(event: StorageEvent) {
       if (event.key === SESSION_KEY) {
         setUser(getSession());
