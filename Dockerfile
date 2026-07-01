@@ -3,8 +3,9 @@
 # -------------------------
 FROM node:24-alpine AS builder
 WORKDIR /app
-COPY package*.json ./
-RUN npm install --ignore-scripts
+COPY package*.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN npm install -g pnpm@latest
+RUN pnpm install --frozen-lockfile
 COPY . .
 RUN npm run build
 

@@ -80,11 +80,7 @@ export default function AgencyDashboardPage() {
       <ActiveGuides />
 
       {/* Placeholder Sections */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="rounded-lg border border-neutral-200 bg-white p-6">
-          <h3 className="font-semibold text-neutral-900">Recent Bookings</h3>
-          <p className="mt-2 text-sm text-neutral-600">No recent bookings</p>
-        </div>
+      <div className="grid grid-cols-1">
         <div className="rounded-lg border border-neutral-200 bg-white p-6">
           <h3 className="font-semibold text-neutral-900">Quick Actions</h3>
           <div className="mt-4 space-y-2">

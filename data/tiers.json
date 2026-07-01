@@ -25,5 +25,59 @@
     "monthly_price": 199,
     "annual_price": 1999,
     "features": ["Featured placement", "Advanced analytics", "Priority support"]
+  },
+  {
+    "id": "tier-small",
+    "name": "Small",
+    "max_staff": 3,
+    "max_guides": 10,
+    "monthly_price": 19,
+    "annual_price": 199,
+    "features": ["Enhanced listing", "Booking management"]
+  },
+  {
+    "id": "tier-enterprise",
+    "name": "Enterprise",
+    "max_staff": 100,
+    "max_guides": 500,
+    "monthly_price": 499,
+    "annual_price": 4999,
+    "features": ["Custom solutions", "Dedicated account manager", "24/7 support"]
+  },
+  {
+    "id": "tier-startup",
+    "name": "Startup",
+    "max_staff": 10,
+    "max_guides": 50,
+    "monthly_price": 99,
+    "annual_price": 999,
+    "features": ["Enhanced listing", "Booking management", "Priority support"]
+  },
+  {
+    "id": "tier-premium",
+    "name": "Premium",
+    "max_staff": 50,
+    "max_guides": 200,
+    "monthly_price": 299,
+    "annual_price": 2999,
+    "features": ["Featured placement", "Advanced analytics", "Dedicated support"]
+  },
+  {
+    "id": "tier-basic",
+    "name": "Basic",
+    "max_staff": 2,
+    "max_guides": 5,
+    "monthly_price": 9,
+    "annual_price": 99,
+    "features": ["Standard listing", "Limited booking management"]
+  },
+  {
+    "id": "tier-pro",
+    "name": "Pro",
+    "max_staff": 15,
+    "max_guides": 75,
+    "monthly_price": 149,
+    "annual_price": 1499,
+    "features": ["Featured placement", "Advanced analytics", "Priority support"]
   }
 ]

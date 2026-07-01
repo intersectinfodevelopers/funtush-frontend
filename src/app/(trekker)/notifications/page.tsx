@@ -8,7 +8,7 @@
  * - Unread items styled differently
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Bell,
@@ -108,11 +108,7 @@ function formatTimeAgo(dateStr: string): string {
 
 export default function NotificationsPage() {
   // Track which notifications are read (combines mock + localStorage)
-  const [readIds, setReadIds] = useState<string[]>([]);
-
-  useEffect(() => {
-    setReadIds(getReadNotificationIds());
-  }, []);
+  const [readIds, setReadIds] = useState<string[]>(() => getReadNotificationIds());
 
   // Merge mock data with localStorage read state
   const notifications = useMemo(() => {

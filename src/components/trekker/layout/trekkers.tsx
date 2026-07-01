@@ -10,7 +10,6 @@ import { cn } from '@/lib/utils/cn';
 
 import { useState, useEffect } from 'react';
 import { getReadNotificationIds } from '@/lib/auth';
-import { relative } from 'path';
 
 const NAV_LINKS = [
     {label: 'MY Treks ', href : ROUTES.TREKKER.MY_TREKS},

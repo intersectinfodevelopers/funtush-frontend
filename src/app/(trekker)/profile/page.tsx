@@ -9,9 +9,7 @@ import Link from 'next/link';
 import { Mail, Phone, Globe, Calendar, User as UserIcon, Pencil, Shield } from 'lucide-react';
 
 import { useAuth } from '@/hooks/useAuth';
-import { useEffect, useState } from 'react';
 import { getEmergencyContact } from '@/lib/auth';
-import type { EmergencyContact } from '@/types/user';
 
 
 
@@ -26,14 +24,8 @@ function formatDate(dateStr: string): string {
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const [emergency, setEmergency] = useState<EmergencyContact | null>(null);
+  const emergency = getEmergencyContact();
 
-  
-  useEffect(() => {
-    setEmergency(getEmergencyContact());
-  }, []);
-
-  
   if (!user) {
     return (
       <div className="text-center text-sm text-neutral-500">Loading...</div>

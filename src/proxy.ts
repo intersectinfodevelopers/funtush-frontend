@@ -24,18 +24,15 @@ function parseSession(cookieValue: string | undefined): { role: string } | null 
   }
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  
   const cookieValue = request.cookies.get(SESSION_COOKIE)?.value;
   const session = parseSession(cookieValue);
   const isLoggedIn = session !== null;
 
-  
   if (pathname === '/') {
     if (isLoggedIn) {
-      
       const dashboard = session.role === 'trekker' ? '/my-treks' : '/dashboard';
       return NextResponse.redirect(new URL(dashboard, request.url));
     }
@@ -53,7 +50,6 @@ export function middleware(request: NextRequest) {
 
   return NextResponse.next();
 }
-
 
 export const config = {
   matcher: [

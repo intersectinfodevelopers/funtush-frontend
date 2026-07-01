@@ -63,5 +63,57 @@
     "joined_date": "2017-01-20",
     "status": "active",
     "subdomain": "himalayan"
+  },
+  {
+    "id": "ag-006",
+    "slug": "sherpa-steps",
+    "name": "Sherpa Steps Guides",
+    "logo": "/images/agencies/sherpa-steps.png",
+    "rating": 4.9,
+    "tier": "large",
+    "destinations": ["everest-region", "gokyo-lakes"],
+    "description": "Elite local Sherpa-led climbing expeditions and high mountain treks.",
+    "joined_date": "2016-04-12",
+    "status": "active",
+    "subdomain": "sherpasteps"
+  },
+  {
+    "id": "ag-007",
+    "slug": "mardi-trails",
+    "name": "Mardi Eco Trails",
+    "logo": "/images/agencies/mardi-trails.png",
+    "rating": 4.5,
+    "tier": "small",
+    "destinations": ["annapurna-region", "mardi-himal"],
+    "description": "Eco-conscious touring agency specializing in short ridge-line trails.",
+    "joined_date": "2022-02-18",
+    "status": "active",
+    "subdomain": "mardi"
+  },
+  {
+    "id": "ag-008",
+    "slug": "wild-west-nepal",
+    "name": "Wild West Expeditions",
+    "logo": "/images/agencies/wild-west.png",
+    "rating": 4.3,
+    "tier": "medium",
+    "destinations": ["rara-lake", "dolpo"],
+    "description": "Off-the-beaten-track true wilderness adventures in remote western Nepal.",
+    "joined_date": "2021-05-24",
+    "status": "active",
+    "subdomain": "wildwest"
+  },
+  {
+    "id": "ag-009",
+    "slug": "summit-horizon",
+    "name": "Summit Horizon Hub",
+    "logo": "/images/agencies/summit-horizon.png",
+    "rating": 4.0,
+    "tier": "free",
+    "destinations": ["langtang"],
+    "description": "Basic group porter and entry-level guide matchmaking services.",
+    "joined_date": "2024-01-05",
+    "status": "suspended",
+    "subdomain": "summithub"
   }
 ]
