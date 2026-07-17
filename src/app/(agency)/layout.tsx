@@ -1,10 +1,26 @@
-/**
- * Agency Dashboard Layout
- * Sidebar + topbar layout for authenticated agency users
- */
+import AgencySidebar from "@/components/agency/AgencySidebar";
+import DashboardTopbar from "@/components/agency/DashboardTopbar";
 
-import { DashboardLayout } from '@/components/layouts/dashboardlayout';
-
-export default function AgencyLayout({ children }: { children: React.ReactNode }) {
-  return <DashboardLayout>{children}</DashboardLayout>;
+export default function AgencyLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex h-screen bg-neutral-50">
+      {/* Sidebar */}
+      <AgencySidebar />
+      
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Topbar */}
+        <DashboardTopbar />
+        
+        {/* Page Content */}
+        <main className="flex-1 overflow-y-auto p-6">
+          {children}
+        </main>
+      </div>
+    </div>
+  );
 }
