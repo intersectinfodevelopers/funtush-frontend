@@ -11,14 +11,23 @@ import {
   Mail,
   Lock,
   CreditCard,
+  Share2,
+  Wallet,
+  Compass,
+  SearchCode,
+  RotateCcw
 } from 'lucide-react';
-import { useEffect } from 'react';
 
 // Settings navigation items
 const settingsNavItems = [
   { label: 'Branding', href: '/dashboard/settings/branding', icon: <Palette size={18} /> },
   { label: 'Agency Info', href: '/dashboard/settings/agency-info', icon: <Building2 size={18} /> },
   { label: 'Domain', href: '/dashboard/settings/domain', icon: <Globe size={18} /> },
+  { label: 'Social', href: '/dashboard/settings/social', icon: <Share2 size={18} /> },
+  { label: 'Payments', href: '/dashboard/settings/payments', icon: <Wallet size={18} /> },
+  { label: 'Navigation', href: '/dashboard/settings/navigation', icon: <Compass size={18} /> },
+  { label: 'Seo', href: '/dashboard/settings/seo', icon: <SearchCode size={18} /> },
+  { label: 'Subscription', href: '/dashboard/settings/subscription', icon: <RotateCcw size={18} /> },
   { label: 'Team', href: '/dashboard/settings/team', icon: <Users size={18} /> },
   { label: 'Security', href: '/dashboard/settings/security', icon: <Shield size={18} /> },
   { label: 'Notifications', href: '/dashboard/settings/notifications', icon: <Bell size={18} /> },
