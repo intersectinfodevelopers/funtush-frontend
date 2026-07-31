@@ -23,7 +23,9 @@ export function useAuth(): UseAuthReturn {
   useEffect(() => {
     function handleStorageChange(event: StorageEvent) {
       if (event.key === SESSION_KEY) {
-        setUser(getSession());
+        window.setTimeout(() => {
+          setUser(getSession());
+        }, 0);
       }
     }
 

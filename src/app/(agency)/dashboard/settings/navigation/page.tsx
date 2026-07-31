@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Save, GripVertical, Plus, Trash2, X } from 'lucide-react';
+import { useState } from 'react';
+import { Save, GripVertical, Plus, Trash2 } from 'lucide-react';
 
 interface NavLink {
   id: string;
@@ -19,19 +19,22 @@ const defaultNavItems: NavLink[] = [
 ];
 
 export default function NavigationSettingsPage() {
-  const [navItems, setNavItems] = useState<NavLink[]>(defaultNavItems);
+  const [navItems, setNavItems] = useState<NavLink[]>(() => {
+    if (typeof window === 'undefined') {
+      return defaultNavItems;
+    }
+
+    try {
+      const stored = localStorage.getItem('navSettings');
+      return stored ? (JSON.parse(stored) as NavLink[]) : defaultNavItems;
+    } catch {
+      return defaultNavItems;
+    }
+  });
   const [newLabel, setNewLabel] = useState('');
   const [newHref, setNewHref] = useState('');
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [showToast, setShowToast] = useState(false);
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('navSettings');
-    if (stored) {
-      setNavItems(JSON.parse(stored));
-    }
-  }, []);
 
   const handleSave = () => {
     localStorage.setItem('navSettings', JSON.stringify(navItems));

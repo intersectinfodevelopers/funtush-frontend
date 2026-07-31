@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Save, Link, Video, Phone } from 'lucide-react';
 
 // Default settings
@@ -13,16 +13,14 @@ const defaultSettings = {
 };
 
 export default function SocialSettingsPage() {
-  const [settings, setSettings] = useState(defaultSettings);
-  const [showToast, setShowToast] = useState(false);
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('socialSettings');
-    if (stored) {
-      setSettings(JSON.parse(stored));
+  const [settings, setSettings] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('socialSettings');
+      return stored ? JSON.parse(stored) : defaultSettings;
     }
-  }, []);
+    return defaultSettings;
+  });
+  const [showToast, setShowToast] = useState(false);
 
   const handleSave = () => {
     localStorage.setItem('socialSettings', JSON.stringify(settings));

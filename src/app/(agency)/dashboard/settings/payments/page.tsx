@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Save, CreditCard, Building2, Smartphone, Banknote } from 'lucide-react';
+import { useState } from 'react';
+import { Save, CreditCard, Building2, Smartphone } from 'lucide-react';
 
 // Payment gateway configurations
 interface PaymentGateway {
@@ -69,16 +69,16 @@ const defaultGateways: PaymentGateway[] = [
 ];
 
 export default function PaymentsSettingsPage() {
-  const [gateways, setGateways] = useState<PaymentGateway[]>(defaultGateways);
-  const [showToast, setShowToast] = useState(false);
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('paymentSettings');
-    if (stored) {
-      setGateways(JSON.parse(stored));
+  const [gateways, setGateways] = useState<PaymentGateway[]>(() => {
+    try {
+      const stored = localStorage.getItem('paymentSettings');
+      return stored ? JSON.parse(stored) : defaultGateways;
+    } catch (error) {
+      console.error('Failed to parse payment settings:', error);
+      return defaultGateways;
     }
-  }, []);
+  });
+  const [showToast, setShowToast] = useState(false);
 
   const handleSave = () => {
     localStorage.setItem('paymentSettings', JSON.stringify(gateways));

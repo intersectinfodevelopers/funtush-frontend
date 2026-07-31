@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Save, Copy, CheckCircle, Globe } from 'lucide-react';
 
 const defaultSettings = {
@@ -8,18 +8,27 @@ const defaultSettings = {
   customDomain: '',
 };
 
-export default function DomainSettingsPage() {
-  const [settings, setSettings] = useState(defaultSettings);
-  const [showToast, setShowToast] = useState(false);
-  const [copied, setCopied] = useState(false);
+const getInitialSettings = () => {
+  if (typeof window === 'undefined') {
+    return defaultSettings;
+  }
 
-  // Load from localStorage on mount
-  useEffect(() => {
+  try {
     const stored = localStorage.getItem('domainSettings');
     if (stored) {
-      setSettings(JSON.parse(stored));
+      return JSON.parse(stored);
     }
-  }, []);
+  } catch (error) {
+    console.error('Failed to parse domain settings:', error);
+  }
+
+  return defaultSettings;
+};
+
+export default function DomainSettingsPage() {
+  const [settings, setSettings] = useState(getInitialSettings);
+  const [showToast, setShowToast] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const handleSave = () => {
     localStorage.setItem('domainSettings', JSON.stringify(settings));

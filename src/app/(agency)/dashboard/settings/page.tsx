@@ -15,7 +15,7 @@ import {
   Wallet,
   Compass,
   SearchCode,
-  RotateCcw
+  Crown
 } from 'lucide-react';
 
 // Settings navigation items
@@ -27,7 +27,7 @@ const settingsNavItems = [
   { label: 'Payments', href: '/dashboard/settings/payments', icon: <Wallet size={18} /> },
   { label: 'Navigation', href: '/dashboard/settings/navigation', icon: <Compass size={18} /> },
   { label: 'Seo', href: '/dashboard/settings/seo', icon: <SearchCode size={18} /> },
-  { label: 'Subscription', href: '/dashboard/settings/subscription', icon: <RotateCcw size={18} /> },
+  { label: 'Subscription', href: '/dashboard/settings/subscription', icon: <Crown size={18} /> },
   { label: 'Team', href: '/dashboard/settings/team', icon: <Users size={18} /> },
   { label: 'Security', href: '/dashboard/settings/security', icon: <Shield size={18} /> },
   { label: 'Notifications', href: '/dashboard/settings/notifications', icon: <Bell size={18} /> },
@@ -74,7 +74,7 @@ export default function SettingsPage() {
           <Palette size={48} className="text-neutral-300 mb-4" />
           <h2 className="text-lg font-semibold text-neutral-900">Branding</h2>
           <p className="text-sm text-neutral-500 max-w-md">
-            Customize your agency's brand appearance. Configure colors, fonts, and logos.
+            Customize your agency brand appearance. Configure colors, fonts, and logos.
           </p>
           <button
             onClick={() => router.push('/dashboard/settings/branding')}

@@ -18,18 +18,13 @@ export default function ForgetPasswordPage() {
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="text-canter">
+      <CardContent className="text-center">
 
         <p className="text-sm text-neutral-600">
-          Email us at
-
-          <a
-            href="mailto:support@funtush.com"
-            className="text-primary-900 hover-underline"
-          >
+          Email us at{' '}
+          <a href="mailto:support@funtush.com" className="text-primary-900 hover-underline">
             support@funtush.com
           </a>
-
         </p>
 
         <Link href={ROUTES.AUTH.LOGIN}

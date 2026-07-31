@@ -9,8 +9,16 @@ import Link from 'next/link';
 import { Mail, Phone, Globe, Calendar, User as UserIcon, Pencil, Shield } from 'lucide-react';
 
 import { useAuth } from '@/hooks/useAuth';
+import { useState } from 'react';
 import { getEmergencyContact } from '@/lib/auth';
 
+
+// Emergency contact shape returned by getEmergencyContact
+interface EmergencyContact {
+  name: string;
+  phone: string;
+  relationship: string;
+}
 
 
 function formatDate(dateStr: string): string {
@@ -24,7 +32,7 @@ function formatDate(dateStr: string): string {
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const emergency = getEmergencyContact();
+  const [emergency] = useState<EmergencyContact | null>(() => getEmergencyContact());
 
   if (!user) {
     return (

@@ -1,12 +1,5 @@
 'use client';
 
-/**
- * Notifications Page
- * 
- * - Shows mock notifications array
- * - Click → mark as read
- * - Unread items styled differently
- */
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
@@ -108,7 +101,9 @@ function formatTimeAgo(dateStr: string): string {
 
 export default function NotificationsPage() {
   // Track which notifications are read (combines mock + localStorage)
-  const [readIds, setReadIds] = useState<string[]>(() => getReadNotificationIds());
+  const [readIds, setReadIds] = useState<string[]>(() =>
+    typeof window !== 'undefined' ? getReadNotificationIds() : []
+  );
 
   // Merge mock data with localStorage read state
   const notifications = useMemo(() => {

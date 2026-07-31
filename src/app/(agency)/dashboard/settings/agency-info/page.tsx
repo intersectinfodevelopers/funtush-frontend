@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Save, Plus, Trash2, X } from 'lucide-react';
+import { useState } from 'react';
+import { Save, Plus, Trash2 } from 'lucide-react';
 
 // Operating regions options
 const regionOptions = [
@@ -40,16 +40,15 @@ const defaultSettings: AgencySettings = {
 };
 
 export default function AgencyInfoSettingsPage() {
-  const [settings, setSettings] = useState<AgencySettings>(defaultSettings);
+  const [settings, setSettings] = useState<AgencySettings>(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('agencyInfoSettings');
+      return stored ? JSON.parse(stored) : defaultSettings;
+    }
+    return defaultSettings;
+  });
   const [showToast, setShowToast] = useState(false);
 
-  // Load from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('agencyInfoSettings');
-    if (stored) {
-      setSettings(JSON.parse(stored));
-    }
-  }, []);
 
   const handleSave = () => {
     localStorage.setItem('agencyInfoSettings', JSON.stringify(settings));
@@ -135,7 +134,7 @@ export default function AgencyInfoSettingsPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900">Agency Info</h1>
-          <p className="text-sm text-neutral-500">Manage your agency's information</p>
+          <p className="text-sm text-neutral-500">Manage your agency information</p>
         </div>
         <button
           onClick={handleSave}

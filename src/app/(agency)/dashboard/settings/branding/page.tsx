@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Save, Upload, Eye } from 'lucide-react';
+import Image from 'next/image';
 
 // Font options
 const fontOptions = [
@@ -21,16 +22,14 @@ const defaultSettings = {
 };
 
 export default function BrandingSettingsPage() {
-  const [settings, setSettings] = useState(defaultSettings);
-  const [showToast, setShowToast] = useState(false);
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('brandingSettings');
-    if (stored) {
-      setSettings(JSON.parse(stored));
+  const [settings, setSettings] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('brandingSettings');
+      return stored ? JSON.parse(stored) : defaultSettings;
     }
-  }, []);
+    return defaultSettings;
+  });
+  const [showToast, setShowToast] = useState(false);
 
   // Save to localStorage
   const handleSave = () => {
@@ -81,7 +80,7 @@ export default function BrandingSettingsPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold text-neutral-900">Branding</h1>
-          <p className="text-sm text-neutral-500">Customize your agency's brand appearance</p>
+          <p className="text-sm text-neutral-500">Customize your agency brand appearance</p>
         </div>
         <button
           onClick={handleSave}
@@ -149,7 +148,7 @@ export default function BrandingSettingsPage() {
             </label>
             <div className="flex items-center gap-4">
               {settings.logo && (
-                <img
+                <Image
                   src={settings.logo}
                   alt="Logo"
                   className="h-16 w-auto object-contain border border-neutral-200 rounded"
@@ -175,7 +174,7 @@ export default function BrandingSettingsPage() {
             </label>
             <div className="flex items-center gap-4">
               {settings.favicon && (
-                <img
+                <Image
                   src={settings.favicon}
                   alt="Favicon"
                   className="w-10 h-10 object-contain border border-neutral-200 rounded"
@@ -211,7 +210,7 @@ export default function BrandingSettingsPage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   {settings.logo ? (
-                    <img src={settings.logo} alt="Logo" className="h-8 w-auto" />
+                    <Image src={settings.logo} alt="Logo" className="h-8 w-auto" />
                   ) : (
                     <div className="w-8 h-8 rounded bg-neutral-200"></div>
                   )}

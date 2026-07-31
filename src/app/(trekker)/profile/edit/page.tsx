@@ -1,15 +1,5 @@
 'use client';
 
-/**
- * Profile Edit Page
- * 
- * Two forms:
- * 1. Profile info (name, phone, country)
- * 2. Emergency contact (name, phone, relationship)
- * 
- * Saved to localStorage on submit
- */
-
 import { useState, FormEvent } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Save, Shield, User as UserIcon } from 'lucide-react';
@@ -26,27 +16,30 @@ import type { EmergencyContact } from '@/types/user';
 export default function ProfileEditPage() {
   const { user } = useAuth();
 
-  const [name, setName] = useState(() => user?.name ?? '');
-  const [phone, setPhone] = useState(() => user?.phone || '');
-  const [country, setCountry] = useState(() => user?.country || '');
+  const [name, setName] = useState<string | undefined>();
+  const [phone, setPhone] = useState<string | undefined>();
+  const [country, setCountry] = useState<string | undefined>();
   const [profileSaving, setProfileSaving] = useState(false);
 
-  const existingEmergency = getEmergencyContact();
-  const [emName, setEmName] = useState(() => existingEmergency?.name ?? '');
-  const [emPhone, setEmPhone] = useState(() => existingEmergency?.phone ?? '');
-  const [emRelationship, setEmRelationship] = useState(() => existingEmergency?.relationship ?? '');
+  const [emName, setEmName] = useState(() => getEmergencyContact()?.name ?? '');
+  const [emPhone, setEmPhone] = useState(() => getEmergencyContact()?.phone ?? '');
+  const [emRelationship, setEmRelationship] = useState(() => getEmergencyContact()?.relationship ?? '');
   const [emSaving, setEmSaving] = useState(false);
+
+  const currentName = name !== undefined ? name : user?.name ?? '';
+  const currentPhone = phone !== undefined ? phone : user?.phone ?? '';
+  const currentCountry = country !== undefined ? country : user?.country ?? '';
 
   function handleProfileSubmit(e: FormEvent) {
     e.preventDefault();
 
-    if (!name.trim()) {
+    if (!currentName.trim()) {
       toast.error('Name is required');
       return;
     }
 
     setProfileSaving(true);
-    updateSession({ name: name.trim(), phone: phone.trim(), country: country.trim() });
+    updateSession({ name: currentName.trim(), phone: currentPhone.trim(), country: currentCountry.trim() });
 
     setTimeout(() => {
       setProfileSaving(false);
@@ -113,7 +106,7 @@ export default function ProfileEditPage() {
           <FormField label="Name">
             <input
               type="text"
-              value={name}
+              value={currentName}
               onChange={(e) => setName(e.target.value)}
               className="form-input"
               placeholder="Your full name"
@@ -132,7 +125,7 @@ export default function ProfileEditPage() {
           <FormField label="Phone">
             <input
               type="tel"
-              value={phone}
+              value={currentPhone}
               onChange={(e) => setPhone(e.target.value)}
               className="form-input"
               placeholder="+977-9XXXXXXXXX"
@@ -142,7 +135,7 @@ export default function ProfileEditPage() {
           <FormField label="Country">
             <input
               type="text"
-              value={country}
+              value={currentCountry}
               onChange={(e) => setCountry(e.target.value)}
               className="form-input"
               placeholder="e.g. Nepal"

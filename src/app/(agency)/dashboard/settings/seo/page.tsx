@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Save, Upload, Eye } from 'lucide-react';
+import { useState } from 'react';
+import { Save, Upload } from 'lucide-react';
 
 const defaultSettings = {
   pageTitleFormat: '{page} | {agency}',
@@ -10,16 +10,24 @@ const defaultSettings = {
 };
 
 export default function SeoSettingsPage() {
-  const [settings, setSettings] = useState(defaultSettings);
-  const [showToast, setShowToast] = useState(false);
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('seoSettings');
-    if (stored) {
-      setSettings(JSON.parse(stored));
+  const [settings, setSettings] = useState(() => {
+    if (typeof window === 'undefined') {
+      return defaultSettings;
     }
-  }, []);
+
+    const stored = localStorage.getItem('seoSettings');
+    if (!stored) {
+      return defaultSettings;
+    }
+
+    try {
+      return JSON.parse(stored);
+    } catch (error) {
+      console.error('Failed to parse SEO settings:', error);
+      return defaultSettings;
+    }
+  });
+  const [showToast, setShowToast] = useState(false);
 
   const handleSave = () => {
     localStorage.setItem('seoSettings', JSON.stringify(settings));
@@ -102,7 +110,7 @@ export default function SeoSettingsPage() {
             onChange={(e) => setSettings({ ...settings, metaDescription: e.target.value })}
             rows={3}
             className="w-full border border-neutral-300 rounded px-3 py-1.5 text-sm"
-            placeholder="Your agency's meta description for search engines"
+            placeholder={"Your agency's meta description for search engines"}
           />
           <p className="text-xs text-neutral-500 mt-1">
             {settings.metaDescription.length}/160 characters

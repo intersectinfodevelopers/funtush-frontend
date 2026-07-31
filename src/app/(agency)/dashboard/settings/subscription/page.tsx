@@ -87,7 +87,9 @@ export default function SubscriptionSettingsPage() {
   useEffect(() => {
     const stored = localStorage.getItem('subscriptionTier');
     if (stored) {
-      setCurrentTier(stored);
+      setTimeout(() => {
+        setCurrentTier(stored);
+      }, 0);
     }
   }, []);
 
