@@ -91,6 +91,11 @@ export default function TrekDetailPage({ params }: PageProps) {
     [booking]
   );
 
+  // const agency = useMemo(
+  //   () => agencies.find((a) => a.id === booking?.agency_id),
+  //   [booking]
+  // );
+
   if (!booking || !trek) {
     return (
       <div className="rounded-xl border border-neutral-200 bg-white p-8 text-center">

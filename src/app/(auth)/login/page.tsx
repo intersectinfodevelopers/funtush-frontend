@@ -99,8 +99,8 @@ export default function LoginPage() {
       const redirectPath = ROLE_REDIRECT[foundUser.role];
       router.push(redirectPath);
 
-    } catch {
-      setFormError('Something went wrong. Please try again.');
+    } catch (err) {
+      setFormError('Something went wrong. Please try again.'+ err);
     } finally {
       setIsLoading(false);
     }

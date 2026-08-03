@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Save, Upload } from 'lucide-react';
+import Image from 'next/image';
 
 const defaultSettings = {
   pageTitleFormat: '{page} | {agency}',
@@ -124,7 +125,7 @@ export default function SeoSettingsPage() {
           </label>
           <div className="flex items-center gap-4">
             {settings.ogImage && (
-              <img
+              <Image
                 src={settings.ogImage}
                 alt="OG Image"
                 className="h-24 w-auto object-contain border border-neutral-200 rounded"
