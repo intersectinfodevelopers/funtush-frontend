@@ -17,6 +17,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (stored) return stored === "dark";
     } catch (e) {
       /* ignore */
+      console.error("Error accessing localStorage:", e);
     }
     return false;
   });
@@ -32,6 +33,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         document.documentElement.classList.remove("dark");
       }
     } catch (e) {
+      console.error("Error accessing localStorage:", e);
       // noop
     }
   }, [isDark]);

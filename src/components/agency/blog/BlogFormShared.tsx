@@ -59,13 +59,13 @@ export function BlogFormShared({ postId }: BlogFormSharedProps) {
 
     if (postId) {
       recordsList = recordsList.map((item) =>
-        item.id === postId ? { ...item, title, status: finalStatus as any, date: dateValue } : item
+        item.id === postId ? { ...item, title, status: finalStatus as "Draft" | "Scheduled" | "Published", date: dateValue } : item
       );
     } else {
       const newPost: BlogPost = {
         id: `post-${Math.floor(100 + Math.random() * 900)}`,
         title,
-        status: finalStatus as any,
+        status: finalStatus as "Draft" | "Scheduled" | "Published",
         date: dateValue,
         views: 0
       };
