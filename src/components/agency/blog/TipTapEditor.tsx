@@ -1,14 +1,12 @@
 "use client";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
 import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import Youtube from "@tiptap/extension-youtube";
 import { 
     Bold, 
     Italic, 
-    Underline as UnderlineIcon, 
     Strikethrough, 
     List, 
     ListOrdered, 
@@ -36,7 +34,6 @@ export function TipTapEditor({ content, onChange }: TipTapEditorProps) {
             StarterKit.configure({
                 codeBlock: false,
             }),
-            Underline,
             Link.configure({
                 openOnClick: false,
                 HTMLAttributes: { class: 'text-blue-500 underline cursor-pointer' },
@@ -163,14 +160,14 @@ export function TipTapEditor({ content, onChange }: TipTapEditorProps) {
                     </button>
 
                     {/* Underline */}
-                    <button
+                    {/* <button
                         type="button"
                         onClick={() => editor.chain().focus().toggleUnderline().run()}
                         className={`p-1.5 rounded-lg transition-colors ${editor.isActive("underline") ? "bg-[#1f365c] text-white" : "text-slate-400 hover:bg-[#162947] hover:text-slate-200"}`}
                         title="Underline"
                     >
                         <UnderlineIcon className="w-4 h-4" />
-                    </button>
+                    </button> */}
 
                     {/* Strikethrough */}
                     <button
