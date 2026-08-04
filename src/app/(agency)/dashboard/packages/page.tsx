@@ -6,12 +6,10 @@ import {
   DeleteOutlined,
   Download,
   EditOutlined,
-  FilterList,
   Search,
   VisibilityOutlined,
 } from "@mui/icons-material";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import packagesJson from "../../../../../data/packages.json";
 
 interface RawPackage {

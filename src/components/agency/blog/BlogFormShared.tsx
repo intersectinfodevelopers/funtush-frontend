@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { TipTapEditor } from "./TipTapEditor";
-import { useTheme } from "@/context/theme";
 import Image from "next/image";
 import { Eye, Plus, Sparkles, Upload } from "lucide-react";
 
@@ -19,7 +18,6 @@ interface BlogFormSharedProps {
 }
 
 export function BlogFormShared({ postId }: BlogFormSharedProps) {
-  // const { isDark } = useTheme();
   const router = useRouter();
 
   const [title, setTitle] = useState("");

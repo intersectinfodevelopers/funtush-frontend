@@ -1,6 +1,7 @@
 // src/components/shared/forms/FileUpload.tsx
 "use client";
 import React, { useState, useRef } from 'react';
+import Image from 'next/image';
 
 interface FileUploadProps {
   label?: string;
@@ -79,7 +80,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({ label, accept, maxSizeMB
         <div className="grid grid-cols-4 gap-2 mt-2">
           {previews.map((src, i) => (
             <div key={i} className="relative group border rounded-md overflow-hidden aspect-square">
-              <img src={src} alt="preview" className="w-full h-full object-cover" />
+              <Image src={src} alt="preview" className="w-full h-full object-cover" />
               <button type="button" onClick={(e) => { e.stopPropagation(); removeFile(i); }} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 text-xs opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
             </div>
           ))}

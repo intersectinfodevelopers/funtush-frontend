@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, Menu, MessageCircle, Moon, Search, SunMedium, User, X } from 'lucide-react';
+import { Bell, Menu, MessageCircle, Moon, Search, SunMedium,X } from 'lucide-react';
 import Link from 'next/link';
 import { useTheme } from '@/context/theme';
 
@@ -16,15 +16,15 @@ export const Navbar: React.FC<NavbarProps> = ({
   isDarkMode,
   onDarkModeToggle,
 }) => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileMenuOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const canToggleSidebar = typeof onSidebarToggle === 'function';
   const theme = useTheme();
   const effectiveIsDark = typeof isDarkMode === 'boolean' ? isDarkMode : theme.isDark;
   const effectiveToggle = onDarkModeToggle ?? theme.toggle;
-  const baseBtnClass = effectiveIsDark
-    ? 'border-slate-800 bg-slate-900 text-slate-200 hover:bg-slate-800'
-    : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50';
+  // const baseBtnClass = effectiveIsDark
+  //   ? 'border-slate-800 bg-slate-900 text-slate-200 hover:bg-slate-800'
+  //   : 'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50';
   const searchBgClass = effectiveIsDark
     ? 'border-slate-800 bg-slate-900/95 text-slate-200 placeholder:text-slate-500 shadow-sm'
     : 'border-neutral-200 bg-white text-neutral-900 placeholder:text-neutral-500 shadow-sm';

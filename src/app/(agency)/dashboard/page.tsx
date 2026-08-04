@@ -1,12 +1,11 @@
 "use client";
 
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
-import { Calendar, Users, DollarSign, BarChart2, PieChart, MapPin, PlusSquare, FileText, Activity, Download } from 'lucide-react';
-import bookings from '../../../../data/bookings.json';
-import packages from '../../../../data/packages.json';
+import { Calendar, Users,BarChart2,PlusSquare, FileText, Activity, Download } from 'lucide-react';
+// import bookings from '../../../../data/bookings.json';
+// import packages from '../../../../data/packages.json';
 import finance from '../../../../data/finance.json';
-import { Button } from '@/components/ui/button';
 
 /**
  * Dark-mode Agency Dashboard (visual parity with provided image)
@@ -16,17 +15,17 @@ const agencyId = 'ag-001';
 const isAgencyData = (agency_id: string) => agency_id === agencyId;
 
 export default function AgencyDashboardPage() {
-  const router = useRouter();
+  // const router = useRouter();
 
-  const totalPackages = useMemo(
-    () => packages.filter((pkg) => isAgencyData(pkg.agency_id)).length,
-    []
-  );
+  // const totalPackages = useMemo(
+  //   () => packages.filter((pkg) => isAgencyData(pkg.agency_id)).length,
+  //   []
+  // );
 
-  const totalBookings = useMemo(
-    () => bookings.filter((b) => isAgencyData(b.agency_id)).length,
-    []
-  );
+  // const totalBookings = useMemo(
+  //   () => bookings.filter((b) => isAgencyData(b.agency_id)).length,
+  //   []
+  // );
 
   const revenue = useMemo(
     () =>
@@ -43,10 +42,10 @@ export default function AgencyDashboardPage() {
     { id: 4, title: 'Facebook Ads campaign started', time: '2 hours ago' },
   ];
 
-  const handleLogout = () => {
-    document.cookie = 'authToken=; path=/; max-age=0';
-    router.push('/login');
-  };
+  // const handleLogout = () => {
+  //   document.cookie = 'authToken=; path=/; max-age=0';
+  //   router.push('/login');
+  // };
 
   return (
     <div className="space-y-4 p-6">
