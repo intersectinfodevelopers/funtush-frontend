@@ -242,11 +242,10 @@ export default function BookingsPage() {
             <p className="mt-5 text-sm text-pink-500">All time</p>
           </div>
         </div>
+      </div>
 
-</div>
-
-<div className="mb-6 flex flex-wrap gap-3">
-  {tabs.map((tab) => (
+      <div className="mb-6 flex flex-wrap gap-3">
+        {tabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -294,92 +293,95 @@ export default function BookingsPage() {
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
-  <div className="overflow-x-auto">
-        <table className="w-full border">
-          <thead className="bg-gray-100">
-            <tr>
-              <th className="border p-3 text-left">Trekker</th>
-
-              <th className="border p-3 text-left">Package</th>
-
-              <th className="border p-3 text-left">Departure</th>
-
-              <th className="border p-3 text-center">Group</th>
-
-              <th className="border p-3 text-right">Amount</th>
-
-              <th className="border p-3 text-left">Guide</th>
-
-              <th className="border p-3 text-center">Status</th>
-
-              <th className="border p-3 text-center">Action</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {filteredBookings.length === 0 ? (
+        <div className="overflow-x-auto">
+          <table className="w-full border">
+            <thead className="bg-gray-100">
               <tr>
-                <td
-                  colSpan={8}
-                  className="border p-5 text-center text-gray-500"
-                >
-                  No bookings found
-                </td>
+                <th className="border p-3 text-left">Trekker</th>
+
+                <th className="border p-3 text-left">Package</th>
+
+                <th className="border p-3 text-left">Departure</th>
+
+                <th className="border p-3 text-center">Group</th>
+
+                <th className="border p-3 text-right">Amount</th>
+
+                <th className="border p-3 text-left">Guide</th>
+
+                <th className="border p-3 text-center">Status</th>
+
+                <th className="border p-3 text-center">Action</th>
               </tr>
-            ) : (
-              filteredBookings.map((booking) => {
-                const trekker = (usersData as User[]).find(
-                  (user) => user.id === booking.trekker_id,
-                );
+            </thead>
 
-                const packageInfo = (packagesData as Package[]).find(
-                  (pkg) => pkg.id === booking.package_id,
-                );
+            <tbody>
+              {filteredBookings.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={8}
+                    className="border p-5 text-center text-gray-500"
+                  >
+                    No bookings found
+                  </td>
+                </tr>
+              ) : (
+                filteredBookings.map((booking) => {
+                  const trekker = (usersData as User[]).find(
+                    (user) => user.id === booking.trekker_id,
+                  );
 
-                const guide = (guidesData as Guide[]).find(
-                  (guide) => guide.id === booking.guide_id,
-                );
+                  const packageInfo = (packagesData as Package[]).find(
+                    (pkg) => pkg.id === booking.package_id,
+                  );
 
-                return (
-                  <tr key={booking.id}>
-                    <td className="border p-3">{trekker?.name ?? "Unknown"}</td>
+                  const guide = (guidesData as Guide[]).find(
+                    (guide) => guide.id === booking.guide_id,
+                  );
 
-                    <td className="border p-3">
-                      {packageInfo?.title ?? "Unknown Package"}
-                    </td>
+                  return (
+                    <tr key={booking.id}>
+                      <td className="border p-3">
+                        {trekker?.name ?? "Unknown"}
+                      </td>
 
-                    <td className="border p-3">{booking.departure_date}</td>
+                      <td className="border p-3">
+                        {packageInfo?.title ?? "Unknown Package"}
+                      </td>
 
-                    <td className="border p-3 text-center">
-                      {booking.group_size}
-                    </td>
+                      <td className="border p-3">{booking.departure_date}</td>
 
-                    <td className="border p-3 text-right">
-                      Rs. {booking.total_price}
-                    </td>
+                      <td className="border p-3 text-center">
+                        {booking.group_size}
+                      </td>
 
-                    <td className="border p-3">
-                      {guide?.name ?? "Not Assigned"}
-                    </td>
+                      <td className="border p-3 text-right">
+                        Rs. {booking.total_price}
+                      </td>
 
-                    <td className="border p-3 text-center">
-                      <BookingStatusBadge status={booking.status} />
-                    </td>
+                      <td className="border p-3">
+                        {guide?.name ?? "Not Assigned"}
+                      </td>
 
-                    <td className="border p-3 text-center">
-                      <Link
-                        href={`/dashboard/bookings/${booking.id}`}
-                        className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
-                      >
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
+                      <td className="border p-3 text-center">
+                        <BookingStatusBadge status={booking.status} />
+                      </td>
+
+                      <td className="border p-3 text-center">
+                        <Link
+                          href={`/dashboard/bookings/${booking.id}`}
+                          className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
+                        >
+                          View
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
