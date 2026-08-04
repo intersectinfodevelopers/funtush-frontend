@@ -1,0 +1,88 @@
+{
+  "total_entries": 28,
+  "showing_from": 1,
+  "showing_to": 4,
+  "current_page": 1,
+  "blogs": [
+    {
+      "id": 1,
+      "title": "How to learn AI in 2026",
+      "description": "A complete guide to learning artificial intelligence from scratch...",
+      "category": "Technology",
+      "author": {
+        "name": "John Doe",
+        "avatar": "user.png"
+      },
+      "date": "July 20, 2026",
+      "time": "10:12 AM",
+      "status": "Published",
+      "views": "2.4K",
+      "likes": 36,
+      "thumbnail": "How-to-learn-ai-in-2026.png"
+    },
+    {
+      "id": 2,
+      "title": "10 Marketing Tips to Grow Fast",
+      "description": "Boost your brand and get more customers with these proven tips...",
+      "category": "Marketing",
+      "author": {
+        "name": "John Doe",
+        "avatar": "user.png"
+      },
+      "date": "July 20, 2026",
+      "time": "10:12 AM",
+      "status": "Draft",
+      "views": "2.4K",
+      "likes": 36,
+      "thumbnail": "10-Marketing-Tips-to-Grow-Fast.png"
+    },
+    {
+      "id": 3,
+      "title": "React.js Complete Guide",
+      "description": "Learn React.js step by step with real-world examples...",
+      "category": "Development",
+      "author": {
+        "name": "John Doe",
+        "avatar": "user.png"
+      },
+      "date": "July 20, 2026",
+      "time": "10:12 AM",
+      "status": "Published",
+      "views": "2.4K",
+      "likes": 36,
+      "thumbnail": "React.js-Complete-Guide.png"
+    },
+    {
+      "id": 4,
+      "title": "SEO Best Practices in 2026",
+      "description": "Stay ahead in search rankings with these latest SEO strategies...",
+      "category": "Business",
+      "author": {
+        "name": "John Doe",
+        "avatar": "user.png"
+      },
+      "date": "July 20, 2026",
+      "time": "10:12 AM",
+      "status": "Published",
+      "views": "2.4K",
+      "likes": 36,
+      "thumbnail": "SEO-Best-Practices-in-2026.png"
+    },
+    {
+      "id": 5,
+      "title": "Business Plan Template",
+      "description": "Download our free business plan template and grow your business...",
+      "category": "Business",
+      "author": {
+        "name": "John Doe",
+        "avatar": "user.png"
+      },
+      "date": "July 20, 2026",
+      "time": "10:12 AM",
+      "status": "Published",
+      "views": "2.4K",
+      "likes": 36,
+      "thumbnail": "Business-Plan-Template.png"
+    }
+  ]
+}
