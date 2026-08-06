@@ -95,7 +95,9 @@ function BookingStatusBadge({ status }: { status: string }) {
   }
 
   return (
-    <span className={`rounded-full px-3 py-1 text-xs font-medium ${color}`}>
+    <span
+      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium capitalize ${color}`}
+    >
       {status}
     </span>
   );
@@ -198,7 +200,7 @@ export default function BookingsPage() {
       </div>
       <div className="mb-8 flex flex-wrap gap-3">
         <div className="mb-8 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="rounded-2xl border border-gray-200 bg-white p-7 shadow-sm">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-violet-100">
               <GroupAddOutlined className="text-violet-600" />
             </div>
@@ -212,7 +214,7 @@ export default function BookingsPage() {
             <p className="mt-5 text-sm text-violet-600">Awaiting response</p>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+          <div className="rounded-2xl border border-gray-200 bg-white p-7 shadow-sm">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
               <CheckCircleOutlineOutlined className="text-orange-500" />
             </div>
@@ -226,8 +228,8 @@ export default function BookingsPage() {
             <p className="mt-5 text-sm text-orange-500">Confirmed bookings</p>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+          <div className="rounded-2xl border border-gray-200 bg-white p-7 shadow-sm">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
               <HikingOutlined className="text-green-600" />
             </div>
 
@@ -240,8 +242,8 @@ export default function BookingsPage() {
             <p className="mt-5 text-sm text-green-600">On trail now</p>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-pink-100">
+          <div className="rounded-2xl border border-gray-200 bg-white p-7 shadow-sm">
+            <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-pink-100">
               <EmojiEventsOutlined className="text-pink-500" />
             </div>
 
@@ -249,30 +251,38 @@ export default function BookingsPage() {
               Completed
             </p>
 
-            <h2 className="mt-2 text-4xl font-bold">{completedCount}</h2>
+            <h2 className="mt-3 text-[40px] font-bold leading-none text-gray-900">
+              {completedCount}
+            </h2>
 
             <p className="mt-5 text-sm text-pink-500">All time</p>
           </div>
         </div>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-3">
+      <div className="mb-6 flex items-center gap-8 rounded-2xl bg-violet-50 px-6 py-4">
         {tabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`rounded-xl px-5 py-2.5 text-sm font-medium capitalize transition ${
+            className={`relative pb-3 text-sm font-medium capitalize transition ${
               activeTab === tab
-                ? "bg-violet-600 text-white shadow-sm"
-                : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
+                ? "text-violet-600"
+                : "text-gray-500 hover:text-violet-600"
             }`}
           >
-            {tab}
+            <span>{tab}</span>
 
-            {tab === "inquiry" && inquiryCount > 0 && (
-              <span className="ml-2 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold leading-none text-white">
-                {inquiryCount}
-              </span>
+            <span className="ml-2 text-gray-500">
+              {
+                bookings.filter(
+                  (booking) => booking.status.toLowerCase() === tab,
+                ).length
+              }
+            </span>
+
+            {activeTab === tab && (
+              <span className="absolute bottom-0 left-0 h-[2px] w-full rounded-full bg-violet-600" />
             )}
           </button>
         ))}
@@ -309,6 +319,10 @@ export default function BookingsPage() {
             <option>Amount</option>
             <option>Group Size</option>
           </select>
+          <button className="flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-violet-600 px-6 py-3 text-sm font-medium text-white shadow-sm">
+            <DownloadOutlined fontSize="small" />
+            Download
+          </button>
         </div>
       </div>
 
@@ -317,38 +331,38 @@ export default function BookingsPage() {
           <table className="w-full border-collapse">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-6 py-5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                   S.N
                 </th>
 
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-6 py-5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                   Trekker
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-6 py-5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                   Package
                 </th>
 
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-6 py-5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                   Departure
                 </th>
 
-                <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-6 py-5 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
                   Group
                 </th>
 
-                <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-6 py-5 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
                   Amount
                 </th>
 
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-6 py-5 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                   Guide
                 </th>
 
-                <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-6 py-5 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
                   Status
                 </th>
 
-                <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+                <th className="px-6 py-5 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
                   Action
                 </th>
               </tr>
@@ -385,38 +399,38 @@ export default function BookingsPage() {
                     >
                       <td className="px-6 py-4 text-center">{index + 1}</td>
 
-                      <td className="px-6 py-4 font-medium text-gray-900">
+                      <td className="px-6 py-5 font-medium text-gray-900">
                         {trekker?.name ?? "Unknown"}
                       </td>
 
-                      <td className="px-6 py-4 text-gray-700">
+                      <td className="px-6 py-5 text-sm text-gray-700">
                         {packageInfo?.title ?? "Unknown Package"}
                       </td>
 
-                      <td className="px-6 py-4 text-gray-700">
+                      <td className="px-6 py-5 text-sm text-gray-700">
                         {booking.departure_date}
                       </td>
 
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-6 py-5 text-center">
                         {booking.group_size}
                       </td>
 
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-6 py-5 text-right">
                         Rs. {booking.total_price}
                       </td>
 
-                      <td className="px-6 py-4 text-gray-700">
+                      <td className="px-6 py-5 text-sm text-gray-700">
                         {guide?.name ?? "Not Assigned"}
                       </td>
 
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-6 py-5 text-center">
                         <BookingStatusBadge status={booking.status} />
                       </td>
 
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-6 py-5 text-center">
                         <Link
                           href={`/dashboard/bookings/${booking.id}`}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-600 transition hover:bg-violet-200"
+                          className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600 transition-colors hover:bg-violet-200"
                         >
                           <VisibilityOutlined fontSize="small" />
                         </Link>

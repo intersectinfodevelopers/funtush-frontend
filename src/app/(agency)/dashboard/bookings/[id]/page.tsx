@@ -125,50 +125,176 @@ export default function BookingDetailPage() {
   );
 
   return (
-    <div className="p-8 space-y-6">
-      <h1 className="text-3xl font-bold">Booking Details</h1>
+    <div className="space-y-8 p-6 lg:p-8">
+      {/* Header */}
 
-      {/* Trekker */}
+      <div className="space-y-2">
+        <h1 className="text-3xl font-bold text-neutral-900">Booking Details</h1>
 
-      <section className="border rounded p-5">
-        <h2 className="text-xl font-semibold">Trekker Information</h2>
+        <div className="flex items-center gap-2 text-sm text-neutral-500">
+          <span>Bookings</span>
+          <span>&gt;</span>
+          <span className="font-medium text-violet-600">Booking Details</span>
+        </div>
+      </div>
 
-        <p>Name: {trekker?.name ?? booking.trekker_id}</p>
+      {/* Content */}
 
-        <p>Email: {trekker?.email ?? "-"}</p>
-      </section>
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Trekker */}
 
-      {/* Package */}
+        {/* Trekker Information */}
 
-      <section className="border rounded p-5">
-        <h2 className="text-xl font-semibold">Package Details</h2>
+        <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-neutral-900">
+                Trekker Information
+              </h2>
 
-        <p>
-          Package:{" "}
-          {packageDetails?.title ?? packageDetails?.name ?? booking.package_id}
-        </p>
+              <p className="text-sm text-neutral-500">Customer information</p>
+            </div>
 
-        <p>Destination: {packageDetails?.destination ?? "-"}</p>
-      </section>
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-violet-100 text-lg font-bold text-violet-700">
+              {trekker?.name?.charAt(0) ?? "T"}
+            </div>
+          </div>
+
+          <div className="space-y-5">
+            <div>
+              <p className="text-sm text-neutral-500">Name</p>
+
+              <p className="font-semibold text-neutral-900">
+                {trekker?.name ?? booking.trekker_id}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-sm text-neutral-500">Email</p>
+
+              <p className="font-medium text-neutral-700">
+                {trekker?.email ?? "-"}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Package Details */}
+
+        <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold text-neutral-900">
+              Package Details
+            </h2>
+
+            <p className="text-sm text-neutral-500">
+              Selected trekking package
+            </p>
+          </div>
+
+          <div className="space-y-5">
+            <div>
+              <p className="text-sm text-neutral-500">Package</p>
+
+              <p className="font-semibold text-neutral-900">
+                {packageDetails?.title ??
+                  packageDetails?.name ??
+                  booking.package_id}
+              </p>
+            </div>
+
+            <div>
+              <p className="text-sm text-neutral-500">Destination</p>
+
+              <p className="font-medium text-neutral-700">
+                {packageDetails?.destination ?? "-"}
+              </p>
+            </div>
+          </div>
+        </section>
+      </div>
 
       {/* Booking Info */}
 
-      <section className="border rounded p-5">
-        <h2 className="text-xl font-semibold">Booking Information</h2>
+      {/* Booking Information */}
 
-        <p>Departure: {booking.departure_date}</p>
+      <section className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold text-neutral-900">
+            Booking Information
+          </h2>
 
-        <p>Group Size: {booking.group_size}</p>
+          <p className="text-sm text-neutral-500">Trip booking details</p>
+        </div>
 
-        <p>Total Price: ${booking.total_price}</p>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div>
+            <p className="text-sm text-neutral-500">Departure Date</p>
 
-        <h3 className="font-semibold mt-3">Add-ons</h3>
+            <p className="mt-1 font-semibold text-neutral-900">
+              {booking.departure_date}
+            </p>
+          </div>
 
-        {booking.add_ons.map((addon) => (
-          <p key={addon.name}>
-            {addon.name} - ${addon.price}
-          </p>
-        ))}
+          <div>
+            <p className="text-sm text-neutral-500">Group Size</p>
+
+            <p className="mt-1 font-semibold text-neutral-900">
+              {booking.group_size} People
+            </p>
+          </div>
+
+          <div>
+            <p className="text-sm text-neutral-500">Total Price</p>
+
+            <p className="mt-1 text-2xl font-bold text-violet-600">
+              ${booking.total_price}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-sm text-neutral-500">Booking Status</p>
+
+            <span
+              className={`inline-flex rounded-full px-4 py-2 text-sm font-semibold ${
+                booking.status === "confirmed"
+                  ? "bg-green-100 text-green-700"
+                  : booking.status === "cancelled"
+                    ? "bg-red-100 text-red-700"
+                    : "bg-orange-100 text-orange-700"
+              }`}
+            >
+              {booking.status}
+            </span>
+          </div>
+        </div>
+
+        <div className="mt-8">
+          <h3 className="mb-4 text-lg font-semibold text-neutral-900">
+            Add-ons
+          </h3>
+
+          <div className="space-y-3">
+            {booking.add_ons.length > 0 ? (
+              booking.add_ons.map((addon) => (
+                <div
+                  key={addon.name}
+                  className="flex items-center justify-between rounded-2xl border border-neutral-200 px-4 py-3"
+                >
+                  <span className="font-medium text-neutral-800">
+                    {addon.name}
+                  </span>
+
+                  <span className="font-semibold text-violet-600">
+                    ${addon.price}
+                  </span>
+                </div>
+              ))
+            ) : (
+              <p className="text-neutral-500">No add-ons selected.</p>
+            )}
+          </div>
+        </div>
       </section>
 
       {/* Timeline */}
