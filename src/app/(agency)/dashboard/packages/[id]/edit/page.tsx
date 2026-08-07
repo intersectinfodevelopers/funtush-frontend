@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -79,13 +79,7 @@ const mockPackages: PackageItem[] = [
 
 export default function AgencyPackagesPage() {
   const router = useRouter();
-  const [packages, setPackages] = useState<PackageItem[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [sortOrder, setSortOrder] = useState("Newest");
-
-  // Load packages from LocalStorage or fall back to mock data
-  useEffect(() => {
+  const [packages, setPackages] = useState<PackageItem[]>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("packages");
 
@@ -94,19 +88,23 @@ export default function AgencyPackagesPage() {
           const parsed = JSON.parse(stored);
 
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setPackages(parsed);
-            return;
+            return parsed as PackageItem[];
           }
         } catch (e) {
           console.error("Error reading packages from storage:", e);
         }
       }
 
-      // Fallback if local storage is empty
-      setPackages(mockPackages);
       localStorage.setItem("packages", JSON.stringify(mockPackages));
     }
-  }, []);
+
+    return mockPackages;
+  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [sortOrder, setSortOrder] = useState("Newest");
+
+  // Load packages from LocalStorage or fall back to mock data
 
   // Handle Delete
   const handleDeletePackage = (id: string) => {

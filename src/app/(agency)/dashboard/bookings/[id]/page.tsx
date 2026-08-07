@@ -73,15 +73,20 @@ export default function BookingDetailPage() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("bookings");
+
       const allBookings: Booking[] = stored
         ? (JSON.parse(stored) as Booking[])
         : (bookingsData as Booking[]);
 
       const found = allBookings.find((item) => item.id === id);
-      setBooking(found ?? null);
+
+      const timeout = setTimeout(() => {
+        setBooking(found ?? null);
+      }, 0);
+
+      return () => clearTimeout(timeout);
     }
   }, [id]);
-
   const updateBooking = (data: Partial<Booking>) => {
     const stored = localStorage.getItem("bookings");
     const allBookings: Booking[] = stored

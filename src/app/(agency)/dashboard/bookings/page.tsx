@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 
 import bookingsData from "../../../../../data/bookings.json";
@@ -107,26 +107,25 @@ function BookingStatusBadge({ status }: { status: string }) {
 const ITEMS_PER_PAGE = 5;
 
 export default function BookingsPage() {
-  const [activeTab, setActiveTab] = useState<TabId>("inquiry");
+  const [activeTab, setActiveTab] = useState("inquiry");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [bookings, setBookings] = useState<Booking[]>(
-    bookingsData as Booking[],
-  );
 
-  useEffect(() => {
+  const [bookings] = useState<Booking[]>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("bookings");
 
       if (stored) {
         try {
-          setBookings(JSON.parse(stored));
+          return JSON.parse(stored) as Booking[];
         } catch (e) {
           console.error("Failed to parse local storage bookings", e);
         }
       }
     }
-  }, []);
+
+    return bookingsData as Booking[];
+  });
 
   const pendingCount = bookings.filter(
     (b) =>
