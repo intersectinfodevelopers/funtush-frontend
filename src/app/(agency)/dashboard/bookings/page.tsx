@@ -1,22 +1,25 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import Link from "next/link";
 
 import bookingsData from "../../../../../data/bookings.json";
 import usersData from "../../../../../data/users.json";
 import packagesData from "../../../../../data/packages.json";
-import guidesData from "../../../../../data/guides.json";
+
 import DownloadOutlined from "@mui/icons-material/DownloadOutlined";
 import AddOutlined from "@mui/icons-material/AddOutlined";
 import ChevronRightOutlined from "@mui/icons-material/ChevronRightOutlined";
-
-import GroupAddOutlined from "@mui/icons-material/GroupAddOutlined";
-import CheckCircleOutlineOutlined from "@mui/icons-material/CheckCircleOutlineOutlined";
-import HikingOutlined from "@mui/icons-material/HikingOutlined";
+import PendingActionsOutlined from "@mui/icons-material/PendingActionsOutlined";
+import CheckCircleOutlined from "@mui/icons-material/CheckCircleOutlined";
+import DirectionsWalkOutlined from "@mui/icons-material/DirectionsWalkOutlined";
 import EmojiEventsOutlined from "@mui/icons-material/EmojiEventsOutlined";
 import SearchOutlined from "@mui/icons-material/SearchOutlined";
 import VisibilityOutlined from "@mui/icons-material/VisibilityOutlined";
+import EditOutlined from "@mui/icons-material/EditOutlined";
+import DeleteOutlineOutlined from "@mui/icons-material/DeleteOutlineOutlined";
+import NorthOutlined from "@mui/icons-material/NorthOutlined";
+import ChevronLeftOutlined from "@mui/icons-material/ChevronLeftOutlined";
 
 type AddOn = {
   name: string;
@@ -35,11 +38,13 @@ type Booking = {
   total_price: number;
   status: string;
   created_at: string;
+  duration?: string;
 };
 
 type User = {
   id: string;
   name: string;
+  email?: string;
 };
 
 type Package = {
@@ -47,105 +52,109 @@ type Package = {
   title: string;
 };
 
-type Guide = {
-  id: string;
-  name: string;
-};
-
 const tabs = [
-  "inquiry",
-  "confirmed",
-  "active",
-  "completed",
-  "cancelled",
+  { id: "inquiry", label: "Inquiries" },
+  { id: "confirmed", label: "Confirmed" },
+  { id: "active", label: "Active" },
+  { id: "completed", label: "Completed" },
+  { id: "cancelled", label: "Cancelled" },
 ] as const;
 
-type Tab = (typeof tabs)[number];
+type TabId = (typeof tabs)[number]["id"];
 
 function BookingStatusBadge({ status }: { status: string }) {
   let color = "bg-gray-100 text-gray-600";
+  let label = status;
 
   switch (status.toLowerCase()) {
     case "inquiry":
-      color = "bg-violet-100 text-violet-600";
+    case "pending":
+      color = "bg-[#FDE8DF] text-[#D97757]";
+      label = "Pending";
       break;
 
     case "confirmed":
-      color = "bg-orange-100 text-orange-500";
+      color = "bg-emerald-100 text-emerald-600";
+      label = "Confirmed";
       break;
 
     case "active":
-      color = "bg-green-100 text-green-600";
+      color = "bg-blue-100 text-blue-600";
+      label = "Active";
       break;
 
     case "completed":
-      color = "bg-pink-100 text-pink-500";
+      color = "bg-purple-100 text-purple-600";
+      label = "Completed";
       break;
 
     case "cancelled":
-      color = "bg-gray-100 text-gray-600";
-      break;
-
     case "rejected":
       color = "bg-red-100 text-red-600";
+      label = "Cancelled";
       break;
-
-    default:
-      color = "bg-gray-100 text-gray-600";
   }
 
   return (
-    <span className={`rounded-full px-3 py-1 text-xs font-medium ${color}`}>
-      {status}
+    <span
+      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${color}`}
+    >
+      {label}
     </span>
   );
 }
 
+const ITEMS_PER_PAGE = 5;
+
 export default function BookingsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("inquiry");
-
+  const [activeTab, setActiveTab] = useState<TabId>("inquiry");
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [bookings, setBookings] = useState<Booking[]>(
+    bookingsData as Booking[],
+  );
 
-  const [fromDate, setFromDate] = useState("");
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("bookings");
 
-  const [toDate, setToDate] = useState("");
-
-  const [bookings] = useState<Booking[]>(() => {
-    if (typeof window === "undefined") {
-      return bookingsData as Booking[];
+      if (stored) {
+        try {
+          setBookings(JSON.parse(stored));
+        } catch (e) {
+          console.error("Failed to parse local storage bookings", e);
+        }
+      }
     }
+  }, []);
 
-    const stored = localStorage.getItem("bookings");
-
-    return stored
-      ? (JSON.parse(stored) as Booking[])
-      : (bookingsData as Booking[]);
-  });
-
-  const inquiryCount = bookings.filter(
-    (booking) => booking.status.toLowerCase() === "inquiry",
-  ).length;
   const pendingCount = bookings.filter(
-    (booking) => booking.status.toLowerCase() === "inquiry",
+    (b) =>
+      b.status.toLowerCase() === "inquiry" ||
+      b.status.toLowerCase() === "pending",
   ).length;
 
   const confirmedCount = bookings.filter(
-    (booking) => booking.status.toLowerCase() === "confirmed",
+    (b) => b.status.toLowerCase() === "confirmed",
   ).length;
 
   const activeCount = bookings.filter(
-    (booking) => booking.status.toLowerCase() === "active",
+    (b) => b.status.toLowerCase() === "active",
   ).length;
 
   const completedCount = bookings.filter(
-    (booking) => booking.status.toLowerCase() === "completed",
+    (b) => b.status.toLowerCase() === "completed",
   ).length;
 
   const filteredBookings = useMemo(() => {
     return bookings.filter((booking) => {
-      if (booking.status.toLowerCase() !== activeTab) {
-        return false;
-      }
+      const statusMatch =
+        activeTab === "inquiry"
+          ? booking.status.toLowerCase() === "inquiry" ||
+            booking.status.toLowerCase() === "pending"
+          : booking.status.toLowerCase() === activeTab;
+
+      if (!statusMatch) return false;
 
       const trekker = (usersData as User[]).find(
         (user) => user.id === booking.trekker_id,
@@ -157,128 +166,117 @@ export default function BookingsPage() {
         return false;
       }
 
-      if (fromDate && booking.departure_date < fromDate) {
-        return false;
-      }
-
-      if (toDate && booking.departure_date > toDate) {
-        return false;
-      }
-
       return true;
     });
-  }, [activeTab, bookings, fromDate, search, toDate]);
+  }, [activeTab, bookings, search]);
+
+  const totalPages = Math.ceil(filteredBookings.length / ITEMS_PER_PAGE) || 1;
+
+  const paginatedBookings = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredBookings.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredBookings, currentPage]);
+
+  const handleTabChange = (tabId: TabId) => {
+    setActiveTab(tabId);
+    setCurrentPage(1);
+  };
 
   return (
-    <div className="p-6">
-      <div className="mb-8 flex items-start justify-between">
+    <div className="min-h-screen bg-gray-50/30 p-8">
+      {/* Page Header */}
+      <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Booking Approval</h1>
-
-          <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold text-gray-900">Booking Approval</h1>
+          <div className="mt-1 flex items-center gap-1.5 text-sm text-gray-400">
             <span>Bookings</span>
-
-            <ChevronRightOutlined fontSize="small" />
-
-            <span className="font-medium text-violet-600">All Bookings</span>
+            <ChevronRightOutlined className="text-gray-300" fontSize="small" />
+            <span className="font-medium text-indigo-600">All Bookings</span>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-5 py-3 text-sm font-medium shadow-sm transition hover:bg-gray-50">
+          <button className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50">
             <DownloadOutlined fontSize="small" />
             Export CSV
           </button>
 
-          <button className="flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-medium text-white transition hover:bg-violet-700">
+          <button className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
             <AddOutlined fontSize="small" />
             Create
           </button>
         </div>
       </div>
-      <div className="mb-8 flex flex-wrap gap-3">
-        <div className="mb-8 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-violet-100">
-              <GroupAddOutlined className="text-violet-600" />
-            </div>
 
-            <p className="text-sm font-semibold uppercase text-gray-700">
-              Pending
-            </p>
-
-            <h2 className="mt-2 text-4xl font-bold">{pendingCount}</h2>
-
-            <p className="mt-5 text-sm text-violet-600">Awaiting response</p>
+      {/* Overview Stat Cards */}
+      <div className="mb-8 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+        {/* Pending Card */}
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600 text-white">
+            <PendingActionsOutlined />
           </div>
+          <p className="text-xs font-bold tracking-wider uppercase text-gray-800">
+            PENDING
+          </p>
+          <h2 className="mt-2 text-3xl font-bold text-gray-900">
+            {pendingCount}
+          </h2>
+          <p className="mt-4 flex items-center gap-1 text-xs font-medium text-indigo-600">
+            <NorthOutlined style={{ fontSize: 14 }} />
+            Awaiting response
+          </p>
+        </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100">
-              <CheckCircleOutlineOutlined className="text-orange-500" />
-            </div>
-
-            <p className="text-sm font-semibold uppercase text-gray-700">
-              Confirmed
-            </p>
-
-            <h2 className="mt-2 text-4xl font-bold">{confirmedCount}</h2>
-
-            <p className="mt-5 text-sm text-orange-500">Confirmed bookings</p>
+        {/* Confirmed Card */}
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-500 text-white">
+            <CheckCircleOutlined />
           </div>
+          <p className="text-xs font-bold tracking-wider uppercase text-gray-800">
+            CONFIRMED
+          </p>
+          <h2 className="mt-2 text-3xl font-bold text-gray-900">
+            {confirmedCount}
+          </h2>
+          <p className="mt-4 flex items-center gap-1 text-xs font-medium text-amber-600">
+            <NorthOutlined style={{ fontSize: 14 }} />
+            12% this month
+          </p>
+        </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-              <HikingOutlined className="text-green-600" />
-            </div>
-
-            <p className="text-sm font-semibold uppercase text-gray-700">
-              Active Treks
-            </p>
-
-            <h2 className="mt-2 text-4xl font-bold">{activeCount}</h2>
-
-            <p className="mt-5 text-sm text-green-600">On trail now</p>
+        {/* Active Treks Card */}
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white">
+            <DirectionsWalkOutlined />
           </div>
+          <p className="text-xs font-bold tracking-wider uppercase text-gray-800">
+            ACTIVE TREKS
+          </p>
+          <h2 className="mt-2 text-3xl font-bold text-gray-900">
+            {activeCount}
+          </h2>
+          <p className="mt-4 text-xs font-medium text-emerald-600">
+            On trail now
+          </p>
+        </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-pink-100">
-              <EmojiEventsOutlined className="text-pink-500" />
-            </div>
-
-            <p className="text-sm font-semibold uppercase text-gray-700">
-              Completed
-            </p>
-
-            <h2 className="mt-2 text-4xl font-bold">{completedCount}</h2>
-
-            <p className="mt-5 text-sm text-pink-500">All time</p>
+        {/* Completed Card */}
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-500 text-white">
+            <EmojiEventsOutlined />
           </div>
+          <p className="text-xs font-bold tracking-wider uppercase text-gray-800">
+            COMPLETED
+          </p>
+          <h2 className="mt-2 text-3xl font-bold text-gray-900">
+            {completedCount}
+          </h2>
+          <p className="mt-4 text-xs font-medium text-rose-500">All time</p>
         </div>
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-3">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={`rounded-xl px-5 py-2.5 text-sm font-medium capitalize transition ${
-              activeTab === tab
-                ? "bg-violet-600 text-white shadow-sm"
-                : "bg-white border border-gray-200 text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            {tab}
-
-            {tab === "inquiry" && inquiryCount > 0 && (
-              <span className="ml-2 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-semibold leading-none text-white">
-                {inquiryCount}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      {/* Filters & Action Bar */}
+      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div className="relative w-full lg:w-[360px]">
           <SearchOutlined
             fontSize="small"
@@ -288,13 +286,16 @@ export default function BookingsPage() {
             type="text"
             placeholder="Search bookings..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-2xl border border-gray-200 bg-white py-3 pl-12 pr-5 text-sm text-gray-700 placeholder:text-gray-400 shadow-sm transition focus:border-violet-500 focus:outline-none"
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full rounded-xl border border-gray-200 bg-slate-600/10 py-2.5 pl-11 pr-4 text-sm text-gray-700 placeholder:text-gray-400 focus:border-indigo-500 focus:bg-white focus:outline-none"
           />
         </div>
 
-        <div className="flex flex-col gap-4 sm:flex-row">
-          <select className="w-full cursor-pointer rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm text-gray-700 shadow-sm transition focus:border-violet-500 focus:outline-none sm:w-[180px]">
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <select className="w-full rounded-xl border border-gray-200 bg-slate-600/10 px-4 py-2.5 text-sm font-medium text-gray-600 focus:border-indigo-500 focus:outline-none sm:w-[140px]">
             <option>Status</option>
             <option>Inquiry</option>
             <option>Confirmed</option>
@@ -303,123 +304,180 @@ export default function BookingsPage() {
             <option>Cancelled</option>
           </select>
 
-          <select className="w-full cursor-pointer rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm text-gray-700 shadow-sm transition focus:border-violet-500 focus:outline-none sm:w-[180px]">
-            <option>Sort By</option>
+          <select className="w-full rounded-xl border border-gray-200 bg-slate-600/10 px-4 py-2.5 text-sm font-medium text-gray-600 focus:border-indigo-500 focus:outline-none sm:w-[140px]">
+            <option>Sort by</option>
             <option>Departure Date</option>
             <option>Amount</option>
             <option>Group Size</option>
           </select>
+
+          <button className="flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700">
+            Download
+            <DownloadOutlined fontSize="small" />
+          </button>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+      {/* Tabs Bar */}
+      <div className="mb-6 flex items-center gap-8 rounded-2xl bg-indigo-50/60 px-6 py-3.5">
+        {tabs.map((tab) => {
+          const count = bookings.filter((b) =>
+            tab.id === "inquiry"
+              ? b.status.toLowerCase() === "inquiry" ||
+                b.status.toLowerCase() === "pending"
+              : b.status.toLowerCase() === tab.id,
+          ).length;
+
+          const isActive = activeTab === tab.id;
+
+          return (
+            <button
+              key={tab.id}
+              onClick={() => handleTabChange(tab.id)}
+              className={`relative flex items-center gap-2 pb-1 text-sm transition ${
+                isActive
+                  ? "font-bold text-indigo-600"
+                  : "font-medium text-gray-500 hover:text-gray-800"
+              }`}
+            >
+              <span>{tab.label}</span>
+              <span className="text-xs font-normal">{count}</span>
+
+              {isActive && (
+                <span className="absolute -bottom-3.5 left-0 h-[3px] w-full rounded-full bg-indigo-600" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Data Table */}
+      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  S.N
-                </th>
-
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Trekker
-                </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Package
-                </th>
-
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Departure
-                </th>
-
-                <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Group
-                </th>
-
-                <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Amount
-                </th>
-
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Guide
-                </th>
-
-                <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Status
-                </th>
-
-                <th className="px-6 py-4 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
-                  Action
-                </th>
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="border-b border-gray-100 bg-[#FBF3F0] text-xs font-bold uppercase tracking-wider text-gray-800">
+                <th className="px-6 py-4">S.N</th>
+                <th className="px-6 py-4">TREKKER</th>
+                <th className="px-6 py-4">PACKAGE</th>
+                <th className="px-6 py-4">DEPARTURE</th>
+                <th className="px-6 py-4">GROUP</th>
+                <th className="px-6 py-4">AMOUNT</th>
+                <th className="px-6 py-4">STATUS</th>
+                <th className="px-6 py-4 text-center">ACTIONS</th>
               </tr>
             </thead>
 
-            <tbody>
-              {filteredBookings.length === 0 ? (
+            <tbody className="divide-y divide-gray-100 text-sm">
+              {paginatedBookings.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={9}
-                    className="border p-5 text-center text-gray-500"
-                  >
+                  <td colSpan={8} className="p-8 text-center text-gray-400">
                     No bookings found
                   </td>
                 </tr>
               ) : (
-                filteredBookings.map((booking, index) => {
+                paginatedBookings.map((booking, index) => {
                   const trekker = (usersData as User[]).find(
                     (user) => user.id === booking.trekker_id,
                   );
-
                   const packageInfo = (packagesData as Package[]).find(
                     (pkg) => pkg.id === booking.package_id,
                   );
 
-                  const guide = (guidesData as Guide[]).find(
-                    (guide) => guide.id === booking.guide_id,
-                  );
+                  const isPendingStatus =
+                    booking.status.toLowerCase() === "inquiry" ||
+                    booking.status.toLowerCase() === "pending";
+
+                  const serialNumber =
+                    (currentPage - 1) * ITEMS_PER_PAGE + index + 1;
 
                   return (
-                    <tr
-                      key={booking.id}
-                      className="border-b border-gray-100 transition-colors hover:bg-gray-50"
-                    >
-                      <td className="px-6 py-4 text-center">{index + 1}</td>
-
-                      <td className="px-6 py-4 font-medium text-gray-900">
-                        {trekker?.name ?? "Unknown"}
+                    <tr key={booking.id} className="hover:bg-gray-50/50">
+                      <td className="px-6 py-4 font-medium text-gray-500">
+                        {serialNumber}
                       </td>
 
-                      <td className="px-6 py-4 text-gray-700">
-                        {packageInfo?.title ?? "Unknown Package"}
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#7C5CFC] text-xs font-bold text-white">
+                            {(trekker?.name ?? "SK")
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </div>
+
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {trekker?.name ?? "Subash Kuwar"}
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              {trekker?.email ?? "subashkur@gmail.com"}
+                            </p>
+                          </div>
+                        </div>
                       </td>
 
-                      <td className="px-6 py-4 text-gray-700">
-                        {booking.departure_date}
+                      <td className="px-6 py-4 font-semibold text-gray-900">
+                        {packageInfo?.title ?? "ABC Trek 14 D"}
                       </td>
 
-                      <td className="px-6 py-4 text-center">
-                        {booking.group_size}
+                      <td className="px-6 py-4">
+                        <p className="font-semibold text-gray-900">
+                          {booking.departure_date || "May 17-30"}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {booking.duration ?? "14 Day"}
+                        </p>
                       </td>
 
-                      <td className="px-6 py-4 text-right">
-                        Rs. {booking.total_price}
+                      <td className="px-6 py-4 font-semibold text-gray-900">
+                        {booking.group_size} PX
                       </td>
 
-                      <td className="px-6 py-4 text-gray-700">
-                        {guide?.name ?? "Not Assigned"}
+                      <td className="px-6 py-4 font-semibold text-gray-900">
+                        ${booking.total_price.toLocaleString()}
                       </td>
 
-                      <td className="px-6 py-4 text-center">
+                      <td className="px-6 py-4">
                         <BookingStatusBadge status={booking.status} />
                       </td>
 
-                      <td className="px-6 py-4 text-center">
-                        <Link
-                          href={`/dashboard/bookings/${booking.id}`}
-                          className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 text-violet-600 transition hover:bg-violet-200"
-                        >
-                          <VisibilityOutlined fontSize="small" />
-                        </Link>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-2">
+                          {isPendingStatus ? (
+                            <>
+                              <button className="rounded-lg bg-indigo-100 px-3 py-1.5 text-xs font-medium text-indigo-600 transition hover:bg-indigo-200">
+                                Accept
+                              </button>
+                              <button className="rounded-lg bg-red-100 px-3 py-1.5 text-xs font-medium text-red-500 transition hover:bg-red-200">
+                                Rejected
+                              </button>
+                              <Link
+                                href={`/dashboard/bookings/${booking.id}`}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 transition hover:bg-indigo-200"
+                              >
+                                <VisibilityOutlined style={{ fontSize: 18 }} />
+                              </Link>
+                            </>
+                          ) : (
+                            <>
+                              <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-100 text-orange-500 hover:bg-orange-200">
+                                <EditOutlined style={{ fontSize: 18 }} />
+                              </button>
+                              <Link
+                                href={`/dashboard/bookings/${booking.id}`}
+                                className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 hover:bg-indigo-200"
+                              >
+                                <VisibilityOutlined style={{ fontSize: 18 }} />
+                              </Link>
+                              <button className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-100 text-red-500 hover:bg-red-200">
+                                <DeleteOutlineOutlined
+                                  style={{ fontSize: 18 }}
+                                />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -427,6 +485,50 @@ export default function BookingsPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Table Footer / Dynamic Pagination */}
+        <div className="flex items-center justify-between border-t border-gray-100 px-6 py-4 text-xs font-medium text-gray-400">
+          <span>
+            Showing{" "}
+            {filteredBookings.length === 0
+              ? 0
+              : (currentPage - 1) * ITEMS_PER_PAGE + 1}{" "}
+            to {Math.min(currentPage * ITEMS_PER_PAGE, filteredBookings.length)}{" "}
+            of {filteredBookings.length} entries
+          </span>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="flex h-7 w-7 items-center justify-center text-gray-400 hover:text-gray-600 disabled:opacity-40"
+            >
+              <ChevronLeftOutlined fontSize="small" />
+            </button>
+
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`flex h-7 w-7 items-center justify-center rounded-lg transition ${
+                  currentPage === page
+                    ? "bg-indigo-600 font-bold text-white"
+                    : "border border-gray-200 text-indigo-600 hover:bg-indigo-50"
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="flex h-7 w-7 items-center justify-center text-indigo-600 hover:text-indigo-800 disabled:opacity-40"
+            >
+              <ChevronRightOutlined fontSize="small" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
