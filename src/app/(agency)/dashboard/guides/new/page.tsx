@@ -18,7 +18,6 @@ export default function NewGuidePage() {
       <Link href="/dashboard/guides" className="text-blue-600 hover:underline mt-4 inline-block">
         ← Back to Guides
       </Link>
-      <h1 className="text-2xl font-bold">Add New Guide</h1>
       <GuideForm onSave={handleSave} isNew/>
     </div>
   );

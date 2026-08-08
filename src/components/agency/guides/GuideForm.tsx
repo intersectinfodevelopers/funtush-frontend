@@ -118,7 +118,7 @@ export default function GuideForm({
         <CardTitle>{isNew ? "Add New Guide" : "Edit Guide"}</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 text-black">
           {/* ---- Name ---- */}
           <div>
             <label className="block text-sm font-medium text-neutral-700">
