@@ -1,12 +1,17 @@
 'use client';
 
-import bookings from '../../../../data/bookings.json';
-import users from '../../../../data/users.json';
-import packages from '../../../../data/packages.json';
+import Link from 'next/link';
+import { getAgencyData } from '@/lib/agency/getAgencyData';
+import users from '@/../data/users.json';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 
 type Props = {
   agencyId: string;
 };
+
+const tableStyles = 'grid lg:grid-cols-5';
+const headerStyles = 'font-[500] text-sm text-[#505055]';
+const dataStyles = 'font-[500] text-[10px]';
 
 const statusStyles = {
   confirmed: 'bg-green-100 text-green-700',
@@ -16,8 +21,9 @@ const statusStyles = {
 };
 
 export default function RecentBookings({ agencyId }: Props) {
+  const { bookings, packages } = getAgencyData(agencyId);
+
   const bookingCreated = bookings
-    .filter((booking) => booking.agency_id === agencyId)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     .slice(0, 5);
 
@@ -27,30 +33,51 @@ export default function RecentBookings({ agencyId }: Props) {
 
     return {
       id: booking.id,
-      trekkerName: usr?.name,
+      customer: usr?.name ?? 'Unknown',
       packageName: pkg?.title,
-      status: booking.status,
+      bookingDate: booking.created_at.split('T')[0],
       amount: booking.total_price,
+      status: booking.status,
     };
   });
 
   return (
-    <div className="flex flex-col gap-4 rounded-lg border border-neutral-200 bg-white p-6">
-      <h3 className="font-semibold text-neutral-900">Recent Bookings</h3>
+    <section className="flex flex-col gap-4 rounded-lg px-3 py-4 bg-white">
+      <div className="flex justify-between items-center">
+        <h3 className="font-semibold text-sm">Recent Bookings</h3>
+        <Link
+          href="/dashboard/bookings"
+          className="text-xs text-[#0D2DFC] font-semibold transition-transform hover:translate-y-[-1px] hover:underline "
+        >
+          View All
+        </Link>
+      </div>
+      <div className={`${tableStyles}`}>
+        <span className={headerStyles}>Customer</span>
+        <span className={headerStyles}>Package</span>
+        <span className={headerStyles}>Date</span>
+        <span className={headerStyles}>Amount</span>
+        <span className={headerStyles}>Status</span>
+      </div>
+      <hr className="w-full border-2 border-[#F2F2F7]" />
       {recentBookingArr.map((booking) => {
         return (
-          <div key={booking.id} className="flex items-center justify-between py-3">
-            <span>{booking.trekkerName}</span>
-            <span>{booking.packageName}</span>
+          <div key={booking.id} className={`${tableStyles}`}>
+            <span className={dataStyles}>
+              <AccountCircleIcon />
+              {booking.customer}
+            </span>
+            <span className={dataStyles}>{booking.packageName}</span>
+            <span className={dataStyles}>{booking.bookingDate}</span>
+            <span className={dataStyles}>${booking.amount}</span>
             <span
-              className={`rounded-full px-2 py-1 text-sm ${statusStyles[booking.status as keyof typeof statusStyles]}`}
+              className={`justify-self-start self-center rounded-full px-2 py-1 ${dataStyles} ${statusStyles[booking.status as keyof typeof statusStyles]}`}
             >
               {booking.status}
             </span>
-            <span>${booking.amount}</span>
           </div>
         );
       })}
-    </div>
+    </section>
   );
 }

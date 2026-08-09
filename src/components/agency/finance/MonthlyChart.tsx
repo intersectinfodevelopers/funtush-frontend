@@ -1,7 +1,7 @@
 'use client';
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { monthlyTransaction } from '@/lib/finance/monthlyTransaction';
+import { monthlyTransaction } from '@/lib/agency/finance/monthlyTransaction';
 
 type MonthlyChartProps = {
   agencyId: string;

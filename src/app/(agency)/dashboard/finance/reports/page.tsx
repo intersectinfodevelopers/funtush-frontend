@@ -1,6 +1,6 @@
 'use client';
 
-import { monthlyTransaction } from '@/lib/finance/monthlyTransaction';
+import { monthlyTransaction } from '@/lib/agency/finance/monthlyTransaction';
 
 const tableClass = 'p-4 text-left';
 
