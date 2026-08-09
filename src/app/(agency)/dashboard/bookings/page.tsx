@@ -2,7 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Clock3, Download, FileText, MapPin, Trophy } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock3,
+  Download,
+  FileText,
+  MapPin,
+  Trophy,
+} from "lucide-react";
 
 import { Pagination } from "@/components/ui/pagination";
 import { AnalyticsSummaryCard } from "@/components/shared/AnalyticsSummaryCard";
@@ -80,7 +87,8 @@ function BookingStatusBadge({ status }: { status: string }) {
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${
-        variants[normalizedStatus] ?? "border border-neutral-200 bg-neutral-100 text-neutral-700"
+        variants[normalizedStatus] ??
+        "border border-neutral-200 bg-neutral-100 text-neutral-700"
       }`}
     >
       {status}
@@ -95,16 +103,17 @@ export default function BookingsPage() {
   const [toDate, setToDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [bookings, setBookings] = useState<Booking[]>(bookingsData as Booking[]);
+  const [bookings, setBookings] = useState<Booking[]>(() => {
+    if (typeof window === "undefined") {
+      return bookingsData as Booking[];
+    }
 
-  useEffect(() => {
     const stored = localStorage.getItem("bookings");
-    const nextBookings = stored
+
+    return stored
       ? (JSON.parse(stored) as Booking[])
       : (bookingsData as Booking[]);
-
-    setBookings(nextBookings);
-  }, []);
+  });
 
   const inquiryCount = bookings.filter(
     (booking) => booking.status.toLowerCase() === "inquiry",
@@ -154,7 +163,10 @@ export default function BookingsPage() {
   }, [activeTab, bookings, fromDate, search, toDate]);
 
   const bookingsPerPage = 8;
-  const totalPages = Math.max(1, Math.ceil(filteredBookings.length / bookingsPerPage));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredBookings.length / bookingsPerPage),
+  );
 
   useEffect(() => {
     setCurrentPage(1);
@@ -172,51 +184,79 @@ export default function BookingsPage() {
   }, [filteredBookings, currentPage]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* 1. Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-2">
+        <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-500">
-            <Link href="/dashboard" className="transition hover:text-neutral-900">
+            <Link
+              href="/dashboard"
+              className="transition hover:text-neutral-900"
+            >
               Dashboard
             </Link>
             <span className="text-neutral-300">/</span>
             <span className="font-semibold text-neutral-900">All Bookings</span>
           </div>
-          <h1 className="text-3xl font-semibold text-neutral-900">Booking Approval</h1>
+          <h1 className="text-2xl font-bold text-neutral-900 sm:text-3xl">
+            Booking Approval
+          </h1>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button className="inline-flex items-center gap-2 rounded-2xl border border-primary-200 bg-white px-4 py-2 text-sm font-semibold text-primary-900 transition hover:bg-primary-50">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+          <button className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl border border-primary-200 bg-white px-4 py-2 text-sm font-semibold text-primary-900 transition hover:bg-primary-50">
             <FileText className="h-4 w-4" />
             Export CSV
           </button>
-          <button className="rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-800">
+          <button className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-800">
             + Create
           </button>
         </div>
       </div>
 
+      {/* 2. Summary Cards */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <AnalyticsSummaryCard label="Pending" value={inquiryCount} tone="warning" icon={Clock3} />
-        <AnalyticsSummaryCard label="Confirmed" value={confirmedCount} tone="success" icon={CheckCircle2} />
-        <AnalyticsSummaryCard label="Active Treks" value={activeCount} tone="primary" icon={MapPin} />
-        <AnalyticsSummaryCard label="Completed" value={completedCount} tone="success" icon={Trophy} />
+        <AnalyticsSummaryCard
+          label="Pending"
+          value={inquiryCount}
+          tone="warning"
+          icon={Clock3}
+        />
+        <AnalyticsSummaryCard
+          label="Confirmed"
+          value={confirmedCount}
+          tone="success"
+          icon={CheckCircle2}
+        />
+        <AnalyticsSummaryCard
+          label="Active Treks"
+          value={activeCount}
+          tone="primary"
+          icon={MapPin}
+        />
+        <AnalyticsSummaryCard
+          label="Completed"
+          value={completedCount}
+          tone="success"
+          icon={Trophy}
+        />
       </div>
 
-      <div className="mt-5 overflow-x-auto border-b border-neutral-200">
-        <div className="flex min-w-max items-center gap-5 px-1 sm:gap-8 sm:px-0">
+      {/* 3. Horizontal Scroll Tabs */}
+      <div className="overflow-x-auto border-b border-neutral-200 pb-1 scrollbar-none">
+        <div className="flex min-w-max items-center gap-4 px-1 sm:gap-6">
           {tabs.map((tab) => {
             const count =
               tab === "inquiry"
                 ? inquiryCount
                 : tab === "confirmed"
-                ? confirmedCount
-                : tab === "active"
-                ? activeCount
-                : tab === "completed"
-                ? completedCount
-                : tab === "cancelled"
-                ? cancelledCount
-                : paymentCount;
+                  ? confirmedCount
+                  : tab === "active"
+                    ? activeCount
+                    : tab === "completed"
+                      ? completedCount
+                      : tab === "cancelled"
+                        ? cancelledCount
+                        : paymentCount;
 
             return (
               <button
@@ -239,7 +279,8 @@ export default function BookingsPage() {
         </div>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-5">
+      {/* 4. Filter Controls (Responsive Grid) */}
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
         <label className="relative block">
           <input
             type="text"
@@ -282,97 +323,150 @@ export default function BookingsPage() {
         </button>
       </div>
 
+      {/* 5. Data View (Mobile Cards + Desktop Table) */}
       <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="min-w-full border-collapse text-left text-sm">
-            <thead className="bg-neutral-50 text-[10px] uppercase tracking-[0.24em] text-neutral-500">
-              <tr>
-                <th className="px-4 py-3 font-medium">Trekker</th>
-                <th className="px-4 py-3 font-medium">Package</th>
-                <th className="px-4 py-3 font-medium">Departure</th>
-                <th className="px-4 py-3 text-center font-medium">Group</th>
-                <th className="px-4 py-3 text-right font-medium">Amount</th>
-                <th className="px-4 py-3 font-medium">Guide</th>
-                <th className="px-4 py-3 text-center font-medium">Status</th>
-                <th className="px-4 py-3 text-center font-medium">Action</th>
-              </tr>
-            </thead>
+        {filteredBookings.length === 0 ? (
+          <div className="p-8 text-center text-sm text-neutral-500">
+            No bookings found for this filter.
+          </div>
+        ) : (
+          <>
+            {/* Mobile Cards (Visible below `md`) */}
+            <div className="divide-y divide-neutral-200 md:hidden">
+              {paginatedBookings.map((booking, index) => {
+                const trekker = (usersData as User[]).find(
+                  (user) => user.id === booking.trekker_id,
+                );
+                const packageInfo = (packagesData as Package[]).find(
+                  (pkg) => pkg.id === booking.package_id,
+                );
+                const guide = (guidesData as Guide[]).find(
+                  (guide) => guide.id === booking.guide_id,
+                );
 
-            <tbody>
-              {filteredBookings.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={8}
-                    className="px-4 py-8 text-center text-sm text-neutral-500"
+                return (
+                  <div
+                    key={`${booking.id}-card-${index}`}
+                    className="p-4 space-y-3"
                   >
-                    No bookings found for this filter.
-                  </td>
-                </tr>
-              ) : (
-                paginatedBookings.map((booking, index) => {
-                  const trekker = (usersData as User[]).find(
-                    (user) => user.id === booking.trekker_id,
-                  );
-
-                  const packageInfo = (packagesData as Package[]).find(
-                    (pkg) => pkg.id === booking.package_id,
-                  );
-
-                  const guide = (guidesData as Guide[]).find(
-                    (guide) => guide.id === booking.guide_id,
-                  );
-
-                  const rowKey = `${booking.id}-${index}`;
-
-                  return (
-                    <tr key={rowKey} className="border-t border-neutral-200 hover:bg-neutral-50">
-                      <td className="px-4 py-3 font-medium text-neutral-900">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-neutral-900">
                         {trekker?.name ?? "Unknown"}
-                      </td>
+                      </span>
+                      <BookingStatusBadge status={booking.status} />
+                    </div>
 
-                      <td className="px-4 py-3 text-neutral-700">
+                    <div className="text-sm text-neutral-600 space-y-1">
+                      <p className="font-medium text-neutral-800">
                         {packageInfo?.title ?? "Unknown Package"}
-                      </td>
+                      </p>
+                      <div className="flex justify-between text-xs text-neutral-500">
+                        <span>Departure: {booking.departure_date}</span>
+                        <span>Group size: {booking.group_size}</span>
+                      </div>
+                      <div className="flex justify-between text-xs text-neutral-500 pt-1">
+                        <span>Guide: {guide?.name ?? "Not Assigned"}</span>
+                        <span className="font-semibold text-neutral-900 text-sm">
+                          {booking.status.toLowerCase() === "inquiry"
+                            ? "-"
+                            : `Rs. ${booking.total_price.toLocaleString("en-IN")}`}
+                        </span>
+                      </div>
+                    </div>
 
-                      <td className="px-4 py-3 text-neutral-700">
-                        {booking.departure_date}
-                      </td>
+                    <div className="pt-2">
+                      <Link
+                        href={`/dashboard/bookings/${booking.id}`}
+                        className="flex w-full min-h-[44px] items-center justify-center rounded-xl bg-primary-900 text-sm font-medium text-white transition hover:bg-primary-800"
+                      >
+                        View Details
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
 
-                      <td className="px-4 py-3 text-center text-neutral-700">
-                        {booking.group_size}
-                      </td>
+            {/* Desktop Table (Visible on `md` and above) */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="min-w-full border-collapse text-left text-sm">
+                <thead className="bg-neutral-50 text-[10px] uppercase tracking-[0.24em] text-neutral-500">
+                  <tr>
+                    <th className="px-4 py-3 font-medium">Trekker</th>
+                    <th className="px-4 py-3 font-medium">Package</th>
+                    <th className="px-4 py-3 font-medium">Departure</th>
+                    <th className="px-4 py-3 text-center font-medium">Group</th>
+                    <th className="px-4 py-3 text-right font-medium">Amount</th>
+                    <th className="px-4 py-3 font-medium">Guide</th>
+                    <th className="px-4 py-3 text-center font-medium">
+                      Status
+                    </th>
+                    <th className="px-4 py-3 text-center font-medium">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-200">
+                  {paginatedBookings.map((booking, index) => {
+                    const trekker = (usersData as User[]).find(
+                      (user) => user.id === booking.trekker_id,
+                    );
+                    const packageInfo = (packagesData as Package[]).find(
+                      (pkg) => pkg.id === booking.package_id,
+                    );
+                    const guide = (guidesData as Guide[]).find(
+                      (guide) => guide.id === booking.guide_id,
+                    );
 
-                      <td className="px-4 py-3 text-right font-medium text-neutral-900">
-                        {booking.status.toLowerCase() === "inquiry"
-                          ? "-"
-                          : `Rs. ${booking.total_price.toLocaleString("en-IN")}`}
-                      </td>
-
-                      <td className="px-4 py-3 text-neutral-700">
-                        {booking.status.toLowerCase() === "inquiry" && !guide ? "Unassigned" : guide?.name ?? "Not Assigned"}
-                      </td>
-
-                      <td className="px-4 py-3 text-center">
-                        <BookingStatusBadge status={booking.status} />
-                      </td>
-
-                      <td className="px-4 py-3 text-center">
-                        <Link
-                          href={`/dashboard/bookings/${booking.id}`}
-                          className="inline-flex items-center justify-center rounded-xl bg-primary-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-primary-800"
-                        >
-                          View
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
-        </div>
+                    return (
+                      <tr
+                        key={`${booking.id}-${index}`}
+                        className="hover:bg-neutral-50"
+                      >
+                        <td className="px-4 py-3 font-medium text-neutral-900">
+                          {trekker?.name ?? "Unknown"}
+                        </td>
+                        <td className="px-4 py-3 text-neutral-700">
+                          {packageInfo?.title ?? "Unknown Package"}
+                        </td>
+                        <td className="px-4 py-3 text-neutral-700">
+                          {booking.departure_date}
+                        </td>
+                        <td className="px-4 py-3 text-center text-neutral-700">
+                          {booking.group_size}
+                        </td>
+                        <td className="px-4 py-3 text-right font-medium text-neutral-900">
+                          {booking.status.toLowerCase() === "inquiry"
+                            ? "-"
+                            : `Rs. ${booking.total_price.toLocaleString("en-IN")}`}
+                        </td>
+                        <td className="px-4 py-3 text-neutral-700">
+                          {booking.status.toLowerCase() === "inquiry" && !guide
+                            ? "Unassigned"
+                            : (guide?.name ?? "Not Assigned")}
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <BookingStatusBadge status={booking.status} />
+                        </td>
+                        <td className="px-4 py-3 text-center">
+                          <Link
+                            href={`/dashboard/bookings/${booking.id}`}
+                            className="inline-flex items-center justify-center rounded-xl bg-primary-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-primary-800"
+                          >
+                            View
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
       </div>
 
+      {/* 6. Pagination */}
       <Pagination
         currentPage={currentPage}
         totalPages={totalPages}

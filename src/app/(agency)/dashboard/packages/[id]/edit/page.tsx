@@ -42,20 +42,29 @@ export default function EditPackagePage() {
       id: rawPackage.id,
       title: rawPackage.title,
       destination: rawPackage.destination_slug.replace(/-/g, " "),
-      difficulty: rawPackage.difficulty === "Easy-Moderate" ? "Moderate" : rawPackage.difficulty as PackageForm["difficulty"],
+      difficulty:
+        rawPackage.difficulty === "Easy-Moderate"
+          ? "Moderate"
+          : (rawPackage.difficulty as PackageForm["difficulty"]),
       duration: rawPackage.duration_days,
       maxGroup: rawPackage.group_size_max,
       shortDesc: "",
       fullDesc: "",
       itinerary: [],
-      dates: [{ date: rawPackage.start_date, slots: rawPackage.group_size_max }],
+      dates: [
+        { date: rawPackage.start_date, slots: rawPackage.group_size_max },
+      ],
       basePrice: rawPackage.price_usd * 133,
       currency: "NPR",
       pricing: [],
       heroImage: "",
       gallery: [],
       video: "",
-      addons: rawPackage.included.map((name) => ({ name, price: 0, perPerson: false })),
+      addons: rawPackage.included.map((name) => ({
+        name,
+        price: 0,
+        perPerson: false,
+      })),
     };
   });
 
@@ -76,8 +85,8 @@ export default function EditPackagePage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6">
-      <PackageBuilderForm initialData={initialData} packageId={id} />
+    <div className="w-full min-w-0 overflow-x-hidden p-4 sm:p-6">
+      <PackageBuilderForm initialData={initialData} />
     </div>
   );
 }

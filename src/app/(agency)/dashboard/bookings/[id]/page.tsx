@@ -89,7 +89,8 @@ function BookingStatusBadge({ status }: { status: string }) {
   return (
     <span
       className={`inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] ${
-        variants[normalizedStatus] ?? "border border-neutral-200 bg-neutral-100 text-neutral-700"
+        variants[normalizedStatus] ??
+        "border border-neutral-200 bg-neutral-100 text-neutral-700"
       }`}
     >
       {status}
@@ -102,19 +103,23 @@ export default function BookingDetailPage() {
 
   const id = params.id as string;
 
-  const [booking, setBooking] = useState<Booking | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [booking, setBooking] = useState<Booking | null>(() => {
+    if (typeof window === "undefined") {
+      return null;
+    }
 
-  useEffect(() => {
     const stored = localStorage.getItem("bookings");
 
     const allBookings: Booking[] = stored
       ? (JSON.parse(stored) as Booking[])
       : (bookingsData as Booking[]);
 
-    setBooking(allBookings.find((item) => item.id === id) ?? null);
-    setIsHydrated(true);
-  }, [id]);
+    const bookingId = params.id as string;
+
+    return allBookings.find((item) => item.id === bookingId) ?? null;
+  });
+
+  const [isHydrated, setIsHydrated] = useState(true);
 
   const [showReject, setShowReject] = useState(false);
   const [showDate, setShowDate] = useState(false);
@@ -122,8 +127,12 @@ export default function BookingDetailPage() {
   const [alternativeDate, setAlternativeDate] = useState("");
   const [newService, setNewService] = useState("");
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentAmount, setPaymentAmount] = useState<string>(booking?.total_price?.toString() ?? "");
-  const [paymentDueDate, setPaymentDueDate] = useState<string>(booking?.payment_due_date ?? "");
+  const [paymentAmount, setPaymentAmount] = useState<string>(
+    booking?.total_price?.toString() ?? "",
+  );
+  const [paymentDueDate, setPaymentDueDate] = useState<string>(
+    booking?.payment_due_date ?? "",
+  );
   const [showServicesModal, setShowServicesModal] = useState(false);
   const [showAssignGuideModal, setShowAssignGuideModal] = useState(false);
   const [selectedGuideId, setSelectedGuideId] = useState<string | null>(null);
@@ -139,11 +148,15 @@ export default function BookingDetailPage() {
 
   // Undo toast state for accidental Cancel
   const [showUndoToast, setShowUndoToast] = useState(false);
-  const [undoAction, setUndoAction] = useState<"assign" | "services" | null>(null);
-  const [undoData, setUndoData] = useState<any>(null);
+  const [undoAction, setUndoAction] = useState<"assign" | "services" | null>(
+    null,
+  );
+  const [undoData, setUndoData] = useState<unknown>(null);
   const undoTimerRef = useRef<number | null>(null);
   const router = useRouter();
-  const [confirmAction, setConfirmAction] = useState<"back" | "payment" | "restore" | "cancel" | null>(null);
+  const [confirmAction, setConfirmAction] = useState<
+    "back" | "payment" | "restore" | "cancel" | null
+  >(null);
 
   const updateBooking = (data: Partial<Booking>) => {
     const stored = localStorage.getItem("bookings");
@@ -151,11 +164,20 @@ export default function BookingDetailPage() {
     const allBookings: Booking[] = stored ? JSON.parse(stored) : bookingsData;
 
     // Prevent reverting status once booking has reached 'active' or later
-    const currentIndex = Math.max(statusSteps.findIndex((s) => s === booking?.status?.toLowerCase()), 0);
-    const newIndex = data.status ? Math.max(statusSteps.findIndex((s) => s === data.status?.toLowerCase()), 0) : currentIndex;
+    const currentIndex = Math.max(
+      statusSteps.findIndex((s) => s === booking?.status?.toLowerCase()),
+      0,
+    );
+    const newIndex = data.status
+      ? Math.max(
+          statusSteps.findIndex((s) => s === data.status?.toLowerCase()),
+          0,
+        )
+      : currentIndex;
 
     const sanitizedData = { ...data } as Partial<Booking>;
-    const isCancellation = data.status === "cancelled" || data.status === "rejected";
+    const isCancellation =
+      data.status === "cancelled" || data.status === "rejected";
     if (
       booking &&
       !isCancellation &&
@@ -188,15 +210,16 @@ export default function BookingDetailPage() {
   };
 
   // trigger undo toast with data snapshot
-  function triggerUndo(action: "assign" | "services", data: any) {
+  function triggerUndo(action: "assign" | "services", data: unknown) {
     setUndoAction(action);
     setUndoData(data);
     setShowUndoToast(true);
+
     // persist snapshot for this booking (no expiry) until user dismisses or uses Undo
     try {
       const snap = { action, data };
       localStorage.setItem(`booking_undo_snapshot_${id}`, JSON.stringify(snap));
-    } catch (e) {
+    } catch {
       // ignore
     }
   }
@@ -209,36 +232,56 @@ export default function BookingDetailPage() {
 
   // load any existing snapshot for this booking (no expiry)
   useEffect(() => {
-    try {
-      const snapshotRaw = localStorage.getItem(`booking_undo_snapshot_${id}`);
-      if (snapshotRaw) {
-        const snap = JSON.parse(snapshotRaw);
-        if (snap) {
-          setUndoAction(snap.action as any);
-          setUndoData(snap.data);
-          setShowUndoToast(true);
+    const loadSnapshot = () => {
+      try {
+        const snapshotRaw = localStorage.getItem(`booking_undo_snapshot_${id}`);
+
+        if (snapshotRaw) {
+          const snap = JSON.parse(snapshotRaw);
+
+          if (snap) {
+            setUndoAction(
+              snap.action === "assign" || snap.action === "services"
+                ? snap.action
+                : null,
+            );
+            setUndoData(snap.data);
+            setShowUndoToast(true);
+          }
         }
+      } catch {
+        // ignore
       }
-    } catch (e) {
-      // ignore
-    }
+    };
+
+    const timer = window.setTimeout(loadSnapshot, 0);
+
+    return () => window.clearTimeout(timer);
   }, [id]);
 
   useEffect(() => {
     if (!booking || booking.status.toLowerCase() !== "completed") return;
 
-    const storedReviews = localStorage.getItem("reviews");
-    const reviews: Review[] = storedReviews
-      ? (JSON.parse(storedReviews) as Review[])
-      : (reviewsData as Review[]);
-    const existingReview = reviews.find((review) => review.booking_id === id);
+    const loadReview = () => {
+      const storedReviews = localStorage.getItem("reviews");
 
-    if (existingReview) {
-      setReviewRating(existingReview.rating);
-      setReviewTitle(existingReview.title);
-      setReviewText(existingReview.text);
-      setHasReview(true);
-    }
+      const reviews: Review[] = storedReviews
+        ? (JSON.parse(storedReviews) as Review[])
+        : (reviewsData as Review[]);
+
+      const existingReview = reviews.find((review) => review.booking_id === id);
+
+      if (existingReview) {
+        setReviewRating(existingReview.rating);
+        setReviewTitle(existingReview.title);
+        setReviewText(existingReview.text);
+        setHasReview(true);
+      }
+    };
+
+    const timer = window.setTimeout(loadReview, 0);
+
+    return () => window.clearTimeout(timer);
   }, [booking, id]);
 
   if (!isHydrated || !booking) {
@@ -279,7 +322,7 @@ export default function BookingDetailPage() {
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              className="inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
+              className="inline-flex min-h-11 items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm font-medium text-neutral-700 transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
               onClick={() => setConfirmAction("back")}
             >
               ← Back to bookings
@@ -290,9 +333,12 @@ export default function BookingDetailPage() {
           </div>
 
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold text-neutral-900">Booking details</h1>
+            <h1 className="text-xl font-semibold text-neutral-900 sm:text-2xl">
+              Booking details
+            </h1>
             <p className="text-sm text-neutral-600">
-              Review traveler, package, schedule, and next actions for this request.
+              Review traveler, package, schedule, and next actions for this
+              request.
             </p>
           </div>
         </div>
@@ -306,25 +352,36 @@ export default function BookingDetailPage() {
       {/* Stepper: shows booking progress steps */}
       <div className="my-3">
         <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white p-3 shadow-sm">
-          <div className="flex w-full items-center gap-1 sm:gap-3">
+          <div className="flex w-full items-center gap-0.5 sm:gap-3">
             {stepperSteps.map((step, idx) => {
               const active = idx <= currentStepIndex;
               const isCurrent = idx === currentStepIndex;
 
               return (
-                <div key={step} className="flex min-w-0 flex-1 items-center gap-1 sm:gap-3">
+                <div
+                  key={step}
+                  className="flex min-w-0 flex-1 items-center gap-1 sm:gap-3"
+                >
                   <div
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold sm:h-9 sm:w-9 ${
-                      isCurrent ? "bg-primary-900 text-white" : active ? "bg-primary-200 text-primary-900" : "bg-neutral-50 text-neutral-500"
+                      isCurrent
+                        ? "bg-primary-900 text-white"
+                        : active
+                          ? "bg-primary-200 text-primary-900"
+                          : "bg-neutral-50 text-neutral-500"
                     }`}
                   >
                     {idx + 1}
                   </div>
-                  <div className={`hidden sm:block text-sm font-medium ${isCurrent ? "text-neutral-900" : "text-neutral-600"} capitalize`}>
+                  <div
+                    className={`hidden sm:block text-sm font-medium ${isCurrent ? "text-neutral-900" : "text-neutral-600"} capitalize`}
+                  >
                     {step}
                   </div>
                   {idx < stepperSteps.length - 1 && (
-                    <div className={`h-1 min-w-1 flex-1 ${idx < currentStepIndex ? "bg-primary-900" : "bg-neutral-200"}`}></div>
+                    <div
+                      className={`h-1 min-w-1 flex-1 ${idx < currentStepIndex ? "bg-primary-900" : "bg-neutral-200"}`}
+                    ></div>
                   )}
                 </div>
               );
@@ -335,7 +392,7 @@ export default function BookingDetailPage() {
 
       <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
         <div className="border-b border-neutral-200 bg-neutral-50 px-4 py-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-neutral-500">
                 Booking summary
@@ -344,7 +401,7 @@ export default function BookingDetailPage() {
                 {packageDetails?.title ?? packageDetails?.name ?? "Package"}
               </h2>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <BookingStatusBadge status={booking.status} />
               <span className="text-sm text-neutral-500">
                 Rs. {booking.total_price.toLocaleString("en-IN")}
@@ -354,25 +411,31 @@ export default function BookingDetailPage() {
         </div>
 
         <div className="px-4 py-3">
-          <div className="flex flex-wrap items-center justify-end gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
             {/* Quick actions */}
-              <button
-                className="rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-900"
-                onClick={() => {
-                  // prefill modal with existing services
-                  setSvcTransport((booking.services ?? []).includes("transport"));
-                  setSvcLodging((booking.services ?? []).includes("lodging"));
-                  setSvcMeals((booking.services ?? []).includes("meals"));
-                  setOtherServicesText((booking.services ?? []).filter((s) => !["transport","lodging","meals"].includes(s)).join(", "));
-                  setShowServicesModal(true);
-                }}
-              >
-                Services
-              </button>
+            <button
+              className="min-h-11 w-full rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-900 sm:w-auto"
+              onClick={() => {
+                // prefill modal with existing services
+                setSvcTransport((booking.services ?? []).includes("transport"));
+                setSvcLodging((booking.services ?? []).includes("lodging"));
+                setSvcMeals((booking.services ?? []).includes("meals"));
+                setOtherServicesText(
+                  (booking.services ?? [])
+                    .filter(
+                      (s) => !["transport", "lodging", "meals"].includes(s),
+                    )
+                    .join(", "),
+                );
+                setShowServicesModal(true);
+              }}
+            >
+              Services
+            </button>
             {booking.status.toLowerCase() === "completed" && (
               <button
                 type="button"
-                className="rounded-2xl bg-primary-900 px-3 py-2 text-sm font-semibold text-white"
+                className="min-h-11 w-full rounded-2xl bg-primary-900 px-3 py-2 text-sm font-semibold text-white sm:w-auto"
                 onClick={() => setShowReviewModal(true)}
               >
                 Review & rating
@@ -381,7 +444,7 @@ export default function BookingDetailPage() {
             {booking.status.toLowerCase() === "inquiry" && (
               <>
                 <button
-                  className="rounded-2xl bg-primary-900 px-3 py-2 text-sm font-semibold text-white"
+                  className="min-h-11 w-full rounded-2xl bg-primary-900 px-3 py-2 text-sm font-semibold text-white sm:w-auto"
                   onClick={() => setShowPaymentModal(true)}
                 >
                   Request payment
@@ -389,7 +452,10 @@ export default function BookingDetailPage() {
                 <button
                   className="rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-900"
                   onClick={() => {
-                    updateBooking({ status: "rejected", reject_reason: "Rejected by agency" });
+                    updateBooking({
+                      status: "rejected",
+                      reject_reason: "Rejected by agency",
+                    });
                   }}
                 >
                   Reject
@@ -400,13 +466,13 @@ export default function BookingDetailPage() {
             {booking.status.toLowerCase() === "payment" && (
               <>
                 <button
-                  className="rounded-2xl bg-primary-900 px-3 py-2 text-sm font-semibold text-white"
+                  className="min-h-11 w-full rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-900 sm:w-auto"
                   onClick={() => setConfirmAction("payment")}
                 >
                   Mark payment received
                 </button>
                 <button
-                  className="rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-900"
+                  className="min-h-11 w-full rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-900 sm:w-auto"
                   onClick={() => setShowPaymentModal(true)}
                 >
                   Edit payment request
@@ -414,7 +480,8 @@ export default function BookingDetailPage() {
               </>
             )}
 
-            {(booking.status.toLowerCase() === "cancelled" || booking.status.toLowerCase() === "rejected") && (
+            {(booking.status.toLowerCase() === "cancelled" ||
+              booking.status.toLowerCase() === "rejected") && (
               <button
                 className="rounded-2xl bg-primary-900 px-3 py-2 text-sm font-semibold text-white"
                 onClick={() => setConfirmAction("restore")}
@@ -436,7 +503,10 @@ export default function BookingDetailPage() {
                       setSvcMeals(false);
                       setShowAssignGuideModal(true);
                     } else {
-                      updateBooking({ status: "active", check_in_at: new Date().toISOString() });
+                      updateBooking({
+                        status: "active",
+                        check_in_at: new Date().toISOString(),
+                      });
                     }
                   }}
                 >
@@ -455,7 +525,12 @@ export default function BookingDetailPage() {
               <>
                 <button
                   className="rounded-2xl bg-success-700 px-3 py-2 text-sm font-semibold text-white"
-                  onClick={() => updateBooking({ status: "completed", check_out_at: new Date().toISOString() })}
+                  onClick={() =>
+                    updateBooking({
+                      status: "completed",
+                      check_out_at: new Date().toISOString(),
+                    })
+                  }
                 >
                   Check out / Complete
                 </button>
@@ -504,7 +579,9 @@ export default function BookingDetailPage() {
                     Package details
                   </p>
                   <p className="mt-1 text-sm font-semibold text-neutral-900">
-                    {packageDetails?.title ?? packageDetails?.name ?? booking.package_id}
+                    {packageDetails?.title ??
+                      packageDetails?.name ??
+                      booking.package_id}
                   </p>
                   <p className="mt-1 text-sm text-neutral-600">
                     Destination: {packageDetails?.destination ?? "-"}
@@ -526,7 +603,10 @@ export default function BookingDetailPage() {
                   </p>
                   <p className="mt-1 text-sm font-semibold text-neutral-900">
                     {assignedGuide ? (
-                      <Link href={`/dashboard/guides/${assignedGuide.id}`} className="text-primary-900 hover:underline">
+                      <Link
+                        href={`/dashboard/guides/${assignedGuide.id}`}
+                        className="text-primary-900 hover:underline"
+                      >
                         {assignedGuide.name}
                       </Link>
                     ) : (
@@ -551,23 +631,29 @@ export default function BookingDetailPage() {
 
           {booking.add_ons.length > 0 && (
             <section className="px-4 py-3">
-              <h3 className="text-sm font-semibold text-neutral-900">Add-ons</h3>
+              <h3 className="text-sm font-semibold text-neutral-900">
+                Add-ons
+              </h3>
               <div className="mt-3 space-y-2">
                 {booking.add_ons.map((addon) => (
                   <div
                     key={addon.name}
-                    className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-2"
+                    className="flex flex-col gap-1 rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <span className="text-sm text-neutral-700">{addon.name}</span>
+                    <span className="text-sm text-neutral-700">
+                      {addon.name}
+                    </span>
                     <span className="text-sm font-medium text-neutral-900">
                       Rs. {addon.price.toLocaleString("en-IN")}
                     </span>
                   </div>
                 ))}
                 {/* static add-on example as requested */}
-                <div className="flex items-center justify-between rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-2">
+                <div className="flex flex-col gap-1 rounded-2xl border border-neutral-200 bg-neutral-50 px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                   <span className="text-sm text-neutral-700">Hot Shower</span>
-                  <span className="text-sm font-medium text-neutral-900">Rs. 20</span>
+                  <span className="text-sm font-medium text-neutral-900">
+                    Rs. 20
+                  </span>
                 </div>
               </div>
             </section>
@@ -575,9 +661,11 @@ export default function BookingDetailPage() {
 
           {/* Undo toast for accidental cancels */}
           {showUndoToast && (
-            <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl bg-white p-3 shadow">
-              <div className="text-sm text-neutral-800">Closed — changes not saved.</div>
-              <div className="flex gap-2">
+            <div className="fixed inset-x-4 bottom-4 z-50 flex flex-col gap-3 rounded-2xl bg-white p-3 shadow sm:inset-x-auto sm:bottom-6 sm:right-6 sm:flex-row sm:items-center">
+              <div className="text-sm text-neutral-800">
+                Closed — changes not saved.
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <button
                   className="rounded-2xl bg-primary-900 px-3 py-1.5 text-sm font-semibold text-white"
                   onClick={() => {
@@ -590,7 +678,9 @@ export default function BookingDetailPage() {
                       check_in_at: undefined,
                       check_out_at: undefined,
                     });
-                    try { localStorage.removeItem(`booking_undo_snapshot_${id}`); } catch (e) {}
+                    try {
+                      localStorage.removeItem(`booking_undo_snapshot_${id}`);
+                    } catch {}
                     setShowUndoToast(false);
                     setUndoAction(null);
                     setUndoData(null);
@@ -602,7 +692,9 @@ export default function BookingDetailPage() {
                 <button
                   className="rounded-2xl border border-neutral-200 bg-white px-3 py-1.5 text-sm font-semibold text-neutral-900"
                   onClick={() => {
-                    try { localStorage.removeItem(`booking_undo_snapshot_${id}`); } catch (e) {}
+                    try {
+                      localStorage.removeItem(`booking_undo_snapshot_${id}`);
+                    } catch {}
                     setShowUndoToast(false);
                     setUndoAction(null);
                     setUndoData(null);
@@ -624,11 +716,17 @@ export default function BookingDetailPage() {
             </p>
             <div className="mt-3 grid gap-3 md:grid-cols-3">
               <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-3">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-neutral-500">Status</p>
-                <p className="mt-2 text-sm font-semibold text-neutral-900">{booking.status}</p>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-neutral-500">
+                  Status
+                </p>
+                <p className="mt-2 text-sm font-semibold text-neutral-900">
+                  {booking.status}
+                </p>
               </div>
               <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-3">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-neutral-500">Amount</p>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-neutral-500">
+                  Amount
+                </p>
                 <p className="mt-2 text-sm font-semibold text-neutral-900">
                   {booking.status.toLowerCase() === "inquiry"
                     ? "-"
@@ -636,7 +734,9 @@ export default function BookingDetailPage() {
                 </p>
               </div>
               <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-3">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-neutral-500">Due date</p>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-neutral-500">
+                  Due date
+                </p>
                 <p className="mt-2 text-sm font-semibold text-neutral-900">
                   {booking.payment_due_date ?? "Not set"}
                 </p>
@@ -659,7 +759,7 @@ export default function BookingDetailPage() {
                     </div>
                     <button
                       type="button"
-                      className="rounded-full border border-neutral-200 px-3 py-1 text-sm font-semibold text-neutral-700"
+                      className="min-h-11 min-w-11 rounded-full border border-neutral-200 px-3 py-1 text-sm font-semibold text-neutral-700"
                       onClick={() => setShowReviewModal(false)}
                     >
                       Close
@@ -669,13 +769,16 @@ export default function BookingDetailPage() {
 
                 <div className="mt-4">
                   <p className="text-sm font-medium text-neutral-900">Rating</p>
-                  <div className="mt-2 flex items-center gap-1" aria-label="Select rating">
+                  <div
+                    className="mt-2 flex items-center gap-1"
+                    aria-label="Select rating"
+                  >
                     {[1, 2, 3, 4, 5].map((star) => (
                       <button
                         key={star}
                         type="button"
                         aria-label={`${star} star${star === 1 ? "" : "s"}`}
-                        className={`text-2xl leading-none ${star <= reviewRating ? "text-amber-500" : "text-neutral-300"}`}
+                        className={`min-h-11 min-w-11 text-2xl leading-none ${star <= reviewRating ? "text-amber-500" : "text-neutral-300"}`}
                         onClick={() => setReviewRating(star)}
                       >
                         {star <= reviewRating ? "★" : "☆"}
@@ -724,10 +827,15 @@ export default function BookingDetailPage() {
                       created_at: new Date().toISOString(),
                     };
                     const nextReviews = [
-                      ...reviews.filter((review) => review.booking_id !== booking.id),
+                      ...reviews.filter(
+                        (review) => review.booking_id !== booking.id,
+                      ),
                       nextReview,
                     ];
-                    localStorage.setItem("reviews", JSON.stringify(nextReviews));
+                    localStorage.setItem(
+                      "reviews",
+                      JSON.stringify(nextReviews),
+                    );
                     setHasReview(true);
                     setShowReviewModal(false);
                   }}
@@ -742,8 +850,10 @@ export default function BookingDetailPage() {
 
           {booking.status.toLowerCase() === "confirmed" && (
             <section className="px-4 py-3">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-neutral-500">Manage services</p>
-              <div className="mt-3 flex items-center gap-2">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-neutral-500">
+                Manage services
+              </p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                 <input
                   type="text"
                   placeholder="Add service (transport, lodging, meals...)"
@@ -752,10 +862,15 @@ export default function BookingDetailPage() {
                   className="w-full rounded-2xl border border-neutral-200 bg-white px-3 py-2 text-sm text-neutral-900 outline-none"
                 />
                 <button
-                  className="rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white"
+                  className="min-h-11 w-full rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white sm:w-auto"
                   onClick={() => {
                     if (!newService.trim()) return;
-                    updateBooking({ services: [...(booking.services ?? []), newService.trim()] });
+                    updateBooking({
+                      services: [
+                        ...(booking.services ?? []),
+                        newService.trim(),
+                      ],
+                    });
                     setNewService("");
                   }}
                 >
@@ -764,10 +879,17 @@ export default function BookingDetailPage() {
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {(booking.services ?? []).map((s, idx) => (
-                  <span key={`${s}-${idx}`} className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-sm font-semibold text-neutral-700">{s}</span>
+                  <span
+                    key={`${s}-${idx}`}
+                    className="rounded-full border border-neutral-200 bg-neutral-50 px-3 py-1 text-sm font-semibold text-neutral-700"
+                  >
+                    {s}
+                  </span>
                 ))}
                 {!(booking.services ?? []).length && (
-                  <span className="text-sm text-neutral-500">No services added yet.</span>
+                  <span className="text-sm text-neutral-500">
+                    No services added yet.
+                  </span>
                 )}
               </div>
             </section>
@@ -779,11 +901,16 @@ export default function BookingDetailPage() {
             </p>
             <p className="mt-2 text-sm font-semibold text-neutral-900">
               {assignedGuide ? (
-                <Link href={`/dashboard/guides/${assignedGuide.id}`} className="text-primary-900 hover:underline">
+                <Link
+                  href={`/dashboard/guides/${assignedGuide.id}`}
+                  className="text-primary-900 hover:underline"
+                >
                   {assignedGuide.name}
                 </Link>
               ) : (
-                <span className="text-neutral-500">Not assigned (assigned at start)</span>
+                <span className="text-neutral-500">
+                  Not assigned (assigned at start)
+                </span>
               )}
             </p>
           </section>
@@ -816,9 +943,11 @@ export default function BookingDetailPage() {
           )}
 
           {confirmAction && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-              <div className="mx-4 w-full max-w-sm rounded-2xl bg-white p-6">
-                <h3 className="text-lg font-semibold text-neutral-900">Are you sure?</h3>
+            <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl sm:p-6">
+              <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl sm:p-6">
+                <h3 className="text-lg font-semibold text-neutral-900">
+                  Are you sure?
+                </h3>
                 <p className="mt-2 text-sm text-neutral-600">
                   {confirmAction === "back"
                     ? "Go back to the bookings list? Any unsaved changes will be lost."
@@ -828,17 +957,17 @@ export default function BookingDetailPage() {
                         ? "Restore this cancelled booking and confirm it because payment has been received?"
                         : "Cancel this confirmed booking at the customer's request? Payment details will be preserved."}
                 </p>
-                <div className="mt-4 flex justify-end gap-2">
+                <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                   <button
                     type="button"
-                    className="rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900"
+                    className="min-h-11 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900"
                     onClick={() => setConfirmAction(null)}
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
-                    className="rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white"
+                    className="min-h-11 rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white"
                     onClick={() => {
                       if (confirmAction === "back") {
                         setConfirmAction(null);
@@ -849,7 +978,9 @@ export default function BookingDetailPage() {
                       if (confirmAction === "restore") {
                         updateBooking({
                           status: "confirmed",
-                          payment_received_at: booking.payment_received_at ?? new Date().toISOString(),
+                          payment_received_at:
+                            booking.payment_received_at ??
+                            new Date().toISOString(),
                           reject_reason: undefined,
                         });
                         setConfirmAction(null);
@@ -881,14 +1012,20 @@ export default function BookingDetailPage() {
 
           {/* Payment modal (simple inline modal) */}
           {showPaymentModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-              <div className="mx-4 w-full max-w-md rounded-2xl bg-white p-6">
-                <h3 className="text-lg font-semibold text-neutral-900">Request payment</h3>
-                <p className="mt-2 text-sm text-neutral-600">Send a payment request to the trekker.</p>
+            <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl sm:p-6">
+              <div className="mx-4 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-4 sm:p-6">
+                <h3 className="text-lg font-semibold text-neutral-900">
+                  Request payment
+                </h3>
+                <p className="mt-2 text-sm text-neutral-600">
+                  Send a payment request to the trekker.
+                </p>
 
                 <div className="mt-4 space-y-3">
                   <div>
-                    <label className="mb-1 block text-sm text-neutral-600">Amount (Rs.)</label>
+                    <label className="mb-1 block text-sm text-neutral-600">
+                      Amount (Rs.)
+                    </label>
                     <input
                       type="number"
                       className="w-full rounded-2xl border border-neutral-200 px-3 py-2 text-sm text-neutral-900 outline-none placeholder:text-neutral-400"
@@ -898,7 +1035,9 @@ export default function BookingDetailPage() {
                   </div>
 
                   <div>
-                    <label className="mb-1 block text-sm text-neutral-600">Due date</label>
+                    <label className="mb-1 block text-sm text-neutral-600">
+                      Due date
+                    </label>
                     <input
                       type="date"
                       className="w-full rounded-2xl border border-neutral-200 px-3 py-2 text-sm text-neutral-900 outline-none placeholder:text-neutral-400"
@@ -908,18 +1047,22 @@ export default function BookingDetailPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 flex justify-end gap-2">
+                <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
                   <button
-                    className="rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900"
+                    className="min-h-11 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900"
                     onClick={() => setShowPaymentModal(false)}
                   >
                     Cancel
                   </button>
                   <button
-                    className="rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white"
+                    className="min-h-11 w-full rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white sm:w-auto"
                     onClick={() => {
                       const amt = Number(paymentAmount) || booking.total_price;
-                      updateBooking({ status: "payment", payment_due_date: paymentDueDate || undefined, total_price: amt });
+                      updateBooking({
+                        status: "payment",
+                        payment_due_date: paymentDueDate || undefined,
+                        total_price: amt,
+                      });
                       setShowPaymentModal(false);
                     }}
                   >
@@ -956,26 +1099,44 @@ export default function BookingDetailPage() {
 
           {/* Services modal */}
           {showServicesModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl sm:p-6">
               <div className="mx-4 w-full max-w-md rounded-2xl bg-white p-6">
-                <h3 className="text-lg font-semibold text-neutral-900">Services</h3>
-                <p className="mt-2 text-sm text-neutral-600">Select additional services for this booking.</p>
+                <h3 className="text-lg font-semibold text-neutral-900">
+                  Services
+                </h3>
+                <p className="mt-2 text-sm text-neutral-600">
+                  Select additional services for this booking.
+                </p>
 
                 <div className="mt-4 space-y-3">
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={svcTransport} onChange={(e) => setSvcTransport(e.target.checked)} />
+                    <input
+                      type="checkbox"
+                      checked={svcTransport}
+                      onChange={(e) => setSvcTransport(e.target.checked)}
+                    />
                     <span className="text-sm">Transport</span>
                   </label>
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={svcLodging} onChange={(e) => setSvcLodging(e.target.checked)} />
+                    <input
+                      type="checkbox"
+                      checked={svcLodging}
+                      onChange={(e) => setSvcLodging(e.target.checked)}
+                    />
                     <span className="text-sm">Lodging</span>
                   </label>
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={svcMeals} onChange={(e) => setSvcMeals(e.target.checked)} />
+                    <input
+                      type="checkbox"
+                      checked={svcMeals}
+                      onChange={(e) => setSvcMeals(e.target.checked)}
+                    />
                     <span className="text-sm">Meals</span>
                   </label>
                   <div>
-                    <label className="mb-1 block text-sm text-neutral-600">Other (comma separated)</label>
+                    <label className="mb-1 block text-sm text-neutral-600">
+                      Other (comma separated)
+                    </label>
                     <input
                       type="text"
                       className="w-full rounded-2xl border border-neutral-200 px-3 py-2 text-sm outline-none"
@@ -986,25 +1147,45 @@ export default function BookingDetailPage() {
                   </div>
                 </div>
 
-                <div className="mt-4 flex justify-end gap-2">
-                  <button className="rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900" onClick={() => {
+                <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                  <button
+                    className="min-h-11 rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900"
+                    onClick={() => {
                       // save current modal state for undo and close
-                      triggerUndo("services", { svcTransport, svcLodging, svcMeals, otherServicesText });
+                      triggerUndo("services", {
+                        svcTransport,
+                        svcLodging,
+                        svcMeals,
+                        otherServicesText,
+                      });
                       setShowServicesModal(false);
-                    }}>Cancel</button>
-                  <button className="rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white" onClick={() => {
-                    const other = otherServicesText || "";
-                    const otherList = other.split(",").map(s => s.trim()).filter(Boolean);
-                    const services = [
-                      ...(svcTransport ? ["transport"] : []),
-                      ...(svcLodging ? ["lodging"] : []),
-                      ...(svcMeals ? ["meals"] : []),
-                      ...otherList,
-                    ];
-                    updateBooking({ services });
-                    try { localStorage.removeItem(`booking_undo_snapshot_${id}`); } catch(e){}
-                    setShowServicesModal(false);
-                  }}>Save</button>
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="min-h-11 w-full rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white sm:w-auto"
+                    onClick={() => {
+                      const other = otherServicesText || "";
+                      const otherList = other
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                      const services = [
+                        ...(svcTransport ? ["transport"] : []),
+                        ...(svcLodging ? ["lodging"] : []),
+                        ...(svcMeals ? ["meals"] : []),
+                        ...otherList,
+                      ];
+                      updateBooking({ services });
+                      try {
+                        localStorage.removeItem(`booking_undo_snapshot_${id}`);
+                      } catch (e) {}
+                      setShowServicesModal(false);
+                    }}
+                  >
+                    Save
+                  </button>
                 </div>
               </div>
             </div>
@@ -1012,52 +1193,114 @@ export default function BookingDetailPage() {
 
           {/* Assign guide modal (asks guide + services) */}
           {showAssignGuideModal && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+            <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl sm:p-6">
               <div className="mx-4 w-full max-w-lg rounded-2xl bg-white p-6">
-                <h3 className="text-lg font-semibold text-neutral-900">Assign guide & confirm start</h3>
-                <p className="mt-2 text-sm text-neutral-600">Please assign a guide and confirm required services before starting the trek.</p>
+                <h3 className="text-lg font-semibold text-neutral-900">
+                  Assign guide & confirm start
+                </h3>
+                <p className="mt-2 text-sm text-neutral-600">
+                  Please assign a guide and confirm required services before
+                  starting the trek.
+                </p>
 
-                  <div className="mt-4 space-y-3">
+                <div className="mt-4 space-y-3">
                   <div>
-                    <label className="mb-1 block text-sm text-neutral-900">Select Guide</label>
-                    <select className="w-full rounded-2xl border border-neutral-200 px-3 py-2 text-sm text-neutral-900" value={selectedGuideId ?? ""} onChange={(e) => setSelectedGuideId(e.target.value || null)}>
+                    <label className="mb-1 block text-sm text-neutral-900">
+                      Select Guide
+                    </label>
+                    <select
+                      className="w-full rounded-2xl border border-neutral-200 px-3 py-2 text-sm text-neutral-900"
+                      value={selectedGuideId ?? ""}
+                      onChange={(e) =>
+                        setSelectedGuideId(e.target.value || null)
+                      }
+                    >
                       <option value="">Select guide</option>
-                      {availableGuides.map(g => (
-                        <option key={g.id} value={g.id}>{g.name} · {g.rating}</option>
+                      {availableGuides.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name} · {g.rating}
+                        </option>
                       ))}
                     </select>
                   </div>
                   <div>
                     <p className="text-sm text-neutral-900">Confirm services</p>
-                    <label className="mt-2 flex items-center gap-2 text-neutral-900"><input className="accent-primary-900" type="checkbox" checked={svcTransport} onChange={(e) => setSvcTransport(e.target.checked)} /> <span className="text-sm">Transport</span></label>
-                    <label className="mt-1 flex items-center gap-2 text-neutral-900"><input className="accent-primary-900" type="checkbox" checked={svcLodging} onChange={(e) => setSvcLodging(e.target.checked)} /> <span className="text-sm">Lodging</span></label>
-                    <label className="mt-1 flex items-center gap-2 text-neutral-900"><input className="accent-primary-900" type="checkbox" checked={svcMeals} onChange={(e) => setSvcMeals(e.target.checked)} /> <span className="text-sm">Meals</span></label>
+                    <label className="mt-2 flex items-center gap-2 text-neutral-900">
+                      <input
+                        className="accent-primary-900"
+                        type="checkbox"
+                        checked={svcTransport}
+                        onChange={(e) => setSvcTransport(e.target.checked)}
+                      />{" "}
+                      <span className="text-sm">Transport</span>
+                    </label>
+                    <label className="mt-1 flex items-center gap-2 text-neutral-900">
+                      <input
+                        className="accent-primary-900"
+                        type="checkbox"
+                        checked={svcLodging}
+                        onChange={(e) => setSvcLodging(e.target.checked)}
+                      />{" "}
+                      <span className="text-sm">Lodging</span>
+                    </label>
+                    <label className="mt-1 flex items-center gap-2 text-neutral-900">
+                      <input
+                        className="accent-primary-900"
+                        type="checkbox"
+                        checked={svcMeals}
+                        onChange={(e) => setSvcMeals(e.target.checked)}
+                      />{" "}
+                      <span className="text-sm">Meals</span>
+                    </label>
                   </div>
                 </div>
 
-                <div className="mt-4 flex justify-end gap-2">
-                  <button className="rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900" onClick={() => {
-                    // save current assign modal state for undo and close
-                    triggerUndo("assign", { selectedGuideId, svcTransport, svcLodging, svcMeals });
-                    setShowAssignGuideModal(false);
-                  }}>Cancel</button>
-                  <button className="rounded-2xl bg-success-600 px-4 py-2 text-sm font-semibold text-white" onClick={() => {
-                    // apply guide and services then start trek
-                    const services = [
-                      ...(svcTransport ? ["transport"] : []),
-                      ...(svcLodging ? ["lodging"] : []),
-                      ...(svcMeals ? ["meals"] : []),
-                      ...((booking.services ?? []).filter(s => !["transport","lodging","meals"].includes(s)))
-                    ];
-                    updateBooking({ guide_id: selectedGuideId, services, status: "active", check_in_at: new Date().toISOString() });
-                    try { localStorage.removeItem(`booking_undo_snapshot_${id}`); } catch(e) {}
-                    setShowAssignGuideModal(false);
-                  }}>Assign & Start</button>
+                <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                  <button
+                    className="min-h-11 rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white"
+                    onClick={() => {
+                      // save current assign modal state for undo and close
+                      triggerUndo("assign", {
+                        selectedGuideId,
+                        svcTransport,
+                        svcLodging,
+                        svcMeals,
+                      });
+                      setShowAssignGuideModal(false);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    className="rounded-2xl bg-success-600 px-4 py-2 text-sm font-semibold text-white"
+                    onClick={() => {
+                      // apply guide and services then start trek
+                      const services = [
+                        ...(svcTransport ? ["transport"] : []),
+                        ...(svcLodging ? ["lodging"] : []),
+                        ...(svcMeals ? ["meals"] : []),
+                        ...(booking.services ?? []).filter(
+                          (s) => !["transport", "lodging", "meals"].includes(s),
+                        ),
+                      ];
+                      updateBooking({
+                        guide_id: selectedGuideId,
+                        services,
+                        status: "active",
+                        check_in_at: new Date().toISOString(),
+                      });
+                      try {
+                        localStorage.removeItem(`booking_undo_snapshot_${id}`);
+                      } catch {}
+                      setShowAssignGuideModal(false);
+                    }}
+                  >
+                    Assign & Start
+                  </button>
                 </div>
               </div>
             </div>
           )}
-
         </div>
       </div>
     </div>

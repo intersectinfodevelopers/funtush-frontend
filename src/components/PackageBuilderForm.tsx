@@ -199,14 +199,26 @@ export default function PackageBuilderForm({
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 bg-white border border-gray-200 shadow-sm rounded-xl my-8">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 bg-white border border-neutral-200 shadow-sm rounded-2xl my-8">
       {/* Dynamic Title Wrapper */}
-      <div className="mb-6 border-b border-gray-100 pb-4">
-        <h1 className="text-2xl font-bold text-gray-900">
+      <div className="mb-6 border-b border-neutral-100 pb-4">
+        <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-500 mb-1">
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard/packages")}
+            className="transition hover:text-neutral-900"
+          >
+            Packages
+          </button>
+          <span className="text-neutral-300">/</span>
+          <span className="font-semibold text-neutral-900">
+            {packageId ? "Edit Package" : "Create Package"}
+          </span>
+        </div>
+        <h1 className="text-2xl font-semibold text-neutral-900">
           {packageId ? "Edit Package" : "Create Package"}
         </h1>
-
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1 text-sm leading-6 text-neutral-600">
           {packageId
             ? "Update your package details and publish your changes."
             : "Create a new travel package by completing the steps below."}
@@ -214,17 +226,16 @@ export default function PackageBuilderForm({
       </div>
 
       {/* Progress Bar Header */}
-      <div className="grid grid-cols-2 sm:grid-cols-7 gap-2 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-7 gap-2 mb-6 sm:mb-8">
         {steps.map((step, i) => (
           <div
             key={i}
-            className={`px-3 py-2 text-xs font-medium rounded-lg text-center border transition-all ${
+            className={`px-3 py-2 text-xs font-semibold rounded-2xl text-center border transition-all ${
               i === currentStep
-                ? "bg-[#6C5CE7] text-white border-[#6C5CE7] shadow-sm"
+                ? "bg-primary-900 text-white border-primary-900 shadow-sm"
                 : i < currentStep
-                  ? "bg-[#6C5CE7]/10 text-[#6C5CE7] border-[#6C5CE7]/20"
-                  : "bg-gray-50 text-gray-400 border-gray-200"
-            }
+                  ? "bg-primary-50 text-primary-900 border-primary-200"
+                  : "bg-neutral-50 text-neutral-400 border-neutral-200"
             }`}
           >
             <div className="font-bold opacity-70 mb-0.5">Step {i + 1}</div>
@@ -234,21 +245,21 @@ export default function PackageBuilderForm({
       </div>
 
       {/* Step Container Board */}
-      <div className="min-h-95 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm mb-6">
+      <div className="min-h-95 w-full min-w-0 overflow-hidden bg-white rounded-2xl p-3 sm:p-6 border border-neutral-200 shadow-sm mb-6">
         {/* STEP 1: BASIC INFO */}
         {currentStep === 0 && (
           <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-neutral-900">
               Package Information
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
+                <label className="block text-xs font-medium text-neutral-500 mb-1">
                   Package Name
                 </label>
                 <input
                   type="text"
-                  className="w-full text-sm border border-gray-300 rounded-lg p-2 bg-white"
+                  className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 min-h-[44px] text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                   placeholder="e.g., Manaslu Circuit Tour"
                   value={formData.title}
                   onChange={(e) =>
@@ -257,11 +268,11 @@ export default function PackageBuilderForm({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
+                <label className="block text-xs font-medium text-neutral-500 mb-1">
                   Destination
                 </label>
                 <select
-                  className="w-full text-sm border border-gray-300 rounded-lg p-2 bg-white"
+                  className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 min-h-[44px] text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                   value={formData.destination}
                   onChange={(e) =>
                     setFormData({ ...formData, destination: e.target.value })
@@ -276,11 +287,11 @@ export default function PackageBuilderForm({
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
+                <label className="block text-xs font-medium text-neutral-500 mb-1">
                   Difficulty
                 </label>
                 <select
-                  className="w-full text-sm border border-gray-300 rounded-lg p-2 bg-white"
+                  className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 min-h-[44px] text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                   value={formData.difficulty}
                   onChange={(e) =>
                     setFormData({
@@ -301,13 +312,13 @@ export default function PackageBuilderForm({
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                  <label className="block text-xs font-medium text-neutral-500 mb-1">
                     Duration (Days)
                   </label>
                   <input
                     type="number"
                     min={1}
-                    className="w-full text-sm border border-gray-300 rounded-lg p-2 bg-white"
+                    className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 min-h-[44px] text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                     value={formData.duration || ""}
                     onChange={(e) =>
                       setFormData({
@@ -318,13 +329,13 @@ export default function PackageBuilderForm({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                  <label className="block text-xs font-medium text-neutral-500 mb-1">
                     Maximum Group Size
                   </label>
                   <input
                     type="number"
                     min={1}
-                    className="w-full text-sm border border-gray-300 rounded-lg p-2 bg-white"
+                    className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 min-h-[44px] text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                     value={formData.maxGroup || ""}
                     onChange={(e) =>
                       setFormData({
@@ -337,12 +348,12 @@ export default function PackageBuilderForm({
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
+              <label className="block text-xs font-medium text-neutral-500 mb-1">
                 Short Description
               </label>
               <textarea
                 rows={2}
-                className="w-full text-sm border border-gray-300 rounded-lg p-2 bg-white"
+                className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                 placeholder="Enter brief overview context..."
                 value={formData.shortDesc}
                 onChange={(e) =>
@@ -351,12 +362,12 @@ export default function PackageBuilderForm({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
+              <label className="block text-xs font-medium text-neutral-500 mb-1">
                 Full Description
               </label>
               <textarea
                 rows={4}
-                className="w-full text-sm border border-gray-300 rounded-lg p-2 bg-white"
+                className="w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                 placeholder="Write standard layout itinerary guidelines..."
                 value={formData.fullDesc}
                 onChange={(e) =>
@@ -370,12 +381,14 @@ export default function PackageBuilderForm({
         {/* STEP 2: ITINERARY BUILDER */}
         {currentStep === 1 && (
           <div className="space-y-4">
-            <div className="flex justify-between items-center border-b border-gray-200 pb-2">
-              <h2 className="text-lg font-semibold text-gray-900">Itinerary</h2>
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b border-neutral-200 pb-3">
+              <h2 className="text-lg font-semibold text-neutral-900">
+                Itinerary
+              </h2>
               <button
                 type="button"
                 onClick={addItineraryDay}
-                className="px-4 py-2 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center justify-center gap-2 min-h-[44px] rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-800"
               >
                 + Append Day Card
               </button>
@@ -385,32 +398,34 @@ export default function PackageBuilderForm({
               {(formData.itinerary || []).map((day, i) => (
                 <div
                   key={i}
-                  className="bg-white border border-neutral-200 rounded-xl p-5 shadow-xs relative"
+                  className="w-full min-w-0 bg-white border border-neutral-200 rounded-2xl p-3 sm:p-5 shadow-sm relative"
                 >
-                  <div className="flex justify-between items-center mb-3">
-                    <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-md">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-3">
+                    <span className="text-xs font-semibold text-primary-900 bg-primary-50 px-2.5 py-1 rounded-full">
                       Day {day.day}
                     </span>
-                    <div className="flex gap-1">
+                    <div className="flex flex-wrap gap-1">
                       <button
                         type="button"
                         disabled={i === 0}
-                        className="p-1 border text-gray-500 rounded hover:bg-gray-50 disabled:opacity-30"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center border border-neutral-200 text-neutral-500 rounded-xl hover:bg-neutral-50 disabled:opacity-30"
                         onClick={() => moveItineraryItem(i, "up")}
+                        aria-label="Move day up"
                       >
                         ▲
                       </button>
                       <button
                         type="button"
                         disabled={i === formData.itinerary.length - 1}
-                        className="p-1 border text-gray-500 rounded hover:bg-gray-50 disabled:opacity-30"
+                        className="min-h-[44px] min-w-[44px] flex items-center justify-center border border-neutral-200 text-neutral-500 rounded-xl hover:bg-neutral-50 disabled:opacity-30"
                         onClick={() => moveItineraryItem(i, "down")}
+                        aria-label="Move day down"
                       >
                         ▼
                       </button>
                       <button
                         type="button"
-                        className="px-2 py-1 text-xs border border-red-200 text-red-600 rounded bg-red-50/50 hover:bg-red-50"
+                        className="min-h-[44px] px-3 text-xs font-semibold border border-danger-200 text-danger-700 rounded-xl bg-danger-50 hover:bg-danger-100"
                         onClick={() => removeItineraryDay(i)}
                       >
                         Remove
@@ -419,7 +434,7 @@ export default function PackageBuilderForm({
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
                     <input
-                      className="w-full text-xs border p-2 rounded-lg"
+                      className="w-full rounded-xl border border-neutral-200 px-3 py-2 min-h-[44px] text-xs outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                       placeholder="Target Stop Location"
                       value={day.location}
                       onChange={(e) =>
@@ -427,7 +442,7 @@ export default function PackageBuilderForm({
                       }
                     />
                     <input
-                      className="w-full text-xs border p-2 rounded-lg"
+                      className="w-full rounded-xl border border-neutral-200 px-3 py-2 min-h-[44px] text-xs outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                       placeholder="Target Elevation Altitude (m)"
                       value={day.altitude}
                       onChange={(e) =>
@@ -436,7 +451,7 @@ export default function PackageBuilderForm({
                     />
                   </div>
                   <textarea
-                    className="w-full text-xs border p-2 rounded-lg mb-2"
+                    className="w-full max-w-full resize-y rounded-xl border border-neutral-200 px-3 py-2 text-xs mb-2 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                     placeholder="Describe tracking details and parameters..."
                     rows={2}
                     value={day.desc}
@@ -444,13 +459,13 @@ export default function PackageBuilderForm({
                       updateItineraryField(i, "desc", e.target.value)
                     }
                   />
-                  <div className="flex items-center gap-2">
-                    <label className="text-[11px] text-gray-400 font-medium">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                    <label className="text-[11px] text-neutral-400 font-medium whitespace-nowrap">
                       Mock Visual Banner URL:
                     </label>
                     <input
                       type="text"
-                      className="border text-xs p-1 rounded flex-1"
+                      className="rounded-xl border border-neutral-200 px-3 py-2 min-h-[44px] text-xs w-full sm:flex-1 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                       placeholder="https://image-path.jpg"
                       value={day.photoUrl || ""}
                       onChange={(e) =>
@@ -467,29 +482,29 @@ export default function PackageBuilderForm({
         {/* STEP 3: DEPARTURE DATES MANAGEMENT */}
         {currentStep === 2 && (
           <div className="space-y-4">
-            <h3 className="text-base font-semibold text-gray-700">
+            <h3 className="text-base font-semibold text-neutral-900">
               Departure Scheduling Configuration
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white p-4 border rounded-xl shadow-sm space-y-3">
+              <div className="bg-white p-4 border border-neutral-200 rounded-2xl shadow-sm space-y-3">
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                  <label className="block text-xs font-medium text-neutral-500 mb-1">
                     Pick Allocation Date Target
                   </label>
                   <input
                     type="date"
-                    className="w-full border p-2 text-sm rounded-lg"
+                    className="w-full rounded-2xl border border-neutral-200 px-4 py-2.5 min-h-[44px] text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                     value={calendarInput}
                     onChange={(e) => setCalendarInput(e.target.value)}
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                  <label className="block text-xs font-medium text-neutral-500 mb-1">
                     Max Slots Target Allocation
                   </label>
                   <input
                     type="number"
-                    className="w-full border p-2 text-sm rounded-lg"
+                    className="w-full rounded-2xl border border-neutral-200 px-4 py-2.5 min-h-[44px] text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                     value={defaultSlotAllocation}
                     onChange={(e) =>
                       setDefaultSlotAllocation(parseInt(e.target.value) || 0)
@@ -498,19 +513,19 @@ export default function PackageBuilderForm({
                 </div>
                 <button
                   type="button"
-                  className="w-full py-2 bg-gray-900 text-white rounded-lg text-xs font-semibold hover:bg-gray-800"
+                  className="w-full min-h-[44px] py-2 rounded-2xl bg-primary-900 text-white text-xs font-semibold hover:bg-primary-800"
                   onClick={handleToggleCalendarDate}
                 >
                   Register / Toggle Target Departure Batch
                 </button>
               </div>
 
-              <div className="bg-white p-4 border rounded-xl shadow-sm">
-                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+              <div className="bg-white p-4 border border-neutral-200 rounded-2xl shadow-sm">
+                <h4 className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-3">
                   Active Registered Calendar Batches
                 </h4>
                 {!formData.dates || formData.dates.length === 0 ? (
-                  <p className="text-xs text-gray-400 italic">
+                  <p className="text-xs text-neutral-400 italic">
                     No batches configured yet.
                   </p>
                 ) : (
@@ -518,23 +533,23 @@ export default function PackageBuilderForm({
                     {formData.dates.map((d, i) => (
                       <div
                         key={i}
-                        className="flex justify-between items-center text-xs p-2 bg-gray-50 border rounded-lg"
+                        className="flex flex-wrap justify-between items-center gap-2 text-xs p-2 bg-neutral-50 border border-neutral-200 rounded-xl"
                       >
                         <div>
-                          <span className="font-semibold text-gray-700">
+                          <span className="font-semibold text-neutral-700">
                             {d.date}
                           </span>
-                          <span className="ml-2 text-gray-400">
+                          <span className="ml-2 text-neutral-400">
                             (Slots: {d.slots})
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="bg-green-100 text-green-800 font-bold px-1.5 py-0.5 rounded text-[10px]">
+                          <span className="bg-success-50 text-success-700 font-semibold px-1.5 py-0.5 rounded-full text-[10px]">
                             Available
                           </span>
                           <button
                             type="button"
-                            className="text-red-500 hover:text-red-700 font-bold px-1"
+                            className="min-h-[44px] min-w-[44px] flex items-center justify-center text-danger-700 hover:text-danger-800 font-bold"
                             onClick={() =>
                               setFormData({
                                 ...formData,
@@ -543,6 +558,7 @@ export default function PackageBuilderForm({
                                 ),
                               })
                             }
+                            aria-label="Remove date"
                           >
                             ×
                           </button>
@@ -559,17 +575,17 @@ export default function PackageBuilderForm({
         {/* STEP 4: FINANCIAL PRICE CONFIGURATION */}
         {currentStep === 3 && (
           <div className="space-y-4">
-            <h3 className="text-base font-semibold text-gray-700">
+            <h3 className="text-base font-semibold text-neutral-900">
               Financial Setup & Scaling Matrix
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
+                <label className="block text-xs font-medium text-neutral-500 mb-1">
                   Standard Price Base Metric
                 </label>
                 <input
                   type="number"
-                  className="w-full text-sm border p-2 rounded-lg"
+                  className="w-full rounded-2xl border border-neutral-200 px-4 py-2.5 min-h-[44px] text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                   placeholder="Cost"
                   value={formData.basePrice || ""}
                   onChange={(e) =>
@@ -581,11 +597,11 @@ export default function PackageBuilderForm({
                 />
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">
+                <label className="block text-xs font-medium text-neutral-500 mb-1">
                   Currency standard code
                 </label>
                 <select
-                  className="w-full text-sm border p-2 rounded-lg"
+                  className="w-full rounded-2xl border border-neutral-200 px-4 py-2.5 min-h-[44px] text-sm outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                   value={formData.currency || "NPR"}
                   onChange={(e) =>
                     setFormData({ ...formData, currency: e.target.value })
@@ -598,14 +614,14 @@ export default function PackageBuilderForm({
               </div>
             </div>
 
-            <div className="border-t pt-4">
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-xs font-semibold text-gray-600">
+            <div className="border-t border-neutral-200 pt-4">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-2">
+                <label className="block text-xs font-semibold text-neutral-600">
                   Volume Discount Scaling Tiers
                 </label>
                 <button
                   type="button"
-                  className="text-xs text-blue-600 font-medium hover:underline"
+                  className="min-h-[44px] text-xs text-primary-900 font-semibold hover:underline text-left sm:text-right"
                   onClick={() =>
                     setFormData({
                       ...formData,
@@ -623,46 +639,56 @@ export default function PackageBuilderForm({
                 {formData.pricing?.map((tier, i) => (
                   <div
                     key={i}
-                    className="flex gap-2 items-center bg-white p-2 border rounded-lg"
+                    className="w-full min-w-0 flex flex-col sm:flex-row gap-2 sm:items-center bg-white p-3border border-neutral-200 rounded-xl"
                   >
-                    <span className="text-xs text-gray-400">Min:</span>
-                    <input
-                      type="number"
-                      className="border text-xs p-1 w-16 rounded"
-                      value={tier.min}
-                      onChange={(e) => {
-                        const tiers = [...formData.pricing];
-                        tiers[i].min = parseInt(e.target.value) || 0;
-                        setFormData({ ...formData, pricing: tiers });
-                      }}
-                    />
-                    <span className="text-xs text-gray-400">Max:</span>
-                    <input
-                      type="number"
-                      className="border text-xs p-1 w-16 rounded"
-                      value={tier.max}
-                      onChange={(e) => {
-                        const tiers = [...formData.pricing];
-                        tiers[i].max = parseInt(e.target.value) || 0;
-                        setFormData({ ...formData, pricing: tiers });
-                      }}
-                    />
-                    <span className="text-xs text-gray-400 ml-auto">
-                      Rate ({formData.currency || "NPR"}):
-                    </span>
-                    <input
-                      type="number"
-                      className="border text-xs p-1 w-24 font-medium rounded"
-                      value={tier.price}
-                      onChange={(e) => {
-                        const tiers = [...formData.pricing];
-                        tiers[i].price = parseFloat(e.target.value) || 0;
-                        setFormData({ ...formData, pricing: tiers });
-                      }}
-                    />
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-neutral-400 w-10 sm:w-auto">
+                        Min:
+                      </span>
+                      <input
+                        type="number"
+                        className="border border-neutral-200 rounded-lg text-xs p-2 min-h-[44px] w-full sm:w-16"
+                        value={tier.min}
+                        onChange={(e) => {
+                          const tiers = [...formData.pricing];
+                          tiers[i].min = parseInt(e.target.value) || 0;
+                          setFormData({ ...formData, pricing: tiers });
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-neutral-400 w-10 sm:w-auto">
+                        Max:
+                      </span>
+                      <input
+                        type="number"
+                        className="border border-neutral-200 rounded-lg text-xs p-2 min-h-[44px] w-full sm:w-16"
+                        value={tier.max}
+                        onChange={(e) => {
+                          const tiers = [...formData.pricing];
+                          tiers[i].max = parseInt(e.target.value) || 0;
+                          setFormData({ ...formData, pricing: tiers });
+                        }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-2 sm:ml-auto">
+                      <span className="text-xs text-neutral-400 whitespace-nowrap">
+                        Rate ({formData.currency || "NPR"}):
+                      </span>
+                      <input
+                        type="number"
+                        className="border border-neutral-200 rounded-lg text-xs p-2 min-h-[44px] w-full sm:w-24 font-medium"
+                        value={tier.price}
+                        onChange={(e) => {
+                          const tiers = [...formData.pricing];
+                          tiers[i].price = parseFloat(e.target.value) || 0;
+                          setFormData({ ...formData, pricing: tiers });
+                        }}
+                      />
+                    </div>
                     <button
                       type="button"
-                      className="text-red-500 px-1 hover:bg-gray-50 rounded"
+                      className="min-h-[44px] min-w-[44px] flex items-center justify-center self-end sm:self-auto text-danger-700 hover:bg-danger-50 rounded-lg"
                       onClick={() =>
                         setFormData({
                           ...formData,
@@ -671,6 +697,7 @@ export default function PackageBuilderForm({
                           ),
                         })
                       }
+                      aria-label="Remove pricing tier"
                     >
                       ×
                     </button>
@@ -684,16 +711,16 @@ export default function PackageBuilderForm({
         {/* STEP 5: MEDIA ASSETS */}
         {currentStep === 4 && (
           <div className="space-y-4">
-            <h3 className="text-base font-semibold text-gray-700">
-              Media Assets Assets
+            <h3 className="text-base font-semibold text-neutral-900">
+              Media Assets
             </h3>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
+              <label className="block text-xs font-medium text-neutral-500 mb-1">
                 Hero Image Pointer string URL
               </label>
               <input
                 type="text"
-                className="w-full text-xs border p-2 rounded-lg"
+                className="w-full rounded-2xl border border-neutral-200 px-4 py-2.5 min-h-[44px] text-xs outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                 placeholder="https://images.unsplash.com/... (Mock Crop Link)"
                 value={formData.heroImage || ""}
                 onChange={(e) =>
@@ -702,12 +729,12 @@ export default function PackageBuilderForm({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
+              <label className="block text-xs font-medium text-neutral-500 mb-1">
                 Gallery Image Link Array (Comma Separated Strings)
               </label>
               <textarea
                 rows={3}
-                className="w-full text-xs border p-2 rounded-lg"
+                className="w-full rounded-2xl border border-neutral-200 px-4 py-2.5 text-xs outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                 placeholder="URL_1, URL_2, URL_3..."
                 value={formData.gallery?.join(", ") || ""}
                 onChange={(e) =>
@@ -719,12 +746,12 @@ export default function PackageBuilderForm({
               />
             </div>
             <div>
-              <label className="block text-xs font-medium text-gray-500 mb-1">
+              <label className="block text-xs font-medium text-neutral-500 mb-1">
                 YouTube Promotional URL Track
               </label>
               <input
                 type="text"
-                className="w-full text-xs border p-2 rounded-lg"
+                className="w-full rounded-2xl border border-neutral-200 px-4 py-2.5 min-h-[44px] text-xs outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
                 placeholder="https://www.youtube.com/watch?v=..."
                 value={formData.video || ""}
                 onChange={(e) =>
@@ -735,16 +762,16 @@ export default function PackageBuilderForm({
           </div>
         )}
 
-        {/* STEP 5: ADD-ONS (Step 6 UI Array Position 5) */}
+        {/* STEP 6: ADD-ONS */}
         {currentStep === 5 && (
           <div className="space-y-4">
-            <div className="flex justify-between items-center border-b pb-2">
-              <h3 className="text-base font-semibold text-gray-700">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 border-b border-neutral-200 pb-3">
+              <h3 className="text-base font-semibold text-neutral-900">
                 Trip Ancillary & Service Addons
               </h3>
               <button
                 type="button"
-                className="px-3 py-1 bg-gray-900 text-white rounded text-xs"
+                className="inline-flex items-center justify-center min-h-[44px] rounded-2xl bg-primary-900 px-4 py-2 text-xs font-semibold text-white hover:bg-primary-800"
                 onClick={() =>
                   setFormData({
                     ...formData,
@@ -762,10 +789,10 @@ export default function PackageBuilderForm({
               {formData.addons?.map((addon, i) => (
                 <div
                   key={i}
-                  className="flex gap-2 items-center bg-white p-2 border rounded-lg shadow-sm"
+                  className="w-full min-w-0 flex flex-col sm:flex-row gap-2 sm:items-center bg-white p-3border border-neutral-200 rounded-xl shadow-sm"
                 >
                   <input
-                    className="text-xs border p-1 flex-1 rounded"
+                    className="text-xs border border-neutral-200 rounded-lg p-2 min-h-[44px] w-full sm:flex-1"
                     placeholder="e.g., Porter Service, Travel Insurance"
                     value={addon.name}
                     onChange={(e) => {
@@ -776,7 +803,7 @@ export default function PackageBuilderForm({
                   />
                   <input
                     type="number"
-                    className="text-xs border p-1 w-20 rounded"
+                    className="text-xs border border-neutral-200 rounded-lg p-2 min-h-[44px] w-full sm:w-20"
                     placeholder="Cost"
                     value={addon.price || ""}
                     onChange={(e) => {
@@ -785,9 +812,10 @@ export default function PackageBuilderForm({
                       setFormData({ ...formData, addons: arr });
                     }}
                   />
-                  <label className="flex items-center gap-1 text-xs text-gray-500 font-medium">
+                  <label className="flex items-center gap-2 text-xs text-neutral-600 font-medium min-h-[44px] px-1">
                     <input
                       type="checkbox"
+                      className="h-5 w-5 accent-primary-900"
                       checked={addon.perPerson}
                       onChange={(e) => {
                         const arr = [...formData.addons];
@@ -799,13 +827,14 @@ export default function PackageBuilderForm({
                   </label>
                   <button
                     type="button"
-                    className="text-red-500 px-1 font-bold"
+                    className="min-h-[44px] min-w-[44px] flex items-center justify-center self-end sm:self-auto text-danger-700 font-bold"
                     onClick={() =>
                       setFormData({
                         ...formData,
                         addons: formData.addons.filter((_, idx) => idx !== i),
                       })
                     }
+                    aria-label="Remove addon"
                   >
                     ×
                   </button>
@@ -818,62 +847,64 @@ export default function PackageBuilderForm({
         {/* STEP 7: COMPREHENSIVE REVIEW SUMMARY BOARD */}
         {currentStep === 6 && (
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-gray-800">
+            <h3 className="text-base font-semibold text-neutral-900">
               Final Verification Summary
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              <div className="bg-white p-3 border rounded-xl">
-                <h4 className="font-bold text-blue-600 mb-1">
+              <div className="bg-white p-3 border border-neutral-200 rounded-xl">
+                <h4 className="font-semibold text-primary-900 mb-1">
                   Core Identity Metrics
                 </h4>
-                <p>
-                  <span className="text-gray-400">Title:</span>{" "}
+                <p className="break-words">
+                  <span className="text-neutral-400">Title:</span>{" "}
                   {formData.title || "Unspecified Plan"}
                 </p>
-                <p>
-                  <span className="text-gray-400">Region Base:</span>{" "}
+                <p className="break-words">
+                  <span className="text-neutral-400">Region Base:</span>{" "}
                   {formData.destination || "None Specified"}
                 </p>
                 <p>
-                  <span className="text-gray-400">Difficulty Scale:</span>{" "}
+                  <span className="text-neutral-400">Difficulty Scale:</span>{" "}
                   {formData.difficulty}
                 </p>
                 <p>
-                  <span className="text-gray-400">Duration Metrics:</span>{" "}
+                  <span className="text-neutral-400">Duration Metrics:</span>{" "}
                   {formData.duration} Days (Max Group: {formData.maxGroup})
                 </p>
               </div>
 
-              <div className="bg-white p-3 border rounded-xl">
-                <h4 className="font-bold text-blue-600 mb-1">
+              <div className="bg-white p-3 border border-neutral-200 rounded-xl">
+                <h4 className="font-semibold text-primary-900 mb-1">
                   Financial Parameters
                 </h4>
                 <p>
-                  <span className="text-gray-400">Standard Baseline:</span>{" "}
+                  <span className="text-neutral-400">Standard Baseline:</span>{" "}
                   {formData.currency || "NPR"} {formData.basePrice}
                 </p>
                 <p>
-                  <span className="text-gray-400">
+                  <span className="text-neutral-400">
                     Volume Scaling Tiers Mapped:
                   </span>{" "}
                   {formData.pricing?.length || 0} configurations
                 </p>
                 <p>
-                  <span className="text-gray-400">Ancillary Items Added:</span>{" "}
+                  <span className="text-neutral-400">
+                    Ancillary Items Added:
+                  </span>{" "}
                   {formData.addons?.length || 0} features
                 </p>
               </div>
             </div>
 
-            <div className="bg-white p-3 border rounded-xl text-xs">
-              <h4 className="font-bold text-gray-700 mb-1">
+            <div className="bg-white p-3 border border-neutral-200 rounded-xl text-xs">
+              <h4 className="font-semibold text-neutral-700 mb-1">
                 Itinerary Route Timeline ({formData.itinerary?.length || 0} Days
                 Mapped)
               </h4>
               <div className="max-h-30 overflow-y-auto space-y-1">
                 {formData.itinerary?.map((day, i) => (
-                  <div key={i} className="text-gray-600">
+                  <div key={i} className="text-neutral-600 break-words">
                     <strong>Day {day.day}:</strong>{" "}
                     {day.location || "Acclimatization Station"} — {day.altitude}
                     m
@@ -882,17 +913,17 @@ export default function PackageBuilderForm({
               </div>
             </div>
 
-            <div className="flex gap-3 justify-end pt-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:justify-end pt-4">
               <button
                 type="button"
-                className="px-4 py-2 border border-gray-300 rounded-lg text-xs font-semibold bg-white text-gray-700 hover:bg-gray-50"
+                className="min-h-[44px] px-4 py-2 border border-neutral-200 rounded-2xl text-sm font-semibold bg-white text-neutral-900 hover:bg-neutral-50"
                 onClick={() => handleSaveToStorage("Draft")}
               >
                 Save Progress as Draft
               </button>
               <button
                 type="button"
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-emerald-600 text-white hover:bg-emerald-700"
+                className="min-h-[44px] px-4 py-2 rounded-2xl text-sm font-semibold bg-success-600 text-white hover:bg-success-700"
                 onClick={() => handleSaveToStorage("Published")}
               >
                 Publish live Package
@@ -903,10 +934,10 @@ export default function PackageBuilderForm({
       </div>
 
       {/* Step Navigation Controls */}
-      <div className="flex justify-between items-center pt-4 border-t border-gray-100">
+      <div className="flex flex-col-reverse sm:flex-row sm:justify-between sm:items-center gap-3 pt-4 border-t border-neutral-100">
         <button
           type="button"
-          className="px-5 py-2.5 border border-gray-200 text-xs font-semibold rounded-xl bg-white text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-30"
+          className="min-h-[44px] w-full sm:w-auto px-5 py-2.5 border border-neutral-200 text-sm font-semibold rounded-2xl bg-white text-neutral-900 hover:bg-neutral-50 transition-colors disabled:opacity-30"
           onClick={prev}
           disabled={currentStep === 0}
         >
@@ -914,7 +945,7 @@ export default function PackageBuilderForm({
         </button>
         <button
           type="button"
-          className="px-5 py-2.5 bg-[#6C5CE7] text-white text-xs font-semibold rounded-xl hover:bg-[#5B4BC4] transition-colors disabled:opacity-30"
+          className="min-h-[44px] w-full sm:w-auto px-5 py-2.5 bg-primary-900 text-white text-sm font-semibold rounded-2xl hover:bg-primary-800 transition-colors disabled:opacity-30"
           onClick={next}
           disabled={currentStep === steps.length - 1}
         >
