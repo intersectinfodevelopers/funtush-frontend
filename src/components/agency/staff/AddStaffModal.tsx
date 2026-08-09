@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import rolesData from '../../../../data/roles.json';
+import { useRoles } from '@/hooks/useRoles';
 
 interface StaffData {
   name: string;
@@ -17,6 +17,7 @@ interface AddStaffModalProps {
 }
 
 export default function AddStaffModal({ isOpen, onClose, onAdd }: AddStaffModalProps) {
+  const { roles } = useRoles();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -87,9 +88,9 @@ export default function AddStaffModal({ isOpen, onClose, onAdd }: AddStaffModalP
               className="mt-1 block w-full border border-neutral-300 rounded px-3 py-1.5 text-sm"
             >
               <option value="">Select a role...</option>
-              {rolesData.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
+              {roles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
                 </option>
               ))}
             </select>

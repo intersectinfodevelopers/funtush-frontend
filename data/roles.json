@@ -1,10 +1,22 @@
 [
-  { "value": "admin", "label": "Administrator" },
-  { "value": "manager", "label": "Manager" },
-  { "value": "guide_coordinator", "label": "Guide Coordinator" },
-  { "value": "finance", "label": "Finance" },
-  { "value": "receptionist", "label": "Receptionist" },
-  { "value": "operations", "label": "Operations" },
-  { "value": "marketing", "label": "Marketing" },
-  { "value": "support", "label": "Customer Support" }
+  {
+    "id": "agency_admin",
+    "name": "Agency Admin",
+    "permissions": ["packages", "bookings", "customers", "guides", "staff", "finance", "analytics", "blog", "reviews", "settings"]
+  },
+  {
+    "id": "moderator",
+    "name": "Moderator",
+    "permissions": ["packages", "bookings"]
+  },
+  {
+    "id": "accountant",
+    "name": "Accountant",
+    "permissions": ["finance"]
+  },
+  {
+    "id": "field_coordinator",
+    "name": "Field Coordinator",
+    "permissions": ["guides", "bookings"]
+  }
 ]

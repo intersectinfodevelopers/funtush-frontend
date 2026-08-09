@@ -3,7 +3,7 @@
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import { useStaff } from "@/hooks/useStaff";
-import rolesData from '../../../../../../data/roles.json';
+import { roleLabel, useRoles } from '@/hooks/useRoles';
 import Link from "next/link";
 import Image from "next/image";
 
@@ -12,15 +12,11 @@ const formatTime = (timestamp: string) => {
   return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 };
 
-const getRoleLabel = (roleValue:string) => {
-  const role = rolesData.find((r) => r.value === roleValue);
-  return role ? role.label: roleValue;
-};
-
 export default function StaffDetailPage() {
   const {id} = useParams<{id: string}>();
   const router = useRouter();
   const {getStaff, updateStaff, toggleActive } = useStaff();
+  const { roles } = useRoles();
   const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [newRole, setNewRole] = useState('');
 
@@ -35,7 +31,7 @@ export default function StaffDetailPage() {
           ...staff.activityLog,
           {
             action: 'change_role',
-            description: `Role changed from ${getRoleLabel(staff.role)} to ${getRoleLabel(newRole)}`,
+            description: `Role changed from ${roleLabel(staff.role, roles)} to ${roleLabel(newRole, roles)}`,
             timestamp: new Date().toISOString(),
             ip: '127.0.0.1',
           }
@@ -107,9 +103,9 @@ export default function StaffDetailPage() {
               className="border border-neutral-300 rounded px-3 py-1.5 text-sm text-black"
             >
               <option value="">Select new role...</option>
-              {rolesData.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
+              {roles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
                 </option>
               ))}
             </select>
@@ -121,7 +117,7 @@ export default function StaffDetailPage() {
               Update Role
             </button>
           </div>
-          <p className="text-xs text-neutral-500 mt-1">Current role: {getRoleLabel(staff.role)}</p>
+          <p className="text-xs text-neutral-500 mt-1">Current role: {roleLabel(staff.role, roles)}</p>
         </div>
       </div>
 

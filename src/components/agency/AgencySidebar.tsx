@@ -8,6 +8,7 @@ import {
   CalendarCheck,
   Users,
   Briefcase,
+  GitBranch,
   Newspaper,
   DollarSign,
   BarChart3,
@@ -45,6 +46,7 @@ const navItems: NavItem[] = [
   { label: 'Finance', href: '/dashboard/finance', icon: <DollarSign size={20} />, section: 'operations' },
   { label: 'Analytics', href: '/dashboard/analytics', icon: <BarChart3 size={20} />, section: 'operations' },
   { label: 'Staff & Roles', href: '/dashboard/staff', icon: <UserCog size={20} />, section: 'operations' },
+  { label: 'Branches', href: '/dashboard/branches', icon: <GitBranch size={20} />, section: 'operations' },
   { label: 'Safety', href: '/dashboard/safety', icon: <Shield size={20} />, section: 'operations' },
   { label: 'Destinations', href: '/dashboard/destinations', icon: <MapPin size={20} />, section: 'operations' },
   
