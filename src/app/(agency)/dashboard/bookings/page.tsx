@@ -203,9 +203,12 @@ export default function BookingsPage() {
             <FileText className="h-4 w-4" />
             Export CSV
           </button>
-          <button className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-800">
+          <Link
+            href="/dashboard/bookings/new"
+            className="inline-flex min-h-[44px] items-center justify-center rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-800"
+          >
             + Create
-          </button>
+          </Link>
         </div>
       </div>
 
