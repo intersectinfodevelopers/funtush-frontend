@@ -4,8 +4,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import PackageBuilderForm, {
   type PackageForm,
-} from "@/components/PackageBuilderForm";
-import packagesData from "../../../../../../../data/packages.json";
+} from "@/components/agency/packages/PackageBuilderForm";
+import packagesData from "@/../data/packages.json";
 
 type RawPackage = {
   id: string;
@@ -65,19 +65,35 @@ export default function EditPackagePage() {
     }
   }, [initialData, router]);
 
-  if (!initialData) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-sm text-gray-500 animate-pulse">
-          Loading package specifications...
+  return (
+    <div className="mx-auto w-full max-w-6xl py-2 sm:py-4">
+      <div className="mb-7 flex flex-col gap-4 border-b border-neutral-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="flex items-center gap-1 text-xs text-neutral-500">
+            <button type="button" onClick={() => router.push("/dashboard")} className="transition hover:text-neutral-900">
+              Dashboard
+            </button>
+            <span className="text-neutral-300">/</span>
+            <button type="button" onClick={() => router.push("/dashboard/packages")} className="transition hover:text-neutral-900">
+              Packages
+            </button>
+            <span className="text-neutral-300">/</span>
+            <span className="font-semibold text-primary-900">Edit package</span>
+          </div>
+          <h1 className="mt-2 text-2xl font-bold text-neutral-900">Update package</h1>
+          <p className="mt-1 text-sm text-neutral-600">
+            Step through each section to adjust the trip details, pricing, and schedule.
+          </p>
         </div>
       </div>
-    );
-  }
 
-  return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6">
-      <PackageBuilderForm initialData={initialData} packageId={id} />
+      {initialData ? (
+        <PackageBuilderForm initialData={initialData} packageId={id} />
+      ) : (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-sm text-gray-500 animate-pulse">Loading package specifications...</div>
+        </div>
+      )}
     </div>
   );
 }

@@ -6,7 +6,6 @@ import toast from "react-hot-toast";
 
 import { useTheme } from "@/context/theme";
 
-import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import AddIcon from "@mui/icons-material/Add";
 
@@ -96,16 +95,9 @@ export function BlogFormShared({
 
     const loadBlog = async () => {
       try {
-        const data = localStorage.getItem(
-          "funtush_blog_posts"
-        );
-
-        if (!data) {
-          toast.error("Blog data could not be found.");
-          return;
-        }
-
-        const posts: BlogPost[] = JSON.parse(data);
+        const fallbackPosts = (await import("@/../data/blogs.json")).default?.blogs ?? [];
+        const data = localStorage.getItem("funtush_blog_posts");
+        const posts: BlogPost[] = data ? JSON.parse(data) : fallbackPosts;
 
         if (!Array.isArray(posts)) {
           toast.error("Invalid blog data.");
@@ -505,167 +497,185 @@ export function BlogFormShared({
   -------------------------------------------------- */
 
   return (
-    <div className="w-full space-y-6">
+    // FIX: dropped `w-full` from the root wrapper — matching the same
+    // fix applied to the guides page. `w-full` on a root block inside
+    // the dashboard's flex shell was the cause of the double-scrollbar
+    // bug there, and this component sits in the same shell.
+    // Also switched space-y-6 -> space-y-4 to match the vertical rhythm
+    // used on customers/packages/bookings/guides.
+    <div className="space-y-4">
       {/* Header & Actions */}
 
-     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-  <div className="min-w-0">
-    {/* Breadcrumbs */}
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0 space-y-1">
+          {/* Breadcrumbs — FIX: was a static, non-clickable trail using
+              ChevronRightIcon separators. Every other dashboard page
+              (customers, packages, bookings, guides) uses clickable
+              router.push() segments with a plain "/" separator, so this
+              now matches that pattern and lets you actually navigate
+              back via the breadcrumb. */}
 
-    <div className="flex items-center gap-1 overflow-hidden text-xs sm:text-sm">
-      <span
-        className={
-          isDark
-            ? "whitespace-nowrap text-neutral-400"
-            : "whitespace-nowrap text-neutral-500"
-        }
-      >
-        Dashboard
-      </span>
+          <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard")}
+              className={
+                isDark
+                  ? "whitespace-nowrap text-neutral-400 transition hover:text-neutral-200"
+                  : "whitespace-nowrap text-neutral-500 transition hover:text-neutral-900"
+              }
+            >
+              Dashboard
+            </button>
 
-      <ChevronRightIcon
-        className={
-          isDark
-            ? "shrink-0 text-neutral-500"
-            : "shrink-0 text-neutral-400"
-        }
-        sx={{ fontSize: 18 }}
-      />
+            <span
+              className={
+                isDark ? "text-neutral-600" : "text-neutral-300"
+              }
+            >
+              /
+            </span>
 
-      <span
-        className={
-          isDark
-            ? "whitespace-nowrap text-neutral-400"
-            : "whitespace-nowrap text-neutral-500"
-        }
-      >
-        All Blogs
-      </span>
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard/blog")}
+              className={
+                isDark
+                  ? "whitespace-nowrap text-neutral-400 transition hover:text-neutral-200"
+                  : "whitespace-nowrap text-neutral-500 transition hover:text-neutral-900"
+              }
+            >
+              All Blogs
+            </button>
 
-      <ChevronRightIcon
-        className={
-          isDark
-            ? "shrink-0 text-neutral-500"
-            : "shrink-0 text-neutral-400"
-        }
-        sx={{ fontSize: 18 }}
-      />
+            <span
+              className={
+                isDark ? "text-neutral-600" : "text-neutral-300"
+              }
+            >
+              /
+            </span>
 
-      <span
-        className={
-          isDark
-            ? "whitespace-nowrap font-medium text-neutral-100"
-            : "whitespace-nowrap font-medium text-neutral-900"
-        }
-      >
-        {postId ? "Edit Blog" : "Add Blog"}
-      </span>
-    </div>
+            <span
+              className={
+                isDark
+                  ? "whitespace-nowrap font-semibold text-neutral-100"
+                  : "whitespace-nowrap font-semibold text-neutral-900"
+              }
+            >
+              {postId ? "Edit Blog" : "Add Blog"}
+            </span>
+          </div>
 
-    {/* Title */}
+          {/* Title — FIX: this was hardcoded to "All Blogs" no matter
+              what, even though the breadcrumb right above it correctly
+              showed "Edit Blog" / "Add Blog". The page heading now
+              actually reflects whether you're editing or creating a
+              post, and font weight/size matches the other pages'
+              `text-2xl font-semibold` header style. */}
 
-    <h1
-      className={
-        isDark
-          ? "mt-2 text-xl font-bold tracking-tight text-neutral-100 sm:text-2xl"
-          : "mt-2 text-xl font-bold tracking-tight text-neutral-900 sm:text-2xl"
-      }
-    >
-      All Blogs
-    </h1>
+          <h1
+            className={
+              isDark
+                ? "text-2xl font-semibold text-neutral-100"
+                : "text-2xl font-semibold text-neutral-900"
+            }
+          >
+            {postId ? "Edit Blog" : "Add Blog"}
+          </h1>
 
-    <p
-      className={
-        isDark
-          ? "text-xs text-neutral-400 sm:text-sm"
-          : "text-xs text-neutral-500 sm:text-sm"
-      }
-    >
-      {postId
-        ? "Edit and update your blog post"
-        : "Create and publish a new blog post"}
-    </p>
-  </div>
+          <p
+            className={
+              isDark
+                ? "text-sm leading-6 text-neutral-400"
+                : "text-sm leading-6 text-neutral-600"
+            }
+          >
+            {postId
+              ? "Edit and update your blog post"
+              : "Create and publish a new blog post"}
+          </p>
+        </div>
 
-  {/* Actions */}
+        {/* Actions */}
 
-  <div className="flex w-full flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-3 lg:w-auto">
-    {/* Save Draft */}
+        <div className="flex w-full flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:gap-3 lg:w-auto">
+          {/* Save Draft */}
 
-    <button
-      type="button"
-      onClick={() => handleSave(undefined, "Draft")}
-      className={`
-        w-full cursor-pointer
-        whitespace-nowrap rounded-lg
-        border px-4 py-2.5
-        text-xs font-semibold
-        shadow-sm transition-colors
-        sm:w-auto
+          <button
+            type="button"
+            onClick={() => handleSave(undefined, "Draft")}
+            className={`
+              w-full cursor-pointer
+              whitespace-nowrap rounded-lg
+              border px-4 py-2.5
+              text-xs font-semibold
+              shadow-sm transition-colors
+              sm:w-auto
 
-        ${
-          isDark
-            ? "border-neutral-700 bg-neutral-800 text-neutral-100 hover:bg-neutral-700"
-            : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
-        }
-      `}
-    >
-      Save as Draft
-    </button>
+              ${
+                isDark
+                  ? "border-neutral-700 bg-neutral-800 text-neutral-100 hover:bg-neutral-700"
+                  : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
+              }
+            `}
+          >
+            Save as Draft
+          </button>
 
-    {/* Preview */}
+          {/* Preview */}
 
-    <button
-      type="button"
-      onClick={handlePreview}
-      className={`
-        flex w-full cursor-pointer
-        items-center justify-center
-        gap-2 whitespace-nowrap
-        rounded-lg border px-4 py-2.5
-        text-xs font-semibold
-        shadow-sm transition-colors
-        sm:w-auto
+          <button
+            type="button"
+            onClick={handlePreview}
+            className={`
+              flex w-full cursor-pointer
+              items-center justify-center
+              gap-2 whitespace-nowrap
+              rounded-lg border px-4 py-2.5
+              text-xs font-semibold
+              shadow-sm transition-colors
+              sm:w-auto
 
-        ${
-          isDark
-            ? "border-neutral-700 bg-neutral-800 text-neutral-100 hover:bg-neutral-700"
-            : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
-        }
-      `}
-    >
-      <VisibilityIcon sx={{ fontSize: 16 }} />
-      Preview
-    </button>
+              ${
+                isDark
+                  ? "border-neutral-700 bg-neutral-800 text-neutral-100 hover:bg-neutral-700"
+                  : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50"
+              }
+            `}
+          >
+            <VisibilityIcon sx={{ fontSize: 16 }} />
+            Preview
+          </button>
 
-    {/* Publish */}
+          {/* Publish */}
 
-    <button
-      type="button"
-      onClick={() =>
-        handleSave(undefined, "Published")
-      }
-      className="
-        flex w-full cursor-pointer
-        items-center justify-center
-        gap-2 whitespace-nowrap
-        rounded-lg px-5 py-2.5
-        text-xs font-semibold
-        shadow-sm transition-colors
-        sm:w-auto
-        bg-primary-500
-        text-white
-        hover:bg-primary-600
-        focus:outline-none
-        focus:ring-2
-        focus:ring-primary-500/30
-      "
-    >
-      <AddIcon sx={{ fontSize: 16 }} />
-      Publish
-    </button>
-  </div>
-</div>
+          <button
+            type="button"
+            onClick={() =>
+              handleSave(undefined, "Published")
+            }
+            className="
+              flex w-full cursor-pointer
+              items-center justify-center
+              gap-2 whitespace-nowrap
+              rounded-lg px-5 py-2.5
+              text-xs font-semibold
+              shadow-sm transition-colors
+              sm:w-auto
+              bg-primary-900
+              text-white
+              hover:bg-primary-800
+              focus:outline-none
+              focus:ring-2
+              focus:ring-primary-900/20
+            "
+          >
+            <AddIcon sx={{ fontSize: 16 }} />
+            Publish
+          </button>
+        </div>
+      </div>
 
       {/* Main Content */}
 

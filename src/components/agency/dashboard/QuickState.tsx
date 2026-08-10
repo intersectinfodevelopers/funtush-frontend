@@ -1,3 +1,4 @@
+//app/components/agency/dashboard/QuickState.tsx
 'use client';
 
 import { Box, Typography, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';

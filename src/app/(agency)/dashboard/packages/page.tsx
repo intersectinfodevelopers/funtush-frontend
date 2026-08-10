@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Add,
@@ -36,11 +36,13 @@ interface Package extends RawPackage {
   price_npr: number;
 }
 
-const packageRows: Package[] = (packagesJson as RawPackage[]).map((pkg) => ({
-  ...pkg,
-  destination: pkg.destination_slug.replace(/-/g, " "),
-  price_npr: Math.round(pkg.price_usd * 133),
-}));
+const packageRows: Package[] = (packagesJson as RawPackage[])
+  .map((pkg) => ({
+    ...pkg,
+    destination: pkg.destination_slug.replace(/-/g, " "),
+    price_npr: Math.round(pkg.price_usd * 133),
+  }))
+  .sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime());
 
 const statusTabs = [
   { label: "All", value: "" },
@@ -79,10 +81,14 @@ export default function PackagesPage() {
   const [statusFilter, setStatusFilter] = useState<Package["status"] | "">("");
   const [sortBy, setSortBy] = useState<"latest" | "price" | "duration">("latest");
   const [currentPage, setCurrentPage] = useState(1);
-  const [packages, setPackages] = useState<Package[]>(() => {
+  // Start with server-safe data so SSR and first client render match,
+  // then hydrate from localStorage on mount to reflect runtime edits.
+  const [packages, setPackages] = useState<Package[]>(packageRows);
+
+  useEffect(() => {
     try {
-      const stored = typeof window !== "undefined" ? localStorage.getItem("packages") : null;
-      if (!stored) return packageRows;
+      const stored = localStorage.getItem("packages");
+      if (!stored) return;
       const storedPackages = JSON.parse(stored) as Array<Partial<Package> & {
         destination?: string;
         duration?: number;
@@ -90,16 +96,20 @@ export default function PackagesPage() {
         basePrice?: number;
         dates?: Array<{ date: string; slots: number }>;
         addons?: Array<{ name: string }>;
-      }>;
-      return storedPackages.map((pkg) => ({
-        ...(pkg as Package),
-        destination: pkg.destination ?? pkg.destination_slug?.replace(/-/g, " ") ?? "",
-        price_npr: pkg.price_npr ?? Math.round(((pkg.price_usd ?? pkg.basePrice ?? 0) as number) * 133),
-      }));
+      }>; 
+      setPackages(
+        storedPackages
+          .map((pkg) => ({
+            ...(pkg as Package),
+            destination: pkg.destination ?? pkg.destination_slug?.replace(/-/g, " ") ?? "",
+            price_npr: pkg.price_npr ?? Math.round(((pkg.price_usd ?? pkg.basePrice ?? 0) as number) * 133),
+          }))
+          .sort((a, b) => new Date(b.start_date).getTime() - new Date(a.start_date).getTime()),
+      );
     } catch {
-      return packageRows;
+      // ignore and keep server-provided packageRows
     }
-  });
+  }, []);
   const [actionDialog, setActionDialog] = useState<{
     type: "edit" | "delete";
     package: Package;

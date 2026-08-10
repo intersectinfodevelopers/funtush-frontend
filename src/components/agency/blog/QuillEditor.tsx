@@ -49,10 +49,11 @@ export function QuillEditor({ content, onChange }: QuillEditorProps) {
         "size",
     ];
 
-    // Dynamic classes matching your theme variables
+    // Match the app's shared neutral/brand palette instead of custom
+    // hardcoded blue/ink values.
     const containerClass = isDark
-        ? "bg-[#0d1b32] text-slate-200 quill-dark"
-        : "bg-white text-neutral-800 border border-neutral-300 shadow-sm quill-light";
+        ? "bg-neutral-900 text-neutral-50 border border-neutral-700 shadow-sm quill-dark"
+        : "bg-white text-neutral-900 border border-neutral-200 shadow-sm quill-light";
 
     return (
         <div className={`rounded-xl overflow-hidden transition-colors duration-200 ${containerClass}`}>
@@ -66,42 +67,44 @@ export function QuillEditor({ content, onChange }: QuillEditorProps) {
                 className="min-h-[28rem] flex flex-col"
             />
 
-            {/* Global style overrides to seamlessly map Quill onto your Light/Dark Tailwind palette */}
+            {/* Global style overrides that follow the app color system. */}
             <style jsx global>{`
                 .quill-dark .ql-toolbar.ql-snow {
-                    background-color: #111B3A;
-                    border-color: #1E293B;
+                    background-color: #111827;
+                    border-color: #374151;
                     border-top: none;
                     border-left: none;
                     border-right: none;
                 }
                 .quill-light .ql-toolbar.ql-snow {
-                    background-color: #f7f7f7;
-                    border-color: #e5e5e5;
+                    background-color: #f9fafb;
+                    border-color: #e5e7eb;
                     border-top: none;
                     border-left: none;
                     border-right: none;
                 }
                 .quill-dark .ql-container.ql-snow {
                     border: none;
-                    color: #cbd5e1;
+                    background: transparent;
+                    color: #f3f4f6;
                 }
                 .quill-light .ql-container.ql-snow {
                     border: none;
-                    color: #262626;
+                    background: transparent;
+                    color: #111827;
                 }
                 .quill-dark .ql-stroke {
-                    stroke: #94a3b8 !important;
+                    stroke: #d1d5db !important;
                 }
                 .quill-dark .ql-fill {
-                    fill: #94a3b8 !important;
+                    fill: #d1d5db !important;
                 }
                 .quill-dark .ql-picker {
-                    color: #94a3b8 !important;
+                    color: #d1d5db !important;
                 }
                 .quill-dark .ql-picker-options {
-                    background-color: #162947 !important;
-                    border-color: #233a5e !important;
+                    background-color: #1f2937 !important;
+                    border-color: #374151 !important;
                 }
                 .ql-editor {
                     min-h: 250px;

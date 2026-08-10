@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Check, Eye, Pencil, Plus, Trash2, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 import { Modal } from "@/components/ui/modal";
@@ -20,6 +21,7 @@ const initials = (name: string) =>
     .toUpperCase();
 
 export default function StaffPage() {
+  const router = useRouter();
   const { staff, toggleActive, deleteStaff, updateStaff } = useStaff();
   const { roles } = useRoles();
   const [viewStaff, setViewStaff] = useState<(typeof staff)[number] | null>(
@@ -178,7 +180,7 @@ export default function StaffPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => openEditStaff(member)}
+                      onClick={() => router.push(`/dashboard/staff/${member.id}/edit`)}
                       className="rounded-md bg-warning-100 p-2 text-warning-600 hover:bg-warning-200"
                       aria-label={`Edit ${member.name}`}
                       title="Edit staff"

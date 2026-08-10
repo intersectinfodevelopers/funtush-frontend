@@ -1,11 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { useRoles } from "@/hooks/useRoles";
 
 interface StaffFormProps {
+  initialData?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    role?: string;
+  };
+  isNew?: boolean;
   onSave: (data: {
     name: string;
     email: string;
@@ -17,12 +24,20 @@ interface StaffFormProps {
 const fieldClassName =
   "w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-primary-500 focus:ring-4 focus:ring-primary-50";
 
-export default function StaffForm({ onSave }: StaffFormProps) {
+export default function StaffForm({ initialData, isNew = true, onSave }: StaffFormProps) {
   const { roles } = useRoles();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [role, setRole] = useState("");
+  const [name, setName] = useState(initialData?.name ?? "");
+  const [email, setEmail] = useState(initialData?.email ?? "");
+  const [phone, setPhone] = useState(initialData?.phone ?? "");
+  const [role, setRole] = useState(initialData?.role ?? "");
+
+  useEffect(() => {
+    if (!initialData) return;
+    setName(initialData.name ?? "");
+    setEmail(initialData.email ?? "");
+    setPhone(initialData.phone ?? "");
+    setRole(initialData.role ?? "");
+  }, [initialData]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -40,7 +55,7 @@ export default function StaffForm({ onSave }: StaffFormProps) {
       onSubmit={handleSubmit}
     >
       <div className="border-b border-neutral-200 pb-5">
-        <h1 className="text-xl font-bold text-neutral-900">Add new staff</h1>
+        <h1 className="text-xl font-bold text-neutral-900">{isNew ? "Add new staff" : "Edit staff"}</h1>
       </div>
 
       <section className="pt-5" aria-labelledby="staff-details-heading">
@@ -118,7 +133,7 @@ export default function StaffForm({ onSave }: StaffFormProps) {
           className="rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-800 focus:outline-none focus:ring-4 focus:ring-primary-100"
           type="submit"
         >
-          Create staff
+          {isNew ? "Create staff" : "Save changes"}
         </button>
       </div>
     </form>

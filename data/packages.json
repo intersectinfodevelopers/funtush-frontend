@@ -127,17 +127,57 @@
   },
   {
     "id": "pkg-010",
+    "id": "pkg-010",
     "title": "Tansen Heritage Hiking Tour",
+    "slug": "tansen-heritage-hiking-tour",
     "destination_slug": "tansen",
+    "destination": "Tansen",
     "agency_id": "ag-001",
     "duration_days": 6,
+    "duration": 6,
     "price_usd": 420,
+    "basePrice": 55860,
+    "currency": "NPR",
     "group_size_max": 14,
+    "maxGroup": 14,
     "included": ["Hotel", "Guide", "Cultural Entry Fees"],
-    "start_date": "2026-10-22",
+    "addons": [
+      { "name": "Airport transfer", "price": 1500, "perPerson": false },
+      { "name": "Meals (extra)", "price": 800, "perPerson": true }
+    ],
+    "shortDesc": "A gentle 6-day cultural hike around Tansen with heritage visits and local experiences.",
+    "fullDesc": "Explore the historic hill-town of Tansen with easy hiking days, guided cultural visits, and comfortable hotel stays. This 6-day tour combines scenic walks, local cuisine, and visits to heritage sites for a relaxed cultural trekking experience.",
+    "itinerary": [
+      { "day": 1, "location": "Tansen - Arrival & Orientation", "desc": "Arrive in Tansen, settle in at the hotel and enjoy a short orientation walk through the bazaar.", "altitude": "1400", "photoUrl": "/assets/tansen-day1.jpg" },
+      { "day": 2, "location": "Tansen - Cultural Walks", "desc": "Visit Palpa Museum, traditional Newari quarters and local craft markets.", "altitude": "1420", "photoUrl": "/assets/tansen-day2.jpg" },
+      { "day": 3, "location": "Village Trail", "desc": "Easy hike through terraced fields and villages with homestay-style tea stops.", "altitude": "1500", "photoUrl": "/assets/tansen-day3.jpg" },
+      { "day": 4, "location": "Ridge Hike & Sunset Point", "desc": "Short ridge hike to a viewpoint for panoramic sunset views over the valley.", "altitude": "1680", "photoUrl": "/assets/tansen-day4.jpg" },
+      { "day": 5, "location": "Local Heritage Sites", "desc": "Guided visits to historical temples and fort ruins, with afternoon free time.", "altitude": "1450", "photoUrl": "/assets/tansen-day5.jpg" },
+      { "day": 6, "location": "Departure", "desc": "Breakfast and transfer back to the highway or next destination.", "altitude": "1400", "photoUrl": "/assets/tansen-day6.jpg" }
+    ],
+    "dates": [
+      { "date": "2026-10-22", "slots": 14 },
+      { "date": "2026-11-05", "slots": 14 },
+      { "date": "2026-12-10", "slots": 14 }
+    ],
+    "pricing": [
+      { "min": 1, "max": 4, "price": 55860 },
+      { "min": 5, "max": 10, "price": 53000 }
+    ],
+    "heroImage": "/assets/tansen-hero.png",
+    "gallery": ["/assets/tansen-hero.png", "/assets/tansen-day2.jpg", "/assets/tansen-day4.jpg"],
+    "video": "",
+    "region": "Palpa",
+    "activities": ["trekking", "culture", "photography"],
+    "altitudeMin": 1400,
+    "altitudeMax": 1680,
+    "bestTime": "Sep - Dec",
+    "routes": ["Heritage Loop", "Ridge Trail"],
     "status": "draft",
-    "difficulty": "Easy-Moderate",
-    "available_slots": 22
+    "featured": false,
+    "difficulty": "Easy",
+    "available_slots": 22,
+    "breadcrumbs": ["Dashboard", "Packages", "Tansen Heritage Hiking Tour"]
   },
   {
     "id": "pkg-1001",

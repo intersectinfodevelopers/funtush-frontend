@@ -4,114 +4,75 @@ import { useState } from 'react';
 import { PieChart, Pie, Tooltip, Label, Cell } from 'recharts';
 import { getAgencyData } from '@/lib/agency/getAgencyData';
 
-type Props = {
-  agencyId: string;
-};
-
-type BookingStatusType = {
-  created_at: string;
-  status: string;
-};
+type Props = { agencyId: string };
+type Booking = { created_at: string; status: string };
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const COLORS = ['#0088FF', '#FF2D55', '#FFCC00', '#00C8B3'];
 
-const getBookingsByMonth = (month: number, data: BookingStatusType[]) => {
-  return data.filter((booking) => {
-    const bookingMonth = new Date(booking.created_at).getMonth();
-    return bookingMonth === month;
-  });
-};
+const filterByMonth = (month: number, data: Booking[]) =>
+  data.filter((b) => new Date(b.created_at).getMonth() === month);
 
 export default function BookingStatus({ agencyId }: Props) {
   const currentMonth = new Date().getMonth();
   const [selectedMonth, setSelectedMonth] = useState(MONTHS[currentMonth]);
   const month = MONTHS.indexOf(selectedMonth);
-  const monthArr = MONTHS.slice(0, currentMonth + 1);
+  const monthOptions = MONTHS.slice(0, currentMonth + 1);
 
   const { bookings } = getAgencyData(agencyId);
-  const bookingsByMonth = getBookingsByMonth(month, bookings);
+  const monthly = filterByMonth(month, bookings);
 
-  const bookingStatus = [
-    { name: 'confirmed', count: bookingsByMonth.filter((booking) => booking.status === 'confirmed').length },
-    {
-      name: 'pending',
-      count: bookingsByMonth.filter(
-        (booking) => booking.status !== 'confirmed' && booking.status !== 'cancelled' && booking.status !== 'completed'
-      ).length,
-    },
-    { name: 'cancelled', count: bookingsByMonth.filter((booking) => booking.status === 'cancelled').length },
-    { name: 'completed', count: bookingsByMonth.filter((booking) => booking.status === 'completed').length },
+  const statusData = [
+    { name: 'Confirmed', count: monthly.filter((b) => b.status === 'confirmed').length },
+    { name: 'Pending', count: monthly.filter((b) => !['confirmed', 'cancelled', 'completed'].includes(b.status)).length },
+    { name: 'Cancelled', count: monthly.filter((b) => b.status === 'cancelled').length },
+    { name: 'Completed', count: monthly.filter((b) => b.status === 'completed').length },
   ];
-
-  const totalBookings = bookingStatus.reduce((total, item) => total + item.count, 0);
+  const total = statusData.reduce((sum, s) => sum + s.count, 0);
 
   return (
-    <section className="min-w-0 min-h-0 flex flex-col gap-7 px-6 py-7 md:p-5 lg:px-7 lg:px-6 rounded-sm bg-white shadow-sm">
-      <div className="flex item-center justify-between">
-        <h2 className="text-base md:text-xs lg:text-sm font-semibold">Booking Status</h2>
-        <label htmlFor="months"></label>
+    <section className="flex flex-col gap-3 rounded-lg bg-white p-3 shadow-sm">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xs font-semibold sm:text-sm">Booking Status</h2>
         <select
-          name="months"
-          id="months"
           value={selectedMonth}
           onChange={(e) => setSelectedMonth(e.target.value)}
-          className="text-[8px] md:text-[7px] border border-neutral-100 rounded p-1 gap-2 outline-none hover:text-red-700 hover:bg-blue-50 focus:ring-2 focus:ring-blue-500"
+          className="rounded border border-neutral-200 p-1 text-[10px] outline-none focus:ring-1 focus:ring-blue-500 sm:text-xs"
         >
-          {monthArr.map((month) => (
-            <option key={month} value={month}>
-              {month}
-            </option>
+          {monthOptions.map((m) => (
+            <option key={m} value={m}>{m}</option>
           ))}
         </select>
       </div>
-      <div className="flex justify-between whitespace-nowrap md:flex-row">
-        <PieChart width={180} height={180}>
-          <Pie data={bookingStatus} dataKey="count" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80}>
-            {bookingStatus.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={['#0088FF', '#FF2D55', '#FFCC00', '#00C8B3'][index % 4]} />
+
+      <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
+        <PieChart width={150} height={150}>
+          <Pie data={statusData} dataKey="count" nameKey="name" cx="50%" cy="50%" innerRadius={42} outerRadius={62}>
+            {statusData.map((_, i) => (
+              <Cell key={i} fill={COLORS[i]} />
             ))}
-
             <Label
-              content={({ viewBox }) => {
-                if (viewBox && 'cx' in viewBox && 'cy' in viewBox) {
-                  return (
-                    <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
-                      <tspan x={viewBox.cx} dy="-5" fontSize="24" fontWeight="bold">
-                        {totalBookings}
-                      </tspan>
-                      <tspan x={viewBox.cx} dy="20" fontSize="12">
-                        Total
-                      </tspan>
-                    </text>
-                  );
-                }
-
-                return null;
-              }}
+              content={({ viewBox }) =>
+                viewBox && 'cx' in viewBox && 'cy' in viewBox ? (
+                  <text x={viewBox.cx} y={viewBox.cy} textAnchor="middle" dominantBaseline="middle">
+                    <tspan x={viewBox.cx} dy="-5" fontSize="20" fontWeight="bold">{total}</tspan>
+                    <tspan x={viewBox.cx} dy="18" fontSize="11">Total</tspan>
+                  </text>
+                ) : null
+              }
             />
           </Pie>
           <Tooltip />
         </PieChart>
 
-        {/* Custom Legend */}
-        <div className="flex flex-col gap-y-6 justify-center">
-          {bookingStatus.map((item, index) => {
-            const percentage = totalBookings ? Math.round((item.count / totalBookings) * 100) : 0;
-
+        <div className="flex w-full flex-col gap-2.5">
+          {statusData.map((item, i) => {
+            const pct = total ? Math.round((item.count / total) * 100) : 0;
             return (
-              <div key={item.name} className="flex items-center gap-1 md:gap-4 lg:gap-5">
-                {/* Circle */}
-                <span
-                  className="w-3 h-3 md:w-2 md:h-2 rounded-full"
-                  style={{
-                    backgroundColor: ['#0088FF', '#FF2D55', '#FFCC00', '#00C8B3'][index % 4],
-                  }}
-                />
-
-                {/* Text */}
-                <span className="text-xs md:text-[8px] lg:text-[10px] font-semibold">
-                  {item.name.charAt(0).toUpperCase() + item.name.slice(1)} <span className="pl-4"></span>
-                  {item.count} ({percentage}%)
+              <div key={item.name} className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: COLORS[i] }} />
+                <span className="text-[11px] font-semibold sm:text-xs">
+                  {item.name} {item.count} ({pct}%)
                 </span>
               </div>
             );

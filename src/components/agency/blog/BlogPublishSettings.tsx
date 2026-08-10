@@ -490,7 +490,7 @@ export function BlogPublishSettings({
             <button
               type="button"
               onClick={() => handleAddTag(tagInput)}
-              className="px-3 py-1 bg-primary-500 text-white rounded-lg text-xs font-medium hover:bg-primary-600 transition-colors shrink-0"
+              className="shrink-0 rounded-lg bg-primary-900 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-primary-800"
             >
               Add
             </button>
@@ -512,9 +512,13 @@ export function BlogPublishSettings({
         </label>
 
         {/* PHOTO SOURCE */}
-        <div className="flex items-center gap-5 text-xs">
+        <div className="flex flex-col gap-2 text-xs sm:flex-row sm:items-center sm:gap-5">
           {/* LOCAL */}
-          <label className="flex items-center gap-1.5 cursor-pointer">
+          <label
+            className={`flex cursor-pointer items-center gap-1.5 ${
+              isDark ? "text-neutral-200" : "text-neutral-700"
+            }`}
+          >
             <input
               type="radio"
               name="photoSource"
@@ -531,7 +535,11 @@ export function BlogPublishSettings({
           </label>
 
           {/* GALLERY */}
-          <label className="flex items-center gap-1.5 cursor-pointer">
+          <label
+            className={`flex cursor-pointer items-center gap-1.5 ${
+              isDark ? "text-neutral-200" : "text-neutral-700"
+            }`}
+          >
             <input
               type="radio"
               name="photoSource"
@@ -578,7 +586,7 @@ export function BlogPublishSettings({
                 </p>
               </div>
 
-              <label className="px-4 py-2 rounded-xl bg-primary-500 hover:bg-primary-600 text-white font-medium text-xs transition-colors shadow-md shadow-primary-500/20 cursor-pointer">
+              <label className="cursor-pointer rounded-xl bg-primary-900 px-4 py-2 text-xs font-medium text-white shadow-md shadow-primary-900/20 transition-colors hover:bg-primary-800">
                 Upload Image
 
                 <input
@@ -629,7 +637,7 @@ export function BlogPublishSettings({
               <button
                 type="button"
                 onClick={() => setShowGalleryModal(true)}
-                className="px-3 py-1 bg-primary-500 text-white rounded-lg text-xs font-medium hover:bg-primary-600 transition-colors"
+                className="rounded-lg bg-primary-900 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-primary-800"
               >
                 Open Gallery
               </button>
