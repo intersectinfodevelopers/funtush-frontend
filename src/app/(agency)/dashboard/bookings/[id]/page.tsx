@@ -352,7 +352,7 @@ export default function BookingDetailPage() {
             <button
               type="button"
               className="inline-flex min-h-11 items-center rounded-full border border-neutral-200 bg-neutral-50 px-3 py-2 text-sm font-medium text-neutral-700 transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
-              onClick={() => setConfirmAction("back")}
+              onClick={() => router.push("/dashboard/bookings")}
             >
               ← Back to bookings
             </button>
