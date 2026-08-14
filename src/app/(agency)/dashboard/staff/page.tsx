@@ -3,9 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Eye, Pencil, Plus, Trash2, ChevronRight } from "lucide-react";
+import { Check, Plus, ChevronRight } from "lucide-react";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  VisibilityOutlined,
+} from "@mui/icons-material";
 import toast from "react-hot-toast";
 import { Modal } from "@/components/ui/modal";
+import { Pagination } from "@/components/ui/pagination";
 import StaffIdCard from "@/components/agency/staff/StaffIdCard";
 import { useStaff } from "@/hooks/useStaff";
 import { roleLabel, useRoles } from "@/hooks/useRoles";
@@ -30,6 +36,10 @@ export default function StaffPage() {
   const [editStaff, setEditStaff] = useState<(typeof staff)[number] | null>(
     null,
   );
+  const [staffToDelete, setStaffToDelete] = useState<
+    (typeof staff)[number] | null
+  >(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [editForm, setEditForm] = useState({
     name: "",
     email: "",
@@ -73,9 +83,18 @@ export default function StaffPage() {
     }
   };
 
-  const removeStaff = (id: string) => {
-    if (window.confirm("Remove this staff member?")) deleteStaff(id);
+  const removeStaff = () => {
+    if (!staffToDelete) return;
+    deleteStaff(staffToDelete.id);
+    setStaffToDelete(null);
   };
+
+  const staffPerPage = 8;
+  const totalPages = Math.max(1, Math.ceil(staff.length / staffPerPage));
+  const paginatedStaff = staff.slice(
+    (currentPage - 1) * staffPerPage,
+    currentPage * staffPerPage,
+  );
 
   return (
     <div className="space-y-4 w-full">
@@ -123,11 +142,11 @@ export default function StaffPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-neutral-100">
-            {staff.map((member, index) => (
+            {paginatedStaff.map((member, index) => (
               <tr key={member.id} className="hover:bg-neutral-50/80">
                 <td className="px-5 py-5">
                   <span className="grid h-11 w-11 place-items-center rounded-full bg-primary-50 font-bold text-neutral-900">
-                    {index + 1}
+                    {(currentPage - 1) * staffPerPage + index + 1}
                   </span>
                 </td>
                 <td className="px-5 py-5">
@@ -176,7 +195,7 @@ export default function StaffPage() {
                       aria-label={`View ${member.name} ID card`}
                       title="View ID card"
                     >
-                      <Eye size={18} />
+                      <VisibilityOutlined sx={{ fontSize: 18 }} />
                     </button>
                     <button
                       type="button"
@@ -185,15 +204,15 @@ export default function StaffPage() {
                       aria-label={`Edit ${member.name}`}
                       title="Edit staff"
                     >
-                      <Pencil size={18} />
+                      <EditOutlined sx={{ fontSize: 18 }} />
                     </button>
                     <button
                       type="button"
-                      onClick={() => removeStaff(member.id)}
+                      onClick={() => setStaffToDelete(member)}
                       className="rounded-md bg-danger-100 p-2 text-danger-500 hover:bg-danger-200"
                       aria-label={`Remove ${member.name}`}
                     >
-                      <Trash2 size={18} />
+                      <DeleteOutlined sx={{ fontSize: 18 }} />
                     </button>
                   </div>
                 </td>
@@ -202,6 +221,13 @@ export default function StaffPage() {
           </tbody>
         </table>
       </section>
+      <div className="mt-4 w-full">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      </div>
 
       <Modal
         isOpen={!!viewStaff}
@@ -368,6 +394,39 @@ export default function StaffPage() {
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        isOpen={!!staffToDelete}
+        onClose={() => setStaffToDelete(null)}
+        title="Delete Staff"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-neutral-600">
+            Are you sure you want to delete this staff member{" "}
+            <span className="font-semibold text-neutral-900">
+              {staffToDelete?.name}
+            </span>
+            ? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setStaffToDelete(null)}
+              className="rounded-2xl border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={removeStaff}
+              className="rounded-2xl bg-danger-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-danger-700"
+            >
+              Delete staff
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
