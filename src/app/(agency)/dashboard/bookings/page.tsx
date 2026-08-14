@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useBookings } from "@/hooks/useBooking";
 import {
   CheckCircle2,
   Clock3,
@@ -14,7 +15,6 @@ import { useRouter } from "next/navigation";
 
 import { Pagination } from "@/components/ui/pagination";
 import { AnalyticsSummaryCard } from "@/components/shared/AnalyticsSummaryCard";
-import bookingsData from "../../../../../data/bookings.json";
 import usersData from "../../../../../data/users.json";
 import packagesData from "../../../../../data/packages.json";
 import guidesData from "../../../../../data/guides.json";
@@ -105,20 +105,7 @@ export default function BookingsPage() {
   const [toDate, setToDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Initialize with the static dataset so server and client render match.
-  // Read from localStorage only after mount to avoid hydration mismatches.
-  const [bookings, setBookings] = useState<Booking[]>(bookingsData as Booking[]);
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("bookings");
-      if (stored) {
-        setBookings(JSON.parse(stored) as Booking[]);
-      }
-    } catch {
-      /* ignore and keep default bookingsData */
-    }
-  }, []);
+  const { bookings } = useBookings();
 
   const inquiryCount = bookings.filter(
     (booking) => booking.status.toLowerCase() === "inquiry",
