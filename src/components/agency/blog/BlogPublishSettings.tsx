@@ -68,7 +68,7 @@ export function BlogPublishSettings({
   errors,
   setErrors,
   onSelectGalleryImage,
-  selectedGalleryImage: selectedGalleryImageProp,
+  // selectedGalleryImage: selectedGalleryImageProp,
 }: BlogPublishSettingsProps) {
   const { isDark } = useTheme();
 
@@ -116,10 +116,25 @@ export function BlogPublishSettings({
   }, []);
 
   useEffect(() => {
-    if (typeof selectedGalleryImageProp !== 'undefined') {
-      setSelectedGalleryImage(selectedGalleryImageProp || null);
-    }
-  }, [selectedGalleryImageProp]);
+    let mounted = true;
+
+    fetch("/api/gallery")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!mounted) return;
+
+        if (Array.isArray(data)) {
+          setGalleryImages(data as GalleryImage[]);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load gallery from API:", err);
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const cardClass = isDark
     ? "bg-neutral-900 text-neutral-50 border-neutral-700"
@@ -232,12 +247,10 @@ export function BlogPublishSettings({
 
     if (!file) {
       setSelectedFile(null);
-
       setErrors((prev) => ({
         ...prev,
         photo: "",
       }));
-
       return;
     }
 
@@ -245,22 +258,19 @@ export function BlogPublishSettings({
 
     if (fileError) {
       setSelectedFile(null);
-
       setErrors((prev) => ({
         ...prev,
         photo: fileError,
       }));
-
       return;
     }
 
-    /*
-     * Local file selected.
-     * Clear gallery selection because only one source
-     * should be active at a time.
-     */
     setSelectedFile(file);
-    setSelectedGalleryImage(null);
+    
+    // Clear gallery selection via parent callback
+    if (typeof onSelectGalleryImage === 'function') {
+      onSelectGalleryImage(null);
+    }
 
     setErrors((prev) => ({
       ...prev,
