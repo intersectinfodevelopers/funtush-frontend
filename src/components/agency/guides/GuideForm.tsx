@@ -41,14 +41,7 @@ interface GuideFormProps {
   isNew?: boolean;
 }
 
-const languageOptions = [
-  "English",
-  "Nepali",
-  "Hindi",
-  "French",
-  "German",
-  "Chinese",
-];
+
 const emptyCertification = (): Certification => ({
   name: "",
   issuingBody: "",
@@ -104,14 +97,6 @@ export default function GuideForm({
 
   const removeLanguage = (language: string) => {
     setLanguages((current) => current.filter((item) => item !== language));
-  };
-
-  const toggleLanguage = (language: string) => {
-    if (languages.includes(language)) {
-      removeLanguage(language);
-    } else {
-      addLanguage(language);
-    }
   };
 
   const updateCertification = (
