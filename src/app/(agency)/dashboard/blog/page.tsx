@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { ArrowUpRight, BarChart3, CheckCircle2, Eye, FileText } from "lucide-react";
@@ -26,12 +26,34 @@ const initialPosts = blogsData.blogs as BlogPost[];
 
 export default function BlogPage() {
   const router = useRouter();
-  const [posts, setPosts] = useState(initialPosts);
+  // Start with server-safe initialPosts to keep SSR and first client render consistent.
+  const [posts, setPosts] = useState<BlogPost[]>(initialPosts);
+
+  // On mount, hydrate posts from localStorage if present so runtime edits are reflected.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const storedPosts = window.localStorage.getItem("funtush_blog_posts");
+      if (!storedPosts) {
+        window.localStorage.setItem("funtush_blog_posts", JSON.stringify(initialPosts));
+        return;
+      }
+      const parsed = JSON.parse(storedPosts);
+      if (Array.isArray(parsed) && parsed.length > 0) setPosts(parsed as BlogPost[]);
+    } catch {
+      // ignore parse errors and keep initialPosts
+    }
+  }, []);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [status, setStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [dialog, setDialog] = useState<{ type: "edit" | "delete"; post: BlogPost } | null>(null);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("funtush_blog_posts", JSON.stringify(posts));
+  }, [posts]);
 
   const categories = useMemo(() => Array.from(new Set(posts.map((post) => post.category))), [posts]);
   const filteredPosts = useMemo(() => posts.filter((post) => {
@@ -104,7 +126,7 @@ export default function BlogPage() {
                   </div>
                 </td>
                 <td className="px-4 py-3"><span className="rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700">{post.category}</span></td>
-                <td className="px-4 py-3 text-neutral-700">{post.author.name}</td>
+                <td className="px-4 py-3 text-neutral-700">{post.author?.name ?? "—"}</td>
                 <td className="px-4 py-3 text-neutral-700">{post.date}</td>
                 <td className="px-4 py-3"><span className={`rounded-full px-3 py-1 text-xs font-semibold ${post.status === "Published" ? "bg-success-50 text-success-700" : post.status === "Draft" ? "bg-warning-50 text-warning-700" : post.status === "Archived" ? "bg-danger-50 text-danger-700" : "bg-neutral-100 text-neutral-700"}`}>{post.status}</span></td>
                 <td className="px-4 py-3 text-neutral-700">{post.views}</td>
@@ -122,7 +144,11 @@ export default function BlogPage() {
   );
 }
 
-function parseViews(value: string) { const numeric = Number.parseFloat(value.replace(/[^0-9.]/g, "")); return value.toUpperCase().includes("K") ? numeric * 1000 : numeric; }
+function parseViews(value: number | string) {
+  const s = String(value ?? "");
+  const numeric = Number.parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
+  return /k/i.test(s) ? numeric * 1000 : numeric;
+}
 function SummaryCard({ label, value, tone }: { label: string; value: number | string; tone: "primary" | "success" | "warning" | "accent" }) {
   const styles = {
     primary: { card: "border-primary-100 bg-primary-50", icon: "bg-primary-900 text-white", Icon: FileText },

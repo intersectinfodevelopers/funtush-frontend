@@ -12,7 +12,7 @@ export interface RawBooking {
   package_id: string;
   trekker_id: string;
   agency_id: string;
-  guide_id: string;
+  guide_id?: string | null;
   departure_date: string;
   group_size: number;
   add_ons: Array<{ name: string; price: number }>;

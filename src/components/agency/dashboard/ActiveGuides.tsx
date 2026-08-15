@@ -1,3 +1,4 @@
+//app/components/agency/dashboard/ActiveGuides.tsx
 'use client';
 
 import Link from 'next/link';
@@ -8,9 +9,9 @@ export default function ActiveGuides() {
   const activeGuides = guides.filter((guide) => guide.status === 'on_trek');
 
   return (
-    <section className="flex flex-col gap-4 rounded-sm bg-white p-2 shadow-sm md:col-span-2 lg:col-span-1 xl:min-w-[240px] xl:min-h-[175px]">
+    <section className="flex flex-col gap-4 rounded-sm bg-white p-2 shadow-sm xl:min-w-[240px] xl:min-h-[175px]">
       <div className="flex justify-between items-center">
-        <h3 className="font-semibold text-sm">Active Guides on Trek</h3>
+        <h2 className="font-semibold text-xs md:text-[10px] lg:text-xs">Active Guides on Trek</h2>
         <Link
           href="/dashboard/guides"
           className="text-xs text-[#0D2DFC] font-semibold transition-transform hover:translate-y-[-1px] hover:underline "

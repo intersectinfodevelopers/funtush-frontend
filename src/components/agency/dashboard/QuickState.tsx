@@ -1,3 +1,4 @@
+//app/components/agency/dashboard/QuickState.tsx
 'use client';
 
 import { Box, Typography, List, ListItem, ListItemIcon, ListItemText } from '@mui/material';
@@ -43,16 +44,29 @@ export default function QuickState() {
         width: '100%',
         border: '1px solid #e5e7eb',
         borderRadius: 1,
-        p: 3,
+        p: {
+          xs: 1.5,
+          sm: 2,
+          md: 3,
+        },
         backgroundColor: '#fff',
       }}
     >
+      {/* Heading */}
       <Typography
         variant="h6"
         sx={{
-          fontSize: 12,
+          fontSize: {
+            xs: 11,
+            sm: 12,
+            md: 14,
+          },
           fontWeight: 600,
-          mb: 1.5,
+          mb: {
+            xs: 1,
+            sm: 1.5,
+            md: 1.5,
+          },
         }}
       >
         Quick State
@@ -64,33 +78,60 @@ export default function QuickState() {
             key={stat.label}
             disableGutters
             sx={{
-              py: 0.7,
+              py: {
+                xs: 0.5,
+                sm: 0.6,
+                md: 0.7,
+              },
             }}
           >
+            {/* Icon */}
             <ListItemIcon
               sx={{
-                minWidth: 60,
+                minWidth: {
+                  xs: 35,
+                  sm: 45,
+                  md: 60,
+                },
                 color: '#92969d',
+
+                '& svg': {
+                  fontSize: {
+                    xs: 17,
+                    sm: 20,
+                    md: 24,
+                  },
+                },
               }}
             >
               {stat.icon}
             </ListItemIcon>
 
+            {/* Label */}
             <ListItemText
               primary={stat.label}
               slotProps={{
                 primary: {
                   sx: {
-                    fontSize: 12,
+                    fontSize: {
+                      xs: 10,
+                      sm: 11,
+                      md: 12,
+                    },
                     fontWeight: 600,
                   },
                 },
               }}
             />
 
+            {/* Value */}
             <Typography
               sx={{
-                fontSize: 12,
+                fontSize: {
+                  xs: 10,
+                  sm: 11,
+                  md: 12,
+                },
                 fontWeight: 600,
               }}
             >

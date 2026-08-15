@@ -44,17 +44,24 @@ export function useGuides() {
         }
     });
 
-    //save to localStorage
     useEffect(() => {
         if (typeof window === 'undefined') return;
         localStorage.setItem('guides', JSON.stringify(guides));
     }, [guides]);
 
+    const getGuide = (id: string) => guides.find((guide) => guide.id === id);
+
     const addGuide = (newGuide: NewGuide) => {
         const id = `gd-${Date.now()}`;
         const guideWithId = { ...newGuide, id};
-        setGuides([...guides, guideWithId]);
+        setGuides((current) => [...current, guideWithId]);
     };
 
-    return { guides, addGuide};
+    const updateGuide = (id: string, updatedGuide: Partial<Guide>) => {
+        setGuides((current) =>
+            current.map((guide) => (guide.id === id ? { ...guide, ...updatedGuide } : guide)),
+        );
+    };
+
+    return { guides, getGuide, addGuide, updateGuide };
 }

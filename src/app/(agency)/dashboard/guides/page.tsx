@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Plus,
@@ -11,7 +11,6 @@ import {
   Footprints,
   CheckCircle2,
   Download,
-  ChevronRight,
 } from "lucide-react";
 import {
   DeleteOutlined,
@@ -136,6 +135,7 @@ export default function GuidesPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [languageFilter, setLanguageFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{
     type: "edit" | "delete";
     guide: (typeof guideRows)[number];
@@ -161,27 +161,30 @@ export default function GuidesPage() {
     certifications: [{ name: "", number: "", expiry: defaultExpiryDate }],
   });
 
+  // FIX #2: derive from live state (guideRowsState) instead of the static
+  // guidesData import, so edits/deletes are reflected immediately.
   const allLanguages = useMemo(() => {
     const langs = new Set<string>();
-    guidesData.forEach((guide) =>
+    guideRowsState.forEach((guide) =>
       guide.languages.forEach((lang) => langs.add(lang)),
     );
     return Array.from(langs);
-  }, []);
+  }, [guideRowsState]);
 
+  // FIX #2 (cont.): stats now recompute whenever guideRowsState changes.
   const stats = useMemo(() => {
-    const total = guidesData.length;
-    const available = guidesData.filter(
+    const total = guideRowsState.length;
+    const available = guideRowsState.filter(
       (guide) => guide.status === "available",
     ).length;
-    const onTrek = guidesData.filter(
+    const onTrek = guideRowsState.filter(
       (guide) => guide.status === "on_trek",
     ).length;
-    const expiring = guidesData.filter((guide) =>
+    const expiring = guideRowsState.filter((guide) =>
       guide.certifications.some((cert) => isExpiringSoon(cert.expiry)),
     ).length;
     return { total, available, onTrek, expiring };
-  }, []);
+  }, [guideRowsState]);
 
   const filteredGuides = useMemo(() => {
     return guideRowsState.filter((guide) => {
@@ -196,11 +199,26 @@ export default function GuidesPage() {
     });
   }, [search, statusFilter, languageFilter, guideRowsState]);
 
+  // FIX #1: reset to page 1 whenever a filter/search changes, so the user
+  // never lands on a page number that no longer has any results.
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, languageFilter]);
+
   const guidesPerPage = 8;
   const totalPages = Math.max(
     1,
     Math.ceil(filteredGuides.length / guidesPerPage),
   );
+
+  // FIX #4: clamp currentPage if it now exceeds totalPages (e.g. after a
+  // delete removes the last item on the last page).
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   const paginatedGuides = filteredGuides.slice(
     (currentPage - 1) * guidesPerPage,
     currentPage * guidesPerPage,
@@ -222,6 +240,20 @@ export default function GuidesPage() {
         )[0] ?? null
     );
   }, [guideRowsState]);
+
+  // FIX #6: keep the "view ID card" modal in sync with the live guide record.
+  // If the currently-viewed guide is edited or deleted elsewhere, this
+  // updates the modal's snapshot (or closes it if the guide was removed)
+  // instead of silently showing stale data.
+  useEffect(() => {
+    if (!viewGuide) return;
+    const latest = guideRowsState.find((row) => row.id === viewGuide.id);
+    if (!latest) {
+      setViewGuide(null);
+    } else if (latest !== viewGuide) {
+      setViewGuide(latest);
+    }
+  }, [guideRowsState, viewGuide]);
 
   const openEditGuide = (guide: GuideRow) => {
     setDialog({ type: "edit", guide });
@@ -252,6 +284,12 @@ export default function GuidesPage() {
       ? getLatestExpiry(certifications)
       : editForm.renewalDate;
 
+    // FIX #3: Number("0") is falsy, so `Number(editForm.rating) || row.rating`
+    // silently discarded a deliberate rating of 0. Validate explicitly instead.
+    const parsedRating = Number(editForm.rating);
+    const isValidRating =
+      editForm.rating.trim() !== "" && !Number.isNaN(parsedRating);
+
     setGuideRowsState((rows) =>
       rows.map((row) =>
         row.id === dialog.guide.id
@@ -264,7 +302,7 @@ export default function GuidesPage() {
                 .split(",")
                 .map((lang) => lang.trim())
                 .filter(Boolean),
-              rating: Number(editForm.rating) || row.rating,
+              rating: isValidRating ? parsedRating : row.rating,
               renewalDate: latestExpiry,
               certifications,
             }
@@ -379,146 +417,172 @@ export default function GuidesPage() {
     });
   };
 
+  // FIX #5: downloadIdCard now wraps the whole flow in try/catch. A photo
+  // that fails CORS (or a toDataURL SecurityError from a tainted canvas)
+  // no longer throws silently - the user gets a visible, dismissable error
+  // message instead of a dead "Download ID Card" button.
   const downloadIdCard = async (guide: (typeof guideRows)[number]) => {
-    const canvas = document.createElement("canvas");
-    const width = 1000;
-    const height = 620;
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const skyBlue = "#0EA5E9";
-
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, width, height);
-
-    ctx.fillStyle = "rgba(15,23,42,0.04)";
-    for (let x = 0; x < width; x += 22) {
-      for (let y = 0; y < height; y += 22) {
-        ctx.beginPath();
-        ctx.arc(x, y, 1, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    ctx.fillStyle = skyBlue;
-    ctx.beginPath();
-    ctx.roundRect(0, 40, 480, 90, [0, 45, 45, 0]);
-    ctx.fill();
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "800 34px Poppins, sans-serif";
-    ctx.fillText("GUIDE ID CARD", 50, 95);
-
-    ctx.fillStyle = skyBlue;
-    ctx.font = "900 32px Poppins, sans-serif";
-    ctx.textAlign = "right";
-    ctx.fillText("FUNTUSH", width - 50, 75);
-    ctx.font = "600 12px Poppins, sans-serif";
-    ctx.fillStyle = "#94a3b8";
-    ctx.fillText("VERIFIED TREK GUIDE", width - 50, 95);
-    ctx.textAlign = "left";
-
-    const photoSize = 230;
-    const photoX = 55;
-    const photoY = 170;
-    ctx.save();
-    ctx.strokeStyle = skyBlue;
-    ctx.lineWidth = 8;
-    ctx.beginPath();
-    ctx.roundRect(photoX, photoY, photoSize, photoSize, 34);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.roundRect(photoX + 6, photoY + 6, photoSize - 12, photoSize - 12, 28);
-    ctx.clip();
-
+    setDownloadError(null);
     try {
-      if (!guide.photo) throw new Error("no photo");
-      const photo = await loadImage(guide.photo);
-      ctx.drawImage(
-        photo,
-        photoX + 6,
-        photoY + 6,
-        photoSize - 12,
-        photoSize - 12,
-      );
-    } catch {
-      ctx.fillStyle = "#4338ca";
-      ctx.fillRect(photoX + 6, photoY + 6, photoSize - 12, photoSize - 12);
+      const canvas = document.createElement("canvas");
+      const width = 1000;
+      const height = 620;
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        throw new Error("Could not initialize canvas context.");
+      }
+
+      const skyBlue = "#0EA5E9";
+
       ctx.fillStyle = "#ffffff";
-      ctx.font = "700 88px Poppins, sans-serif";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(
-        getInitial(guide.name),
-        photoX + photoSize / 2,
-        photoY + photoSize / 2,
-      );
-      ctx.textAlign = "start";
-      ctx.textBaseline = "alphabetic";
-    }
-    ctx.restore();
+      ctx.fillRect(0, 0, width, height);
 
-    const qrSize = 130;
-    const qrX = photoX + (photoSize - qrSize) / 2;
-    const qrY = photoY + photoSize + 28;
-    drawQrPlaceholder(ctx, qrX, qrY, qrSize, guide.id + guide.email);
+      ctx.fillStyle = "rgba(15,23,42,0.04)";
+      for (let x = 0; x < width; x += 22) {
+        for (let y = 0; y < height; y += 22) {
+          ctx.beginPath();
+          ctx.arc(x, y, 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
 
-    ctx.fillStyle = "#94a3b8";
-    ctx.font = "600 11px Poppins, sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText("SCAN TO VERIFY", qrX + qrSize / 2, qrY + qrSize + 20);
-    ctx.textAlign = "start";
+      ctx.fillStyle = skyBlue;
+      ctx.beginPath();
+      ctx.roundRect(0, 40, 480, 90, [0, 45, 45, 0]);
+      ctx.fill();
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "800 34px Poppins, sans-serif";
+      ctx.fillText("GUIDE ID CARD", 50, 95);
 
-    const detailsX = photoX + photoSize + 60;
-    const labelColW = 190;
-    const rows: [string, string][] = [
-      ["NAME", guide.name],
-      ["GUIDE ID", guide.id],
-      ["SEX", guide.sex],
-      ["LANGUAGES", guide.languages.join(", ")],
-      ["PHONE", guide.phone],
-      ["VALID UNTIL", guide.renewalDate],
-    ];
-    let rowY = 220;
-    rows.forEach(([label, value]) => {
-      ctx.fillStyle = "#0f172a";
-      ctx.font = "700 22px Poppins, sans-serif";
-      ctx.fillText(label, detailsX, rowY);
+      ctx.fillStyle = skyBlue;
+      ctx.font = "900 32px Poppins, sans-serif";
+      ctx.textAlign = "right";
+      ctx.fillText("FUNTUSH", width - 50, 75);
+      ctx.font = "600 12px Poppins, sans-serif";
       ctx.fillStyle = "#94a3b8";
-      ctx.fillText(":", detailsX + labelColW, rowY);
-      ctx.fillStyle = "#334155";
-      ctx.font = "500 22px Poppins, sans-serif";
-      ctx.fillText(value, detailsX + labelColW + 24, rowY);
-      rowY += 56;
-    });
+      ctx.fillText("VERIFIED TREK GUIDE", width - 50, 95);
+      ctx.textAlign = "left";
 
-    // Minimal footer accent line, right-side decoration removed
-    const accentY = height - 40;
-    ctx.fillStyle = "rgba(14,165,233,0.14)";
-    ctx.fillRect(0, accentY, width, 10);
+      const photoSize = 230;
+      const photoX = 55;
+      const photoY = 170;
+      ctx.save();
+      ctx.strokeStyle = skyBlue;
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.roundRect(photoX, photoY, photoSize, photoSize, 34);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.roundRect(photoX + 6, photoY + 6, photoSize - 12, photoSize - 12, 28);
+      ctx.clip();
 
-    const imageUrl = canvas.toDataURL("image/png");
-    const link = document.createElement("a");
-    link.href = imageUrl;
-    link.download = `${guide.name.replace(/\s+/g, "_")}_id_card.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      try {
+        if (!guide.photo) throw new Error("no photo");
+        const photo = await loadImage(guide.photo);
+        ctx.drawImage(
+          photo,
+          photoX + 6,
+          photoY + 6,
+          photoSize - 12,
+          photoSize - 12,
+        );
+      } catch {
+        // Falls back to an initials avatar if the photo is missing or
+        // fails to load (e.g. blocked by CORS) — this part already degrades
+        // gracefully, the real risk is the later toDataURL() call below.
+        ctx.fillStyle = "#4338ca";
+        ctx.fillRect(photoX + 6, photoY + 6, photoSize - 12, photoSize - 12);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "700 88px Poppins, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(
+          getInitial(guide.name),
+          photoX + photoSize / 2,
+          photoY + photoSize / 2,
+        );
+        ctx.textAlign = "start";
+        ctx.textBaseline = "alphabetic";
+      }
+      ctx.restore();
+
+      const qrSize = 130;
+      const qrX = photoX + (photoSize - qrSize) / 2;
+      const qrY = photoY + photoSize + 28;
+      drawQrPlaceholder(ctx, qrX, qrY, qrSize, guide.id + guide.email);
+
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = "600 11px Poppins, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("SCAN TO VERIFY", qrX + qrSize / 2, qrY + qrSize + 20);
+      ctx.textAlign = "start";
+
+      const detailsX = photoX + photoSize + 60;
+      const labelColW = 190;
+      const rows: [string, string][] = [
+        ["NAME", guide.name],
+        ["GUIDE ID", guide.id],
+        ["SEX", guide.sex],
+        ["LANGUAGES", guide.languages.join(", ")],
+        ["PHONE", guide.phone],
+        ["VALID UNTIL", guide.renewalDate],
+      ];
+      let rowY = 220;
+      rows.forEach(([label, value]) => {
+        ctx.fillStyle = "#0f172a";
+        ctx.font = "700 22px Poppins, sans-serif";
+        ctx.fillText(label, detailsX, rowY);
+        ctx.fillStyle = "#94a3b8";
+        ctx.fillText(":", detailsX + labelColW, rowY);
+        ctx.fillStyle = "#334155";
+        ctx.font = "500 22px Poppins, sans-serif";
+        ctx.fillText(value, detailsX + labelColW + 24, rowY);
+        rowY += 56;
+      });
+
+      const accentY = height - 40;
+      ctx.fillStyle = "rgba(14,165,233,0.14)";
+      ctx.fillRect(0, accentY, width, 10);
+
+      // This is the call most likely to throw a SecurityError if the photo
+      // was drawn from a cross-origin source without proper CORS headers
+      // (a "tainted" canvas). Now caught below instead of crashing silently.
+      const imageUrl = canvas.toDataURL("image/png");
+      const link = document.createElement("a");
+      link.href = imageUrl;
+      link.download = `${guide.name.replace(/\s+/g, "_")}_id_card.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Failed to generate guide ID card:", error);
+      setDownloadError(
+        "Couldn't generate the ID card image. This can happen if the guide's photo is hosted somewhere that blocks cross-origin downloads. Try again, or use a different photo.",
+      );
+    }
   };
 
   return (
-    <div className="space-y-4 w-full">
-      <h1 className="mt-2 text-2xl font-semibold text-neutral-900">Guides</h1>
+    <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm text-neutral-500">
-            <Link href={"/dashboard/guides"}>Guides</Link>
-            <span className="text-neutral-300">
-              <ChevronRight size={15} />
-            </span>
+          <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-500">
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard")}
+              className="transition hover:text-neutral-900"
+            >
+              Dashboard
+            </button>
+            <span className="text-neutral-300">/</span>
             <span className="font-semibold text-neutral-900">All Guides</span>
           </div>
+          <h1 className="text-2xl font-semibold text-neutral-900">Guides</h1>
+          <p className="text-sm leading-6 text-neutral-600">
+            Manage trek guide profiles, certifications, and availability.
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -565,6 +629,22 @@ export default function GuidesPage() {
           </button>
         </div>
       </div>
+
+      {downloadError && (
+        <div className="flex items-start justify-between gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 shadow-sm">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 flex-none" />
+            <p>{downloadError}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setDownloadError(null)}
+            className="text-xs font-semibold uppercase tracking-wide text-rose-700 hover:text-rose-900"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-4">
         <AnalyticsSummaryCard
@@ -629,125 +709,136 @@ export default function GuidesPage() {
         </select>
       </div>
 
-      <section className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-neutral-100">
-        <table className="min-w-full text-left text-sm text-neutral-700">
-          <thead className="bg-warning-50/70">
-            <tr className="text-xs font-bold uppercase tracking-wide text-neutral-500">
-              <th className="px-4 py-5">S.N</th>
-              <th className="px-4 py-5">Guide</th>
-              <th className="px-4 py-5">Languages</th>
-              <th className="px-4 py-5">Certifications</th>
-              <th className="px-4 py-5">Rating</th>
-              <th className="px-4 py-5">Status</th>
-              <th className="px-4 py-5">Actions</th>
+      <section className="overflow-x-auto border-t border-neutral-200 bg-white">
+        <table className="min-w-full border-collapse text-left text-sm text-neutral-700">
+          <thead className="bg-neutral-50 text-[10px] uppercase tracking-[0.24em] text-neutral-500">
+            <tr>
+              <th className="px-4 py-3">S.NO</th>
+              <th className="px-4 py-3">Guide</th>
+              <th className="px-4 py-3">Languages</th>
+              <th className="px-4 py-3">Certifications</th>
+              <th className="px-4 py-3">Rating</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-100">
-            {paginatedGuides.map((guide, index) => {
-              const statusInfo =
-                statusMap[guide.status] || statusMap.unavailable;
-              const expiringCert = guide.certifications.find((cert) =>
-                isExpiringSoon(cert.expiry),
-              );
-              return (
-                <tr
-                  key={guide.id}
-                  className="transition hover:bg-neutral-50/80"
+          <tbody>
+            {paginatedGuides.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={7}
+                  className="px-4 py-8 text-center text-sm text-neutral-500"
                 >
-                  <td className="px-5 py-5">
-                    <span className="grid h-11 w-11 place-items-center rounded-full bg-primary-50 font-bold text-neutral-900">
-                      {(currentPage - 1) * guidesPerPage + index + 1}
-                    </span>
-                  </td>
-                  <td className="px-5 py-5">
-                    <div className="flex items-center gap-3">
-                      <GuideAvatar
-                        name={guide.name}
-                        src={guide.photo}
-                        className="h-11 w-11"
-                      />
-                      <div>
-                        <strong className="block text-sm text-neutral-950">
-                          {guide.name}
-                        </strong>
-                        <small className="mt-1 block text-xs text-neutral-500">
-                          {guide.email}
-                        </small>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-5 py-5 text-sm font-semibold text-neutral-800">
-                    {guide.languages.join(", ") || "—"}
-                  </td>
-                  <td className="px-5 py-5 text-xs leading-5 text-neutral-600">
-                    {guide.certifications.length > 0 ? (
-                      guide.certifications.map((cert) => (
-                        <div
-                          key={cert.number}
-                          className="mb-2 rounded-xl bg-neutral-50 px-3 py-2"
-                        >
-                          <div className="font-semibold text-neutral-900">
-                            {cert.name}
-                          </div>
-                          <div className="text-[11px] text-neutral-500">
-                            {cert.number}
-                          </div>
+                  No guides match your filters.
+                </td>
+              </tr>
+            ) : (
+              paginatedGuides.map((guide, index) => {
+                const statusInfo =
+                  statusMap[guide.status] || statusMap.unavailable;
+                const expiringCert = guide.certifications.find((cert) =>
+                  isExpiringSoon(cert.expiry),
+                );
+                return (
+                  <tr
+                    key={guide.id}
+                    className="border-b border-neutral-200 hover:bg-neutral-50"
+                  >
+                    <td className="px-4 py-3">
+                      <span className="grid h-11 w-11 place-items-center rounded-full bg-primary-50 font-bold text-neutral-900">
+                        {(currentPage - 1) * guidesPerPage + index + 1}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-3">
+                        <GuideAvatar
+                          name={guide.name}
+                          src={guide.photo}
+                          className="h-11 w-11"
+                        />
+                        <div>
+                          <strong className="block text-sm text-neutral-950">
+                            {guide.name}
+                          </strong>
+                          <small className="mt-1 block text-xs text-neutral-500">
+                            {guide.email}
+                          </small>
                         </div>
-                      ))
-                    ) : (
-                      <span className="text-neutral-400">No certs</span>
-                    )}
-                    {expiringCert && (
-                      <div className="mt-1 text-[11px] text-rose-600">
-                        Expires{" "}
-                        {new Date(expiringCert.expiry).toLocaleDateString()}
                       </div>
-                    )}
-                  </td>
-                  <td className="px-4 py-4 text-amber-600">
-                    {guide.rating.toFixed(1)}★
-                  </td>
-                  <td className="px-5 py-5">
-                    <span
-                      className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusInfo.pill}`}
-                    >
-                      {statusInfo.label}
-                    </span>
-                  </td>
-                  <td className="px-5 py-5">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        title="View ID Card"
-                        onClick={() => setViewGuide(guide)}
-                        className="rounded-md bg-primary-100 p-2 text-primary-600 transition hover:bg-primary-200"
+                    </td>
+                    <td className="px-4 py-3 text-sm font-semibold text-neutral-800">
+                      {guide.languages.join(", ") || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-xs leading-5 text-neutral-600">
+                      {guide.certifications.length > 0 ? (
+                        guide.certifications.map((cert) => (
+                          <div
+                            key={cert.number}
+                            className="mb-2 rounded-xl bg-neutral-50 px-3 py-2"
+                          >
+                            <div className="font-semibold text-neutral-900">
+                              {cert.name}
+                            </div>
+                            <div className="text-[11px] text-neutral-500">
+                              {cert.number}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <span className="text-neutral-400">No certs</span>
+                      )}
+                      {expiringCert && (
+                        <div className="mt-1 text-[11px] text-rose-600">
+                          Expires{" "}
+                          {new Date(expiringCert.expiry).toLocaleDateString()}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-amber-600">
+                      {guide.rating.toFixed(1)}★
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${statusInfo.pill}`}
                       >
-                        <span className="sr-only">View ID Card</span>
-                        <VisibilityOutlined sx={{ fontSize: 18 }} />
-                      </button>
-                      <button
-                        type="button"
-                        title="Edit guide"
-                        onClick={() => openEditGuide(guide)}
-                        className="rounded-md bg-warning-100 p-2 text-warning-600 transition hover:bg-warning-200"
-                      >
-                        <span className="sr-only">Edit</span>
-                        <EditOutlined sx={{ fontSize: 18 }} />
-                      </button>
-                      <button
-                        type="button"
-                        title="Delete guide"
-                        onClick={() => setDialog({ type: "delete", guide })}
-                        className="rounded-md bg-danger-100 p-2 text-danger-500 transition hover:bg-danger-200"
-                      >
-                        <span className="sr-only">Delete</span>
-                        <DeleteOutlined sx={{ fontSize: 18 }} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+                        {statusInfo.label}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          title="View ID Card"
+                          onClick={() => setViewGuide(guide)}
+                          className="rounded-md bg-primary-100 p-2 text-primary-600 transition hover:bg-primary-200"
+                        >
+                          <span className="sr-only">View ID Card</span>
+                          <VisibilityOutlined sx={{ fontSize: 18 }} />
+                        </button>
+                        <button
+                          type="button"
+                          title="Edit guide"
+                          onClick={() => router.push(`/dashboard/guides/${guide.id}/edit`)}
+                          className="rounded-md bg-warning-100 p-2 text-warning-600 transition hover:bg-warning-200"
+                        >
+                          <span className="sr-only">Edit</span>
+                          <EditOutlined sx={{ fontSize: 18 }} />
+                        </button>
+                        <button
+                          type="button"
+                          title="Delete guide"
+                          onClick={() => setDialog({ type: "delete", guide })}
+                          className="rounded-md bg-danger-100 p-2 text-danger-500 transition hover:bg-danger-200"
+                        >
+                          <span className="sr-only">Delete</span>
+                          <DeleteOutlined sx={{ fontSize: 18 }} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </section>
@@ -759,19 +850,20 @@ export default function GuidesPage() {
         />
       </div>
 
-      <Modal
-        isOpen={!!viewGuide}
-        onClose={() => setViewGuide(null)}
-        title={viewGuide ? `${viewGuide.name} ID Card` : undefined}
-        size="xl"
-      >
-        {viewGuide && (
+      {/* Only mounted while a guide is being viewed - prevents any closed-state
+          backdrop/markup from staying in the page flow and painting black
+          space below the content when the page is taller than the viewport. */}
+      {viewGuide && (
+        <Modal
+          isOpen
+          onClose={() => setViewGuide(null)}
+          title={`${viewGuide.name} ID Card`}
+          size="xl"
+        >
           <div className="space-y-6">
             <div className="relative overflow-hidden rounded-4xl border border-slate-200 bg-white shadow-2xl">
-              {/* subtle marble texture */}
               <div className="pointer-events-none absolute inset-0 opacity-[0.04] [background:radial-gradient(circle_at_20%_20%,#000_1px,transparent_1px)] bg-size-[22px_22px]" />
 
-              {/* Header */}
               <div className="relative flex items-center justify-between px-8 pt-8 pb-14">
                 <div className="rounded-r-3xl bg-sky-500 py-5 pl-8 pr-10 shadow-lg">
                   <p className="text-2xl font-extrabold uppercase tracking-wide text-white">
@@ -788,7 +880,6 @@ export default function GuidesPage() {
                 </div>
               </div>
 
-              {/* Body */}
               <div className="relative grid gap-8 px-8 pb-6 lg:grid-cols-[220px_minmax(0,1fr)]">
                 <div className="space-y-4">
                   <div className="overflow-hidden rounded-3xl border-4 border-sky-500 shadow-md">
@@ -858,25 +949,24 @@ export default function GuidesPage() {
 
             <button
               type="button"
-              onClick={() => viewGuide && downloadIdCard(viewGuide)}
+              onClick={() => downloadIdCard(viewGuide)}
               className="inline-flex w-full max-w-2xl items-center justify-center gap-2 rounded-full bg-primary-950 px-6 py-4 text-sm font-semibold text-white transition hover:bg-primary-900"
             >
               <Download className="h-4 w-4" />
               Download ID Card
             </button>
           </div>
-        )}
-      </Modal>
+        </Modal>
+      )}
 
-      <Modal
-        isOpen={!!dialog}
-        onClose={() => setDialog(null)}
-        title={
-          dialog?.type === "edit" ? `Edit ${dialog.guide.name}` : "Delete Guide"
-        }
-        size={dialog?.type === "edit" ? "xl" : "md"}
-      >
-        {dialog?.type === "edit" ? (
+      {/* Same fix applied here - only mounted while dialog is set */}
+      {dialog?.type === "edit" && (
+        <Modal
+          isOpen
+          onClose={() => setDialog(null)}
+          title={`Edit ${dialog.guide.name}`}
+          size="xl"
+        >
           <div className="space-y-6">
             <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
               <div>
@@ -1061,12 +1151,21 @@ export default function GuidesPage() {
               </button>
             </div>
           </div>
-        ) : (
+        </Modal>
+      )}
+
+      {dialog?.type === "delete" && (
+        <Modal
+          isOpen
+          onClose={() => setDialog(null)}
+          title="Delete Guide"
+          size="md"
+        >
           <div className="space-y-4">
             <p className="text-sm text-neutral-600">
               Are you sure you want to delete{" "}
               <span className="font-semibold text-neutral-900">
-                {dialog?.guide.name}
+                {dialog.guide.name}
               </span>{" "}
               from the guide list? This action cannot be undone.
             </p>
@@ -1087,8 +1186,8 @@ export default function GuidesPage() {
               </button>
             </div>
           </div>
-        )}
-      </Modal>
+        </Modal>
+      )}
     </div>
   );
 }

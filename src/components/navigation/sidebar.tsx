@@ -128,31 +128,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       {/* Sidebar Container */}
       <aside
         className={cn(
-          'fixed left-0 top-16 bottom-0 z-40 w-72 flex flex-col border-r transition-all duration-300 ease-in-out select-none',
+          'fixed left-0 top-16 bottom-0 z-40 flex flex-col border-r transition-all duration-300 ease-in-out select-none md:w-72',
+          'w-16 md:w-72',
           isDark
             ? 'border-slate-800 bg-slate-950 text-slate-200 shadow-2xl'
             : 'border-neutral-200 bg-white text-neutral-900 shadow-sm'
         )}
-      >
-        {/* Header Section */}
+      >        {/* Header Section */}
         <div
           className={cn(
-            'flex items-center justify-between border-b px-4 py-3.5',
+            'flex items-center justify-center border-b px-2 py-2 md:justify-between md:px-4 md:py-3.5',
             isDark ? 'border-slate-800/80' : 'border-neutral-100'
           )}
         >
           <div
             className={cn(
-              'flex flex-1 items-center gap-3 rounded-2xl border px-3 py-2.5 transition-colors',
+              'flex flex-1 items-center justify-center rounded-2xl border px-1 py-2 md:justify-start md:gap-3 md:px-3 md:py-2.5',
               isDark
                 ? 'border-slate-800 bg-slate-900/60'
                 : 'border-neutral-200/80 bg-neutral-50/80'
             )}
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#6C72FF] text-white shadow-sm shadow-[#6C72FF]/20">
-              <CompassCalibrationOutlined className="h-5 w-5" />
+            <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#6C72FF] text-white shadow-sm shadow-[#6C72FF]/20 md:h-9 md:w-9">
+              <CompassCalibrationOutlined className="h-4 w-4 md:h-5 md:w-5" />
             </div>
-            <div className="overflow-hidden">
+            <div className="hidden overflow-hidden md:block">
               <p className={cn('text-xs font-bold truncate', isDark ? 'text-white' : 'text-neutral-900')}>
                 FUNTUSh
               </p>
@@ -167,7 +167,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             onClick={onClose}
             aria-label="Close sidebar"
             className={cn(
-              'ml-2 inline-flex h-9 w-9 items-center justify-center rounded-xl border transition focus:outline-none focus:ring-2 focus:ring-[#6C72FF]',
+              'ml-2 hidden h-8 w-8 items-center justify-center rounded-xl border transition focus:outline-none focus:ring-2 focus:ring-[#6C72FF] md:inline-flex',
               isDark
                 ? 'border-slate-800 bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white'
                 : 'border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900'
@@ -178,12 +178,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Navigation Group Items */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+        <div className="flex-1 overflow-y-auto px-1 py-2 space-y-3 md:px-3 md:py-4 md:space-y-6">
           {navigationGroups.map((group) => (
             <div key={group.label}>
               <p
                 className={cn(
-                  'mb-2 px-3 text-[11px] font-bold uppercase tracking-wider',
+                  'mb-2 hidden px-3 text-[11px] font-bold uppercase tracking-wider md:block',
                   isDark ? 'text-slate-500' : 'text-neutral-400'
                 )}
               >
@@ -207,7 +207,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                           type="button"
                           onClick={() => toggleExpand(item.label)}
                           className={cn(
-                            'flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition-all duration-150',
+                            'flex w-full items-center justify-center rounded-xl px-1.5 py-2.5 text-xs font-semibold transition-all duration-150 md:justify-between md:px-3',
                             isParentActive
                               ? isDark
                                 ? 'bg-[#6C72FF]/15 text-[#6C72FF]'
@@ -217,7 +217,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                               : 'text-neutral-700 hover:bg-neutral-100/70 hover:text-neutral-900'
                           )}
                         >
-                          <span className="flex items-center gap-3">
+                          <span className="flex items-center justify-center md:justify-start md:gap-3">
                             <Icon
                               className={cn(
                                 'h-4 w-4',
@@ -228,10 +228,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                                   : 'text-neutral-400'
                               )}
                             />
-                            {item.label}
+                            <span className="hidden md:inline">{item.label}</span>
                           </span>
 
-                          <span className="flex items-center gap-2">
+                          <span className="hidden items-center gap-2 md:flex">
                             {item.badge && (
                               <span className="rounded-full bg-[#6C72FF] px-2 py-0.5 text-[10px] font-bold text-white">
                                 {item.badge}
@@ -249,7 +249,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                         <Link
                           href={item.href!}
                           className={cn(
-                            'flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition-all duration-150',
+                            'flex items-center justify-center rounded-xl px-1.5 py-2.5 text-xs font-semibold transition-all duration-150 md:justify-between md:px-3',
                             isParentActive
                               ? 'bg-[#6C72FF] text-white shadow-sm shadow-[#6C72FF]/20'
                               : isDark
@@ -257,7 +257,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                               : 'text-neutral-700 hover:bg-neutral-100/70 hover:text-neutral-900'
                           )}
                         >
-                          <span className="flex items-center gap-3">
+                          <span className="flex items-center justify-center md:gap-3">
                             <Icon
                               className={cn(
                                 'h-4 w-4',
@@ -268,13 +268,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                                   : 'text-neutral-400'
                               )}
                             />
-                            {item.label}
+                            <span className="hidden md:inline">{item.label}</span>
                           </span>
 
                           {item.badge && (
                             <span
                               className={cn(
-                                'rounded-full px-2 py-0.5 text-[10px] font-bold',
+                                'hidden rounded-full px-2 py-0.5 text-[10px] font-bold md:inline-block',
                                 isParentActive
                                   ? 'bg-white/20 text-white'
                                   : 'bg-[#6C72FF]/10 text-[#6C72FF]'
@@ -290,7 +290,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                       {hasChildren && isExpanded && (
                         <div
                           className={cn(
-                            'mt-1 ml-4 space-y-1 border-l pl-3 py-1',
+                            'mt-1 ml-0 space-y-1 border-l pl-1 py-1 md:ml-4 md:pl-3',
                             isDark ? 'border-slate-800' : 'border-neutral-200'
                           )}
                         >
@@ -303,7 +303,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                                 key={child.label}
                                 href={child.href}
                                 className={cn(
-                                  'flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors',
+                                  'flex items-center justify-center gap-0 rounded-lg px-2 py-2 text-xs font-medium transition-colors md:justify-start md:gap-2.5 md:px-2.5',
                                   childActive
                                     ? isDark
                                       ? 'bg-slate-800/80 text-white font-semibold'
@@ -332,7 +332,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                                     )}
                                   />
                                 )}
-                                {child.label}
+                                <span className="hidden md:inline">{child.label}</span>
                               </Link>
                             );
                           })}

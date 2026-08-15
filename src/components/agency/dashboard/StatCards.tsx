@@ -1,18 +1,10 @@
 'use client';
 
-//import Image from 'next/image';
 import { getAgencyData } from '@/lib/agency/getAgencyData';
 import ChartWave from './ChartWave';
+import { Calendar, DollarSign, Users, Radio, TrendingUp } from 'lucide-react';
 
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import AttachMoneyIcon from '@mui/icons-material/AttachMoney';
-import GroupIcon from '@mui/icons-material/Group';
-import WifiTetheringSharpIcon from '@mui/icons-material/WifiTetheringSharp';
-
-type Props = {
-  agencyId: string;
-};
+type Props = { agencyId: string };
 
 export default function StatCards({ agencyId }: Props) {
   const { bookings, income } = getAgencyData(agencyId);
@@ -21,87 +13,75 @@ export default function StatCards({ agencyId }: Props) {
   const revenue = income.reduce((sum, item) => sum + item.amount, 0);
   const totalCustomers = bookings.length;
 
-  const stat = [
+  const stats = [
     {
       label: 'Total Bookings',
       amount: `Rs ${totalBookings.toLocaleString()}`,
-      icon: <CalendarMonthIcon />,
-      iconBg: 'bg-[#DAEBFF]',
+      icon: Calendar,
+      iconBg: 'bg-blue-100',
+      iconColor: 'text-blue-500',
       color: '#0088FF',
-      iconColor: 'text-[#0088FF]',
-      gradientColor1: '#436CCC',
-      gradientColor2: '#2282FF',
+      gradient: ['#436CCC', '#2282FF'],
       sub: 18.2,
-      comparison: 'VS last 30 days',
+      comparison: 'vs last 30 days',
     },
     {
       label: 'Revenue (This month)',
       amount: `Rs ${revenue.toLocaleString()}`,
-      icon: <AttachMoneyIcon />,
-      iconBg: 'bg-[#E8FDE6]',
+      icon: DollarSign,
+      iconBg: 'bg-green-100',
+      iconColor: 'text-green-500',
       color: '#34C759',
-      iconColor: 'text-[#34C759]',
-      gradientColor1: '#43CC55',
-      gradientColor2: '#56FF22',
+      gradient: ['#43CC55', '#56FF22'],
       sub: 12.2,
-      comparison: 'VS last month',
+      comparison: 'vs last month',
     },
     {
       label: 'Total Customers',
       amount: totalCustomers,
-      icon: <GroupIcon />,
-      iconBg: 'bg-[#E1E3FB]',
+      icon: Users,
+      iconBg: 'bg-indigo-100',
+      iconColor: 'text-indigo-500',
       color: '#6155F5',
-      iconColor: 'text-[#6155F5]',
-      gradientColor1: '#5143CC',
-      gradientColor2: '#485BFF',
+      gradient: ['#5143CC', '#485BFF'],
       sub: 4.8,
-      comparison: 'VS last 30 days',
+      comparison: 'vs last 30 days',
     },
     {
       label: 'Active Treks',
       amount: 1,
-      icon: <WifiTetheringSharpIcon />,
-      iconBg: 'bg-[#FBFFDC]',
+      icon: Radio,
+      iconBg: 'bg-amber-100',
+      iconColor: 'text-amber-500',
       color: '#FDA31C',
-      iconColor: 'text-[#FDA31C]',
-      gradientColor1: '#F1ED18',
-      gradientColor2: '#FEC817',
+      gradient: ['#F1ED18', '#FEC817'],
       sub: 4.8,
       comparison: 'Live on trails',
     },
   ];
 
   return (
-    <section className="w-full mt-2 grid gap-8 grid-cols-[repeat(4,minmax(260px,1fr))] xl:grid-cols-4 overflow-x-auto scrollbar-hide">
-      {stat.map((item) => {
-        return (
-          <div
-            key={item.label}
-            className="flex w-full min-w-0 items-center justify-between gap-x-4 rounded-lg bg-white p-2.5 shadow-sm"
-          >
-            <div className="min-w-0 flex flex-col gap-y-2 whitespace-nowrap py-1.5">
-              <h3 className="text-xs font-semibold">{item.label}</h3>
-              <p className="text-sm font-semibold">{item.amount}</p>
-              <p className="text-xs font-semibold text-[#34C759]">
-                <span>
-                  <PlayArrowIcon className="m-[-4px]" sx={{ transform: 'rotate(270deg)' }} />
-                </span>
-                {`${item.sub}%`}
-              </p>
-              <p className="text-[9.5px] font-medium">{item.comparison}</p>
+    <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-4 lg:gap-3">
+      {stats.map(({ label, amount, icon: Icon, iconBg, iconColor, color, gradient, sub, comparison }) => (
+        <div key={label} className="flex items-center justify-between rounded-lg bg-white p-3 shadow-sm">
+          <div className="flex flex-col gap-1">
+            <h3 className="text-[11px] font-semibold text-neutral-800 sm:text-xs">{label}</h3>
+            <p className="text-sm font-semibold sm:text-base">{amount}</p>
+            <p className="flex items-center gap-0.5 text-[11px] font-semibold text-green-500 sm:text-xs">
+              <TrendingUp size={13} /> {sub}%
+            </p>
+            <p className="text-[10px] font-medium text-neutral-500 sm:text-[11px]">{comparison}</p>
+          </div>
+          <div className="flex flex-col items-end gap-1">
+            <div className={`flex h-7 w-7 items-center justify-center rounded-full sm:h-8 sm:w-8 ${iconBg} ${iconColor}`}>
+              <Icon size={16} />
             </div>
-            <div className="flex flex-col">
-              <div
-                className={`flex h-9 w-9 items-center justify-center self-end rounded-full ${item.iconBg} ${item.iconColor}`}
-              >
-                {item.icon}
-              </div>
-              <ChartWave color={item.color} gradient={[item.gradientColor1, item.gradientColor2]} />
+            <div className="h-[44px] w-[80px] sm:h-[60px] sm:w-[110px]">
+              <ChartWave color={color} gradient={gradient as [string, string]} />
             </div>
           </div>
-        );
-      })}
+        </div>
+      ))}
     </section>
   );
 }

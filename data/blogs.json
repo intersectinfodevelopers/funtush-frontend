@@ -1,88 +1,88 @@
 {
-  "total_entries": 28,
+  "total_entries": 5,
   "showing_from": 1,
-  "showing_to": 4,
+  "showing_to": 5,
   "current_page": 1,
   "blogs": [
     {
       "id": 1,
-      "title": "How to learn AI in 2026",
-      "description": "A complete guide to learning artificial intelligence from scratch...",
-      "category": "Technology",
+      "title": "Packing essentials for a Himalayan trek",
+      "description": "Plan your trek with the right gear, weather layers, and trail-ready essentials for Himalayan adventures.",
+      "category": "Travel Tips",
       "author": {
-        "name": "John Doe",
+        "name": "Aarav Shrestha",
         "avatar": "user.png"
       },
-      "date": "July 20, 2026",
-      "time": "10:12 AM",
+      "date": "August 01, 2026",
+      "time": "09:15 AM",
       "status": "Published",
       "views": "2.4K",
       "likes": 36,
-      "thumbnail": "How-to-learn-ai-in-2026.png"
+      "thumbnail": "packing-essentials-for-a-himalayan-trek.png"
     },
     {
       "id": 2,
-      "title": "10 Marketing Tips to Grow Fast",
-      "description": "Boost your brand and get more customers with these proven tips...",
-      "category": "Marketing",
+      "title": "Best forest trails near Kathmandu",
+      "description": "Discover scenic forest walks, picnic spots, and beginner-friendly hikes for a calming weekend escape.",
+      "category": "Forest Adventures",
       "author": {
-        "name": "John Doe",
+        "name": "Nisha Gurung",
         "avatar": "user.png"
       },
-      "date": "July 20, 2026",
-      "time": "10:12 AM",
+      "date": "August 04, 2026",
+      "time": "11:30 AM",
       "status": "Draft",
-      "views": "2.4K",
-      "likes": 36,
-      "thumbnail": "10-Marketing-Tips-to-Grow-Fast.png"
+      "views": "1.8K",
+      "likes": 24,
+      "thumbnail": "best-forest-trails-near-kathmandu.png"
     },
     {
       "id": 3,
-      "title": "React.js Complete Guide",
-      "description": "Learn React.js step by step with real-world examples...",
-      "category": "Development",
+      "title": "Celebrating local festivals in the hills",
+      "description": "From masked dances to temple rituals, explore the stories and traditions that shape mountain communities.",
+      "category": "Culture & Heritage",
       "author": {
-        "name": "John Doe",
+        "name": "Suman Rai",
         "avatar": "user.png"
       },
-      "date": "July 20, 2026",
-      "time": "10:12 AM",
+      "date": "August 08, 2026",
+      "time": "02:10 PM",
       "status": "Published",
-      "views": "2.4K",
-      "likes": 36,
-      "thumbnail": "React.js-Complete-Guide.png"
+      "views": "3.1K",
+      "likes": 48,
+      "thumbnail": "celebrating-local-festivals-in-the-hills.png"
     },
     {
       "id": 4,
-      "title": "SEO Best Practices in 2026",
-      "description": "Stay ahead in search rankings with these latest SEO strategies...",
-      "category": "Business",
+      "title": "Nepali dishes every traveler should try",
+      "description": "Taste hearty momos, fresh choila, and comforting dal bhat while exploring the region's culinary identity.",
+      "category": "Food Guide",
       "author": {
-        "name": "John Doe",
+        "name": "Pooja Khadka",
         "avatar": "user.png"
       },
-      "date": "July 20, 2026",
-      "time": "10:12 AM",
+      "date": "August 11, 2026",
+      "time": "08:45 AM",
       "status": "Published",
-      "views": "2.4K",
-      "likes": 36,
-      "thumbnail": "SEO-Best-Practices-in-2026.png"
+      "views": "2.9K",
+      "likes": 41,
+      "thumbnail": "nepali-dishes-every-traveler-should-try.png"
     },
     {
       "id": 5,
-      "title": "Business Plan Template",
-      "description": "Download our free business plan template and grow your business...",
-      "category": "Business",
+      "title": "Weekend escape ideas for slow travelers",
+      "description": "A short guide to quiet destinations, local stays, and scenic routes that are ideal for relaxed exploration.",
+      "category": "Travel Tips",
       "author": {
-        "name": "John Doe",
+        "name": "Aarav Shrestha",
         "avatar": "user.png"
       },
-      "date": "July 20, 2026",
-      "time": "10:12 AM",
-      "status": "Published",
-      "views": "2.4K",
-      "likes": 36,
-      "thumbnail": "Business-Plan-Template.png"
+      "date": "August 14, 2026",
+      "time": "01:05 PM",
+      "status": "Scheduled",
+      "views": "1.2K",
+      "likes": 18,
+      "thumbnail": "weekend-escape-ideas-for-slow-travelers.png"
     }
   ]
 }
