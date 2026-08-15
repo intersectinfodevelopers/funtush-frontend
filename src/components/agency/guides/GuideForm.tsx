@@ -8,7 +8,7 @@ import type { NewGuide } from "@/hooks/useGuides";
 
 interface Certification {
   name: string;
-  issuingBody: string;
+  issuingBody?: string;
   number: string;
   expiry: string;
   document?: string;

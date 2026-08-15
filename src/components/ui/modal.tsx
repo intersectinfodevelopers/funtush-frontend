@@ -21,7 +21,15 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, size = 'md
       window.addEventListener('keydown', handleEscape);
     }
     return () => {
-      document.body.style.overflow = 'unset';
+      // FIX: clear the inline style instead of setting it to 'unset'.
+      // Setting an explicit inline value ('unset') permanently wins over the
+      // body { overflow: hidden } rule in globals.css, because inline
+      // styles always beat stylesheet rules — and in Next.js <body> is
+      // never recreated between client-side navigations, so that stuck
+      // inline value silently re-enables the outer page scrollbar on
+      // every route for the rest of the session, not just this modal.
+      // Removing the inline style entirely lets the CSS rule apply again.
+      document.body.style.removeProperty('overflow');
       window.removeEventListener('keydown', handleEscape);
     };
   }, [isOpen, onClose]);
@@ -39,7 +47,7 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, size = 'md
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop overlay */}
       <div className="fixed inset-0 bg-neutral-950/40 backdrop-blur-sm" onClick={onClose} />
-      
+
       {/* Target Content Modal Wrapper */}
       <div className={cn('relative w-full bg-white rounded-lg shadow-md border border-neutral-200 flex flex-col max-h-[90vh] z-10 duration-150 animate-in fade-in zoom-in-95', sizes[size])}>
         <div className="flex items-center justify-between p-4 border-b border-neutral-100">

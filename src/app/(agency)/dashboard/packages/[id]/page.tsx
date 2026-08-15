@@ -31,86 +31,114 @@ export default function PackageDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
-  const [packageData, setPackageData] = useState<Package | null>(() => {
+
+  const [packageData, setPackageData] = useState<Package | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
     try {
       const stored = typeof window !== "undefined" ? localStorage.getItem("packages") : null;
       const allPackages = stored ? (JSON.parse(stored) as Package[]) : (packagesJson as Package[]);
-      return allPackages.find((item) => item.id === id) ?? null;
+      const found = allPackages.find((item) => item.id === id) ?? null;
+      setPackageData(found);
     } catch {
-      return null;
+      setPackageData(null);
+    } finally {
+      setLoading(false);
     }
-  });
+  }, [id]);
 
-  if (!packageData) {
-    return <div className="p-6 text-sm text-neutral-500">Package not found.</div>;
-  }
-
-  const destination = packageData.destination_slug.replace(/-/g, " ");
-  const price = Math.round(packageData.price_usd * 133).toLocaleString("en-IN");
+  const destination = packageData?.destination_slug?.replace(/-/g, " ") ?? "";
+  const price = packageData ? Math.round(packageData.price_usd * 133).toLocaleString("en-IN") : "";
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:flex-row sm:items-start sm:justify-between">
+    <div className="mx-auto w-full max-w-6xl py-2 sm:py-4">
+      <div className="mb-7 flex flex-col gap-4 border-b border-neutral-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <Link href="/dashboard/packages" className="text-sm font-medium text-primary-900 hover:underline">
-            ← Back to packages
-          </Link>
-          <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.24em] text-neutral-500">
-            Package details
-          </p>
-          <h1 className="mt-1 text-2xl font-semibold text-neutral-900">{packageData.title}</h1>
-          <p className="mt-1 text-sm capitalize text-neutral-600">{destination}</p>
+          <div className="flex items-center gap-1 text-xs text-neutral-500">
+            <button type="button" onClick={() => router.push("/dashboard")} className="transition hover:text-neutral-900">
+              Dashboard
+            </button>
+            <span className="text-neutral-300">/</span>
+            <button type="button" onClick={() => router.push("/dashboard/packages")} className="transition hover:text-neutral-900">
+              Packages
+            </button>
+            <span className="text-neutral-300">/</span>
+            <span className="font-semibold text-primary-900">Package details</span>
+          </div>
+          <h1 className="mt-2 text-2xl font-bold text-neutral-900">Package details</h1>
+          <p className="mt-1 text-sm text-neutral-600">Review the package information and manage publishing or edits.</p>
         </div>
-        <span className={`inline-flex w-fit rounded-full border px-3 py-1 text-xs font-semibold capitalize ${statusStyles[packageData.status]}`}>
-          {packageData.status}
-        </span>
+        <div className="hidden sm:block" />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          ["Duration", `${packageData.duration_days} days`],
-          ["Price", `Rs. ${price}`],
-          ["Group size", `${packageData.group_size_max} people`],
-          ["Available slots", String(packageData.available_slots)],
-        ].map(([label, value]) => (
-          <div key={label} className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">{label}</p>
-            <p className="mt-2 text-lg font-semibold text-neutral-900">{value}</p>
-          </div>
-        ))}
-      </div>
-
-      <section className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Difficulty</p>
-            <p className="mt-2 text-sm font-semibold text-neutral-900">{packageData.difficulty}</p>
-          </div>
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Next start date</p>
-            <p className="mt-2 text-sm font-semibold text-neutral-900">{packageData.start_date}</p>
-          </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-sm text-gray-500 animate-pulse">Loading package...</div>
         </div>
-        <div className="mt-5 border-t border-neutral-200 pt-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Included</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {packageData.included.map((item) => (
-              <span key={item} className="rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-sm text-primary-900">
-                {item}
-              </span>
+      ) : !packageData ? (
+        <div className="p-6 text-sm text-neutral-500">Package not found.</div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <Link href="/dashboard/packages" className="text-sm font-medium text-primary-900 hover:underline">
+                ← Back to packages
+              </Link>
+              <p className="mt-4 text-[10px] font-semibold uppercase tracking-[0.24em] text-neutral-500">Package details</p>
+              <h2 className="mt-1 text-2xl font-semibold text-neutral-900">{packageData.title}</h2>
+              <p className="mt-1 text-sm capitalize text-neutral-600">{destination}</p>
+            </div>
+            <span className={`inline-flex w-fit rounded-full border px-3 py-1 text-xs font-semibold capitalize ${statusStyles[packageData.status]}`}>
+              {packageData.status}
+            </span>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              ["Duration", `${packageData.duration_days} days`],
+              ["Price", `Rs. ${price}`],
+              ["Group size", `${packageData.group_size_max} people`],
+              ["Available slots", String(packageData.available_slots)],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">{label}</p>
+                <p className="mt-2 text-lg font-semibold text-neutral-900">{value}</p>
+              </div>
             ))}
           </div>
+
+          <section className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Difficulty</p>
+                <p className="mt-2 text-sm font-semibold text-neutral-900">{packageData.difficulty}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Next start date</p>
+                <p className="mt-2 text-sm font-semibold text-neutral-900">{packageData.start_date}</p>
+              </div>
+            </div>
+            <div className="mt-5 border-t border-neutral-200 pt-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500">Included</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {packageData.included.map((item) => (
+                  <span key={item} className="rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-sm text-primary-900">{item}</span>
+                ))}
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => router.push(`/dashboard/packages/${packageData.id}/edit`)}
+                className="rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-800"
+              >
+                Edit package
+              </button>
+            </div>
+          </section>
         </div>
-        <div className="mt-5 flex justify-end">
-          <button
-            type="button"
-            onClick={() => router.push(`/dashboard/packages/${packageData.id}/edit`)}
-            className="rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-800"
-          >
-            Edit package
-          </button>
-        </div>
-      </section>
+      )}
     </div>
   );
 }

@@ -26,15 +26,15 @@ type Booking = {
   group_size: number;
   add_ons: AddOn[];
   services?: string[];
-  payment_due_date?: string;
+  payment_due_date?: string | null;
   total_price: number;
   status: string;
   created_at: string;
   proposed_date?: string;
-  reject_reason?: string;
-  payment_received_at?: string;
-  check_in_at?: string;
-  check_out_at?: string;
+  reject_reason?: string | null;
+  payment_received_at?: string | null;
+  check_in_at?: string | null;
+  check_out_at?: string | null;
 };
 
 type Guide = {
