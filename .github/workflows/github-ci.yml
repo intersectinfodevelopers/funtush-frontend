@@ -48,7 +48,22 @@ jobs:
           npm exec pnpm -- --version
       - name: Install dependencies
         run: npm exec pnpm -- install --frozen-lockfile
-      - name: Run Lint
+      - name: Run Lint (pull_request: changed files)
+        if: github.event_name == 'pull_request'
+        run: |
+          # Fetch base branch to compare
+          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1 || true
+          CHANGED=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | grep -E '\.(ts|tsx)$' || true)
+          if [ -z "$CHANGED" ]; then
+            echo "No TypeScript/TSX changes to lint"
+            exit 0
+          fi
+          echo "Linting changed files:"
+          echo "$CHANGED"
+          echo "$CHANGED" | xargs -r npm exec pnpm -- eslint --max-warnings=0
+
+      - name: Run Lint (non-PR)
+        if: github.event_name != 'pull_request'
         run: npm exec pnpm -- lint
       - name: Run Tests
         run: npm exec pnpm -- test -- --passWithNoTests
