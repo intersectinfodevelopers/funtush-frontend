@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { ChevronDown, Search, Star, X, Upload, Plus } from "lucide-react";
@@ -276,33 +276,82 @@ export default function PackageBuilderForm({
     new Promise<string>((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => resolve(String(reader.result));
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
+      reader.onerror = () => {
+        console.debug("toDataUrl: reader error for", file.name);
+        reject(new Error(`Failed to read file ${file.name}`));
+      };
+      try {
+        console.debug("toDataUrl: reading", file.name, file.type, file.size);
+        reader.readAsDataURL(file);
+      } catch (err) {
+        console.debug("toDataUrl: readAsDataURL threw for", file.name, err);
+        reject(err);
+      }
     });
 
-  const handleFiles = async (files: FileList | File[]) => {
-    const remainingSlots = MAX_GALLERY_IMAGES - galleryCount;
-    if (remainingSlots <= 0) {
-      toast.error(`You can upload up to ${MAX_GALLERY_IMAGES} photos.`);
-      return;
+  const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6MB per file
+  type ReadResult = { ok: true; data: string } | { ok: false; reason: string };
+
+  const handleFiles = useCallback(async (files: FileList | File[]) => {
+    const list = Array.from(files).slice(0, MAX_GALLERY_IMAGES);
+
+    console.debug("handleFiles: received files", list.map(f => ({ name: f.name, type: f.type, size: f.size })));
+    // Validate and read files individually so a single bad file doesn't fail all
+    const readPromises: Promise<ReadResult>[] = list.map(async (file): Promise<ReadResult> => {
+      if (!file.type.startsWith("image/")) {
+        console.debug("handleFiles: unsupported type", file.name, file.type);
+        return { ok: false, reason: `Unsupported file type: ${file.name}` };
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        console.debug("handleFiles: file too large", file.name, file.size);
+        return { ok: false, reason: `File too large: ${file.name} (max 6MB)` };
+      }
+      try {
+        const data = await toDataUrl(file);
+        console.debug("handleFiles: read success", file.name);
+        return { ok: true, data };
+      } catch (err) {
+        console.debug("handleFiles: read failed", file.name, err);
+        return { ok: false, reason: `Failed to read ${file.name}` };
+      }
+    });
+
+    const results = await Promise.all(readPromises) as ReadResult[];
+    const successful = results.filter((r): r is { ok: true; data: string } => r.ok).map((r) => r.data);
+    const errors = results.filter((r): r is { ok: false; reason: string } => !r.ok).map((r) => r.reason);
+
+    if (errors.length > 0) {
+      console.warn("Gallery upload errors:", errors);
+      toast.error(errors[0]);
     }
-    const list = Array.from(files).slice(0, remainingSlots);
-    try {
-      const urls = await Promise.all(list.map(toDataUrl));
-      const merged = Array.from(new Set([...(formData.gallery || []), ...urls])).slice(
-        0,
-        MAX_GALLERY_IMAGES,
-      );
-      setFormData({
-        ...formData,
+
+    if (successful.length === 0) return;
+
+    setFormData((prev) => {
+      const merged = Array.from(new Set([...(prev.gallery || []), ...successful])).slice(0, MAX_GALLERY_IMAGES);
+      return {
+        ...prev,
         gallery: merged,
-        heroImage: formData.heroImage && merged.includes(formData.heroImage) ? formData.heroImage : merged[0] || "",
-      });
-    } catch (err) {
-      console.error(err);
-      toast.error("Couldn't read one or more images. Please try again.");
+        heroImage: prev.heroImage && merged.includes(prev.heroImage) ? prev.heroImage : merged[0] || "",
+      };
+    });
+  }, [toDataUrl, setFormData, MAX_FILE_SIZE]);
+
+  // Expose handler for debugging/testing in dev environment
+  useEffect(() => {
+      try {
+      // @ts-expect-error Expose debug handler to window for integration tests
+      window.__funtush_handleFiles = handleFiles;
+    } catch (e) {
+      // ignore
     }
-  };
+    return () => {
+      try {
+        // @ts-expect-error Remove debug handler during cleanup
+        delete window.__funtush_handleFiles;
+      } catch (e) {}
+    };
+  }, [handleFiles]);
 
   const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -359,7 +408,7 @@ export default function PackageBuilderForm({
      CATEGORY PICKER
      ========================================== */
   const allCategories: { id: string; name: string }[] =
-    (categoriesData as any).categories || [];
+    (((categoriesData as unknown) as { categories?: { id: string; name: string }[] }).categories) || [];
 
   const selectedCategory = allCategories.find((c) => c.id === formData.categoryId);
 
@@ -374,7 +423,7 @@ export default function PackageBuilderForm({
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 min-h-0">
       <Section title="Package Builder" description="All package settings.">
         {/* ============ BASIC INFO ============ */}
         <div className="mb-6">
@@ -716,7 +765,7 @@ export default function PackageBuilderForm({
           <div className="mb-4 flex items-start justify-between gap-3 border-b border-neutral-100 pb-3">
             <div>
               <h3 className="text-base font-semibold text-neutral-900">Itinerary</h3>
-              <p className="mt-0.5 text-xs text-neutral-500">Day-by-day route plan.</p>
+              <p className="mt-0.5 text-xs text-neutral-700">Day-by-day route plan.</p>
             </div>
             <div>
               <button type="button" className={sectionActionButtonClassName} onClick={addItineraryDay}>
@@ -728,8 +777,8 @@ export default function PackageBuilderForm({
           <p className="py-6 text-center text-xs text-neutral-400">No itinerary days added yet.</p>
         ) : (
           <div className="space-y-3">
-            {formData.itinerary.map((day, i) => (
-              <div key={i} className="relative rounded-xl border border-neutral-200 bg-neutral-50/60 p-4">
+              {formData.itinerary.map((day, i) => (
+                <div key={i} className="relative rounded-xl border border-neutral-200 bg-white p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <span className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-600">
                     Day {day.day}
@@ -762,20 +811,20 @@ export default function PackageBuilderForm({
                 </div>
                 <div className="mb-2 grid grid-cols-1 gap-3 md:grid-cols-2">
                   <input
-                    className="w-full rounded-lg border p-2 text-xs"
+                    className={`${fieldClassName} text-xs`}
                     placeholder="Stop / location"
                     value={day.location}
                     onChange={(e) => updateItineraryField(i, "location", e.target.value)}
                   />
                   <input
-                    className="w-full rounded-lg border p-2 text-xs"
+                    className={`${fieldClassName} text-xs`}
                     placeholder="Altitude (m)"
                     value={day.altitude}
                     onChange={(e) => updateItineraryField(i, "altitude", e.target.value)}
                   />
                 </div>
                 <textarea
-                  className="mb-2 w-full rounded-lg border p-2 text-xs"
+                  className={`${fieldClassName} mb-2`}
                   placeholder="Describe this day's route and highlights..."
                   rows={2}
                   value={day.desc}
@@ -783,7 +832,7 @@ export default function PackageBuilderForm({
                 />
                 <input
                   type="text"
-                  className="w-full rounded-lg border p-2 text-xs"
+                  className={`${fieldClassName} text-xs`}
                   placeholder="Optional banner image URL for this day"
                   value={day.photoUrl || ""}
                   onChange={(e) => updateItineraryField(i, "photoUrl", e.target.value)}
@@ -828,7 +877,7 @@ export default function PackageBuilderForm({
               />
             </div>
             <p className="text-[11px] text-neutral-400">
-              Picking a date already on the list removes it — use the "Add Departure" button above.
+              Picking a date already on the list removes it — use the &quot;Add Departure&quot; button above.
             </p>
           </div>
         </div>

@@ -93,6 +93,7 @@ export default function DashboardTopbar({ onMenuClick }: DashboardTopbarProps) {
   const userName = user.name || 'Manish Rai';
   const userRole = user.role || 'Agency Admin';
   const initial = userName.charAt(0).toUpperCase();
+  const avatarUrl = (user as any)?.avatarUrl ?? null;
 
   const markAsRead = (id: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
@@ -218,8 +219,8 @@ export default function DashboardTopbar({ onMenuClick }: DashboardTopbarProps) {
               <p className="text-xs text-neutral-500">{userRole}</p>
             </div>
             <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium overflow-hidden shrink-0">
-              {user.avatarUrl ? (
-                <img src={user.avatarUrl} alt={userName} className="w-full h-full object-cover" />
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
               ) : (
                 initial
               )}
