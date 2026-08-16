@@ -34,11 +34,8 @@ export default function DetailsPage() {
     }
   });
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const sp = new URLSearchParams(window.location.search);
-    setTypeParam(sp.get('type') || 'agency');
-  }, []);
+  // Initializer already reads from window when available; remove redundant effect
+  // that re-sets the same value on mount to satisfy lint.
 
   const role: UserRole = typeParam === 'trekker' ? 'trekker' : 'agency_admin';
 

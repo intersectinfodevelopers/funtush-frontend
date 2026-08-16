@@ -37,8 +37,8 @@ export default function EditGuidePage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl py-2 sm:py-4">
-      <div className="mb-7 flex flex-col gap-4 border-b border-neutral-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-4 w-full">
+      <div className="mb-6">
         <div>
           <div className="flex items-center gap-1 text-xs text-neutral-500">
             <Link href="/dashboard">Dashboard</Link>

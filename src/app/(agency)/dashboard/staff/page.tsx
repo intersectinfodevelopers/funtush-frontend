@@ -3,9 +3,15 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Eye, Pencil, Plus, Trash2, ChevronRight } from "lucide-react";
+import { Check, Plus, ChevronRight } from "lucide-react";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  VisibilityOutlined,
+} from "@mui/icons-material";
 import toast from "react-hot-toast";
 import { Modal } from "@/components/ui/modal";
+import { Pagination } from "@/components/ui/pagination";
 import StaffIdCard from "@/components/agency/staff/StaffIdCard";
 import { useStaff } from "@/hooks/useStaff";
 import { roleLabel, useRoles } from "@/hooks/useRoles";
@@ -30,6 +36,10 @@ export default function StaffPage() {
   const [editStaff, setEditStaff] = useState<(typeof staff)[number] | null>(
     null,
   );
+  const [staffToDelete, setStaffToDelete] = useState<
+    (typeof staff)[number] | null
+  >(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [editForm, setEditForm] = useState({
     name: "",
     email: "",
@@ -73,15 +83,22 @@ export default function StaffPage() {
     }
   };
 
-  const removeStaff = (id: string) => {
-    if (window.confirm("Remove this staff member?")) deleteStaff(id);
+  const removeStaff = () => {
+    if (!staffToDelete) return;
+    deleteStaff(staffToDelete.id);
+    setStaffToDelete(null);
   };
+
+  const staffPerPage = 8;
+  const totalPages = Math.max(1, Math.ceil(staff.length / staffPerPage));
+  const paginatedStaff = staff.slice(
+    (currentPage - 1) * staffPerPage,
+    currentPage * staffPerPage,
+  );
 
   return (
     <div className="space-y-4 w-full">
-      <h1 className="mt-2 text-2xl font-semibold text-neutral-900">
-        Staff & Roles
-      </h1>
+      <h1 className="mt-2 text-2xl font-semibold text-neutral-900">Staff & Roles</h1>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-sm text-neutral-500">
@@ -110,98 +127,77 @@ export default function StaffPage() {
       </div>
 
       <section className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-neutral-100">
-        <table className="min-w-full text-left text-sm text-neutral-700">
-          <thead className="bg-warning-50/70">
-            <tr className="text-xs font-bold uppercase tracking-wide text-neutral-500">
-              <th className="px-4 py-5">S.N</th>
-              <th className="px-4 py-5">Staff Member</th>
-              <th className="px-4 py-5">Role</th>
-              <th className="px-4 py-5">Phone Number</th>
-              <th className="px-4 py-5">Email</th>
-              <th className="px-4 py-5">Status</th>
-              <th className="px-4 py-5">Actions</th>
+        <table className="min-w-full border-collapse text-left text-sm">
+          <thead className="bg-neutral-50 text-[10px] uppercase tracking-[0.24em] text-neutral-500">
+            <tr>
+              <th className="px-4 py-3">S.N</th>
+              <th className="px-4 py-3">Staff Member</th>
+              <th className="px-4 py-3">Role</th>
+              <th className="px-4 py-3">Phone Number</th>
+              <th className="px-4 py-3">Email</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-neutral-100">
-            {staff.map((member, index) => (
-              <tr key={member.id} className="hover:bg-neutral-50/80">
-                <td className="px-5 py-5">
-                  <span className="grid h-11 w-11 place-items-center rounded-full bg-primary-50 font-bold text-neutral-900">
-                    {index + 1}
-                  </span>
-                </td>
-                <td className="px-5 py-5">
-                  <div className="flex items-center gap-3">
-                    <span className="grid h-11 w-11 place-items-center rounded-full bg-success-500 font-semibold text-white">
-                      {initials(member.name)}
-                    </span>
-                    <span>
-                      <strong className="block text-sm text-neutral-950">
-                        {member.name}
-                      </strong>
-                      <small className="mt-1 block text-xs text-neutral-500">
-                        {member.email}
-                      </small>
-                    </span>
-                  </div>
-                </td>
-                <td className="px-5 py-5 text-sm font-semibold text-neutral-800">
-                  {roleLabel(member.role, roles)}
-                </td>
-                <td className="px-5 py-5 text-sm font-semibold text-neutral-800">
-                  {member.phone || "—"}
-                </td>
-                <td className="px-5 py-5 text-sm font-medium text-warning-600">
-                  {member.email}
-                </td>
-                <td className="px-5 py-5">
-                  <button
-                    type="button"
-                    onClick={() => toggleActive(member.id)}
-                    className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${member.active ? "bg-success-100 text-success-600" : "bg-neutral-100 text-neutral-500"}`}
-                  >
-                    <Check
-                      size={14}
-                      className={`rounded-full p-0.5 ${member.active ? "bg-success-400 text-white" : "bg-neutral-400 text-white"}`}
-                    />
-                    {member.active ? "Active" : "Inactive"}
-                  </button>
-                </td>
-                <td className="px-5 py-5">
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setViewStaff(member)}
-                      className="rounded-md bg-primary-100 p-2 text-primary-600 hover:bg-primary-200"
-                      aria-label={`View ${member.name} ID card`}
-                      title="View ID card"
-                    >
-                      <Eye size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => router.push(`/dashboard/staff/${member.id}/edit`)}
-                      className="rounded-md bg-warning-100 p-2 text-warning-600 hover:bg-warning-200"
-                      aria-label={`Edit ${member.name}`}
-                      title="Edit staff"
-                    >
-                      <Pencil size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeStaff(member.id)}
-                      className="rounded-md bg-danger-100 p-2 text-danger-500 hover:bg-danger-200"
-                      aria-label={`Remove ${member.name}`}
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </td>
+          <tbody>
+            {paginatedStaff.length === 0 ? (
+              <tr>
+                <td colSpan={7} className="px-4 py-8 text-center text-sm text-neutral-500">No staff found.</td>
               </tr>
-            ))}
+            ) : (
+              paginatedStaff.map((member, index) => (
+                <tr key={member.id} className="border-b border-neutral-200 hover:bg-neutral-50">
+                  <td className="px-4 py-3 text-neutral-700">{(currentPage - 1) * staffPerPage + index + 1}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-success-500 font-semibold text-white text-sm">
+                        {initials(member.name)}
+                      </span>
+                      <span>
+                        <strong className="block text-sm text-neutral-900">{member.name}</strong>
+                        <small className="mt-1 block text-xs text-neutral-500">{member.email}</small>
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm font-semibold text-neutral-800">{roleLabel(member.role, roles)}</td>
+                  <td className="px-4 py-3 text-sm font-semibold text-neutral-800">{member.phone || '—'}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-warning-600">{member.email}</td>
+                  <td className="px-4 py-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleActive(member.id)}
+                      className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${member.active ? 'bg-success-100 text-success-600' : 'bg-neutral-100 text-neutral-500'}`}
+                    >
+                      <Check size={14} className={`rounded-full p-0.5 ${member.active ? 'bg-success-400 text-white' : 'bg-neutral-400 text-white'}`} />
+                      {member.active ? 'Active' : 'Inactive'}
+                    </button>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <button type="button" onClick={() => setViewStaff(member)} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary-100 text-primary-600 hover:bg-primary-200" aria-label={`View ${member.name} ID card`} title="View ID card">
+                        <VisibilityOutlined sx={{ fontSize: 16 }} />
+                      </button>
+                      <button type="button" onClick={() => router.push(`/dashboard/staff/${member.id}/edit`)} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-warning-100 text-warning-600 hover:bg-warning-200" aria-label={`Edit ${member.name}`} title="Edit staff">
+                        <EditOutlined sx={{ fontSize: 16 }} />
+                      </button>
+                      <button type="button" onClick={() => setStaffToDelete(member)} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-danger-100 text-danger-500 hover:bg-danger-200" aria-label={`Remove ${member.name}`}>
+                        <DeleteOutlined sx={{ fontSize: 16 }} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </section>
+      <div className="mt-4 w-full">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      </div>
 
       <Modal
         isOpen={!!viewStaff}
@@ -368,6 +364,39 @@ export default function StaffPage() {
             </div>
           </div>
         )}
+      </Modal>
+
+      <Modal
+        isOpen={!!staffToDelete}
+        onClose={() => setStaffToDelete(null)}
+        title="Delete Staff"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-neutral-600">
+            Are you sure you want to delete this staff member{" "}
+            <span className="font-semibold text-neutral-900">
+              {staffToDelete?.name}
+            </span>
+            ? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setStaffToDelete(null)}
+              className="rounded-2xl border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={removeStaff}
+              className="rounded-2xl bg-danger-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-danger-700"
+            >
+              Delete staff
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

@@ -23,7 +23,7 @@ export default function NewGuidePage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl py-6">
+    <div className="space-y-4 w-full">
       <div className="mb-6">
         <div className="flex items-center gap-1 text-xs text-neutral-500">
           <Link href="/dashboard">Dashboard</Link>

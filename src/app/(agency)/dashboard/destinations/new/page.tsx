@@ -1,72 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import DestinationForm from "@/components/agency/destinations/DestinationForm";
 
 export default function NewDestinationPage() {
-  const [formData, setFormData] = useState({
-    title: "",
-    region: "",
-    difficulty: "",
-    maxAltitude: "",
-    bestSeason: "",
-  });
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  const router = useRouter();
 
   return (
-    <div className="p-6">
-      <h1 className="mb-6 text-3xl font-bold">New Destination</h1>
+    <div className="flex w-full flex-col gap-5 min-h-0">
+      <div className="mb-7 border-b border-neutral-200 pb-6">
+        <div className="flex items-center gap-2 text-sm text-neutral-500">
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard")}
+            className="hover:text-neutral-900"
+          >
+            Dashboard
+          </button>
 
-      <div className="space-y-4">
-        <input
-          name="title"
-          placeholder="Destination title"
-          value={formData.title}
-          onChange={handleChange}
-          className="w-full rounded border p-2"
-        />
+          <span className="text-neutral-300">/</span>
 
-        <input
-          name="region"
-          placeholder="Region"
-          value={formData.region}
-          onChange={handleChange}
-          className="w-full rounded border p-2"
-        />
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard/destinations")}
+            className="hover:text-neutral-900"
+          >
+            Destinations
+          </button>
 
-        <input
-          name="difficulty"
-          placeholder="Difficulty (Easy/Medium/Hard)"
-          value={formData.difficulty}
-          onChange={handleChange}
-          className="w-full rounded border p-2"
-        />
+          <span className="text-neutral-300">/</span>
 
-        <input
-          name="maxAltitude"
-          placeholder="Maximum Altitude"
-          value={formData.maxAltitude}
-          onChange={handleChange}
-          className="w-full rounded border p-2"
-        />
+          <span className="font-semibold text-neutral-900">
+            New destination
+          </span>
+        </div>
 
-        <input
-          name="bestSeason"
-          placeholder="Best Season"
-          value={formData.bestSeason}
-          onChange={handleChange}
-          className="w-full rounded border p-2"
-        />
+        <h1 className="mt-2 text-2xl font-bold text-neutral-900">
+          Add destination
+        </h1>
 
-        <button className="rounded bg-blue-600 px-4 py-2 text-white">
-          Save Destination
-        </button>
+        <p className="mt-1 text-sm text-neutral-600">
+          Create a new destination and configure its details.
+        </p>
       </div>
+
+      <DestinationForm isNew />
     </div>
   );
 }
