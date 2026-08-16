@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from "react";
+import {  useState, useEffect } from "react";
 import guidesData from "../../data/guides.json";
 
 interface Certification {
@@ -10,11 +10,12 @@ interface Certification {
     document?: string;
 }
 
-interface Guide {
+export interface Guide {
     id: string;
     name: string;
     email?: string;
     phone?: string;
+    sex?: string;
     photo?: string;
     bio?: string;
     languages: string[];
@@ -31,6 +32,62 @@ interface Guide {
 }
 
 export type NewGuide = Omit<Guide, 'id'>;
+
+const STORAGE_KEY = "guides";
+const STORAGE_EVENT = "guides-storage-updated";
+
+const defaultGuides = guidesData as Guide[];
+let cachedStoredValue: string | null = null;
+let cachedGuides = defaultGuides;
+
+const isGuideList = (value: unknown): value is Guide[] =>
+    Array.isArray(value) && value.every((guide) =>
+        guide &&
+        typeof guide === "object" &&
+        typeof guide.id === "string" &&
+        typeof guide.name === "string" &&
+        Array.isArray(guide.languages) &&
+        Array.isArray(guide.certifications),
+    );
+
+const readGuides = (): Guide[] => {
+    if (typeof window === "undefined") return defaultGuides;
+
+    try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored === cachedStoredValue) return cachedGuides;
+
+        const parsed: unknown = stored ? JSON.parse(stored) : defaultGuides;
+        cachedStoredValue = stored;
+        cachedGuides = isGuideList(parsed) ? parsed : defaultGuides;
+        return cachedGuides;
+    } catch {
+        cachedStoredValue = null;
+        cachedGuides = defaultGuides;
+        return cachedGuides;
+    }
+};
+
+const subscribeToGuides = (onStoreChange: () => void) => {
+    const handleStorage = (event: StorageEvent) => {
+        if (event.key === STORAGE_KEY) onStoreChange();
+    };
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener(STORAGE_EVENT, onStoreChange);
+    return () => {
+        window.removeEventListener("storage", handleStorage);
+        window.removeEventListener(STORAGE_EVENT, onStoreChange);
+    };
+};
+
+const saveGuides = (nextGuides: Guide[]) => {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(nextGuides));
+        window.dispatchEvent(new Event(STORAGE_EVENT));
+    } catch {
+        // Keep the rendered list usable if browser storage is unavailable.
+    }
+};
 
 export function useGuides() {
     const [guides, setGuides] = useState<Guide[]>(() => {

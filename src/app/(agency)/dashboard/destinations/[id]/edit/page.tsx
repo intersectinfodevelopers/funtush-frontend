@@ -1,75 +1,56 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useState } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import DestinationForm from "@/components/agency/destinations/DestinationForm";
+import destinationsJson from "@/../data/destinations.json";
 
 export default function EditDestinationPage() {
   const params = useParams();
+  const router = useRouter();
+  const id = params.id as string | undefined;
 
-  const [formData, setFormData] = useState({
-    title: "",
-    region: "",
-    difficulty: "",
-    maxAltitude: "",
-    bestSeason: "",
-  });
+  const [initialData, setInitialData] = useState<any | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
+  useEffect(() => {
+    if (!id) return;
 
-  return (
-    <div className="p-6">
-      <h1 className="mb-6 text-3xl font-bold">Edit Destination {params.id}</h1>
+    try {
+      const stored = localStorage.getItem("destinations");
+      if (stored) {
+        const list = JSON.parse(stored) as any[];
+        const found = list.find((d) => String(d.id) === String(id));
+        if (found) {
+          setInitialData({
+            ...found,
+            name: found.name ?? found.title ?? "",
+            featuredImage: found.featuredImage ?? "",
+            bestTimeToVisit: found.bestTimeToVisit ?? found.bestSeason ?? "",
+          });
+          return;
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
 
-      <div className="space-y-4">
-        <input
-          name="title"
-          value={formData.title}
-          onChange={handleChange}
-          placeholder="Destination title"
-          className="w-full rounded border p-2"
-        />
+    // fallback to static data
+    const raw = (destinationsJson as any[]).find((d) => String(d.id) === String(id));
+    if (raw) {
+      setInitialData({
+        ...raw,
+        name: raw.title || "",
+        featuredImage: raw.featuredImage || "",
+        bestTimeToVisit: raw.bestSeason || "",
+      });
+      return;
+    }
 
-        <input
-          name="region"
-          value={formData.region}
-          onChange={handleChange}
-          placeholder="Region"
-          className="w-full rounded border p-2"
-        />
+    router.push("/dashboard/destinations");
+  }, [id, router]);
 
-        <input
-          name="difficulty"
-          value={formData.difficulty}
-          onChange={handleChange}
-          placeholder="Difficulty"
-          className="w-full rounded border p-2"
-        />
+  if (!initialData) return <div className="p-4">Loading destination editor...</div>;
 
-        <input
-          name="maxAltitude"
-          value={formData.maxAltitude}
-          onChange={handleChange}
-          placeholder="Maximum Altitude"
-          className="w-full rounded border p-2"
-        />
-
-        <input
-          name="bestSeason"
-          value={formData.bestSeason}
-          onChange={handleChange}
-          placeholder="Best Season"
-          className="w-full rounded border p-2"
-        />
-
-        <button className="rounded bg-green-600 px-4 py-2 text-white">
-          Update Destination
-        </button>
-      </div>
-    </div>
-  );
+  return <DestinationForm isNew={false} initialData={initialData} destinationId={id} />;
 }
+

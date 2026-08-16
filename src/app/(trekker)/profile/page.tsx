@@ -69,21 +69,26 @@ export default function ProfilePage() {
   const [emSaving, setEmSaving] = useState(false);
 
   // Load user data on mount
+  // Hydrate local state asynchronously from `user` and local storage to avoid
+  // synchronous setState calls inside effect.
   useEffect(() => {
-  if (user) {
-    setFullName(user.name);
-    setEmail(user.email);
-    setPhone(user.phone || '');
-    setCountry(user.country || '');
-  }
+    const t = setTimeout(() => {
+      if (user) {
+        setFullName(user.name);
+        setEmail(user.email);
+        setPhone(user.phone || '');
+        setCountry(user.country || '');
+      }
 
-  const existing = getEmergencyContact();
-  if (existing) {
-    setEmName(existing.name);
-    setEmPhone(existing.phone);
-    setEmRelationship(existing.relationship);
-  }
-}, [user]);
+      const existing = getEmergencyContact();
+      if (existing) {
+        setEmName(existing.name);
+        setEmPhone(existing.phone);
+        setEmRelationship(existing.relationship);
+      }
+    }, 0);
+    return () => clearTimeout(t);
+  }, [user]);
 
   // ── Save Personal Info ──
   function handleProfileSubmit(e: FormEvent) {

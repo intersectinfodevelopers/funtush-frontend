@@ -57,7 +57,7 @@ export default function DashboardHeader() {
         <div className="relative">
           <button
             onClick={() => setIsActive((prev) => !prev)}
-            className="flex h-11 items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-4 text-xs font-medium text-white whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700"
           >
             Quick Actions
             <ChevronDown size={16} className={`transition-transform ${isActive ? 'rotate-180' : ''}`} />

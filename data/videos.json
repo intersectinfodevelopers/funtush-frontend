@@ -1,0 +1,24 @@
+[
+  {
+    "id": "vid-001",
+    "youtubeUrl": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    "title": "Everest Base Camp Overview",
+    "description": "A short overview of the Everest Base Camp trek.",
+    "thumbnail": "/images/videos/ebc-thumb.jpg",
+    "order": 1,
+    "status": "active",
+    "views": 12456,
+    "likes": 842
+  },
+  {
+    "id": "vid-002",
+    "youtubeUrl": "https://www.youtube.com/watch?v=9bZkp7q19f0",
+    "title": "Annapurna Circuit Highlights",
+    "description": "Highlights from the Annapurna Circuit trek.",
+    "thumbnail": "/images/videos/annapurna-thumb.jpg",
+    "order": 2,
+    "status": "inactive",
+    "views": 8421,
+    "likes": 430
+  }
+]

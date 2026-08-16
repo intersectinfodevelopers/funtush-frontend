@@ -1,6 +1,6 @@
 "use client";
 
-import type { LucideIcon } from "lucide-react";
+import React from "react";
 import { ArrowUpRight } from "lucide-react";
 
 export type AnalyticsTone = "primary" | "success" | "warning" | "accent" | "danger";
@@ -23,16 +23,16 @@ export function AnalyticsSummaryCard({
   label: string;
   value: number | string;
   tone: AnalyticsTone;
-  icon: LucideIcon;
+  icon?: React.ComponentType<any> | null;
   change?: string;
 }) {
-  const styles = toneStyles[tone];
+  const styles = toneStyles[tone] ?? toneStyles.primary;
 
   return (
     <div className={`rounded-2xl border p-4 shadow-sm ${styles.card}`}>
       <div className="flex items-start justify-between gap-3">
         <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${styles.icon}`}>
-          <Icon className="h-4 w-4" />
+          {Icon ? <Icon className="h-4 w-4" /> : null}
         </div>
         <ArrowUpRight className="h-4 w-4 text-success-600" />
       </div>

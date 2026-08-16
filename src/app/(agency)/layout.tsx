@@ -19,6 +19,22 @@ export default function AgencyLayout({ children }: { children: React.ReactNode }
     return () => mq.removeEventListener('change', handleChange);
   }, []);
 
+  // Ensure the global page background remains light while inside the agency
+  // dashboard area. On some systems `prefers-color-scheme` can make the root
+  // background dark which becomes visible if inner layout doesn't cover the
+  // full html height. Force a neutral light background for this layout and
+  // restore the previous values on unmount.
+  useEffect(() => {
+    const prevHtmlBg = document.documentElement.style.background;
+    const prevBodyBg = document.body.style.background;
+    document.documentElement.style.background = '#f9fafb';
+    document.body.style.background = '#f9fafb';
+    return () => {
+      document.documentElement.style.background = prevHtmlBg || '';
+      document.body.style.background = prevBodyBg || '';
+    };
+  }, []);
+
   const handleMenuClick = () => {
     if (window.matchMedia('(min-width: 768px)').matches) {
       setIsSidebarCollapsed((prev) => !prev);

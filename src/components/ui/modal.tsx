@@ -11,25 +11,31 @@ export interface ModalProps {
   children: React.ReactNode;
 }
 
+let openModalCount = 0;
+
 export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, size = 'md', children }) => {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
+
     if (isOpen) {
-      document.body.style.overflow = 'hidden';
+      // Increment modal stack counter and set body overflow only when first opens
+      openModalCount += 1;
+      if (openModalCount === 1) {
+        document.body.style.overflow = 'hidden';
+      }
       window.addEventListener('keydown', handleEscape);
     }
+
     return () => {
-      // FIX: clear the inline style instead of setting it to 'unset'.
-      // Setting an explicit inline value ('unset') permanently wins over the
-      // body { overflow: hidden } rule in globals.css, because inline
-      // styles always beat stylesheet rules — and in Next.js <body> is
-      // never recreated between client-side navigations, so that stuck
-      // inline value silently re-enables the outer page scrollbar on
-      // every route for the rest of the session, not just this modal.
-      // Removing the inline style entirely lets the CSS rule apply again.
-      document.body.style.removeProperty('overflow');
+      // Decrement modal counter and only remove overflow when no modals remain
+      if (isOpen) {
+        openModalCount = Math.max(0, openModalCount - 1);
+        if (openModalCount === 0) {
+          document.body.style.removeProperty('overflow');
+        }
+      }
       window.removeEventListener('keydown', handleEscape);
     };
   }, [isOpen, onClose]);
