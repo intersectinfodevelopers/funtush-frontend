@@ -186,14 +186,18 @@ export default function NewBookingPage() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-6xl py-6">
-      <div className="mb-6">
-        <div className="flex items-center gap-1 text-xs text-neutral-500">
-          <Link href="/dashboard">Dashboard</Link>
-          <ChevronRight size={15} />
-          <Link href="/dashboard/bookings">Bookings</Link>
-          <ChevronRight size={15} />
-          <strong className="text-primary-900">New booking</strong>
+    <div className="mx-auto w-full max-w-6xl py-2 sm:py-4">
+      <div className="mb-7 border-b border-neutral-200 pb-6">
+        <div className="flex items-center gap-2 text-sm text-neutral-500">
+          <Link href="/dashboard" className="hover:text-neutral-900">
+            Dashboard
+          </Link>
+          <span className="text-neutral-300">/</span>
+          <Link href="/dashboard/bookings" className="hover:text-neutral-900">
+            Bookings
+          </Link>
+          <span className="text-neutral-300">/</span>
+          <span className="font-semibold text-neutral-900">New booking</span>
         </div>
         <h1 className="mt-2 text-2xl font-bold text-neutral-900">
           Create booking
@@ -203,7 +207,7 @@ export default function NewBookingPage() {
         </p>
       </div>
 
-      <div className="w-full space-y-6 rounded-2xl border border-neutral-200 bg-white p-6">
+      <div className="w-full space-y-6 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="grid gap-6 lg:grid-cols-3">
           <div>
             <label className="block text-sm font-medium text-neutral-700">
