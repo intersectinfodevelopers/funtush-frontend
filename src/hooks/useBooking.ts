@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import bookingsData from "../../data/bookings.json";
 
@@ -19,18 +20,21 @@ export type Booking = {
 export type NewBooking = Omit<Booking, "id" | "created_at">;
 
 export function useBookings() {
-  const [bookings, setBookings] = useState<Booking[]>(() => {
-    if (typeof window === "undefined") {
-      return bookingsData as Booking[];
-    }
+  const [bookings, setBookings] = useState<Booking[]>(
+    bookingsData as Booking[],
+  );
 
-    const stored = localStorage.getItem("bookings");
-    if (stored) {
-      return JSON.parse(stored) as Booking[];
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("bookings");
+      if (stored) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setBookings(JSON.parse(stored) as Booking[]);
+      }
+    } catch {
+      // Keep default bookings if localStorage is invalid
     }
-
-    return bookingsData as Booking[];
-  });
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("bookings", JSON.stringify(bookings));
