@@ -11,6 +11,9 @@ import {
   AnalyticsOutlined,
   BadgeOutlined,
   CalendarMonthOutlined,
+  PhotoLibraryOutlined,
+  OndemandVideoOutlined,
+  CampaignOutlined,
   ChevronRight,
   ChevronLeft,
   CompassCalibrationOutlined,
@@ -72,11 +75,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       label: 'Operations',
       items: [
         { label: 'Guides', href: '/dashboard/guides', icon: CompassCalibrationOutlined },
+        { label: 'Gallery', href: '/dashboard/gallery', icon: PhotoLibraryOutlined },
+        { label: 'Videos', href: '/dashboard/videos', icon: OndemandVideoOutlined },
         { label: 'Finance', href: '/dashboard/finance', icon: WalletOutlined },
         { label: 'Analytics', href: '/dashboard/analytics', icon: AnalyticsOutlined },
         { label: 'Staff & Roles', href: '/dashboard/staff', icon: ManageAccountsOutlined },
         { label: 'Safety', href: '/dashboard/safety', icon: SecurityOutlined },
         { label: 'Destinations', href: '/dashboard/destinations', icon: PublicOutlined },
+        {
+          label: 'Advertisements',
+          icon: CampaignOutlined,
+          children: [
+            { label: 'All Ads', href: '/dashboard/advertisements', icon: CalendarMonthOutlined },
+            { label: 'Positions', href: '/dashboard/advertisements/positions', icon: CalendarMonthOutlined },
+          ],
+        },
       ],
     },
     {

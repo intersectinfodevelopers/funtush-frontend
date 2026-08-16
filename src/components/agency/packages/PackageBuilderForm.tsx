@@ -194,9 +194,41 @@ export default function PackageBuilderForm({
       synchronizedList = [...database, payload];
     }
 
-    localStorage.setItem("packages", JSON.stringify(synchronizedList));
-    toast.success(`Package ${packageId ? "updated" : "created"} successfully.`);
-    router.push("/dashboard/packages");
+    try {
+      localStorage.setItem("packages", JSON.stringify(synchronizedList));
+      toast.success(`Package ${packageId ? "updated" : "created"} successfully.`);
+      router.push("/dashboard/packages");
+      return;
+    } catch (err) {
+      console.warn("localStorage.setItem failed, attempting trimmed save:", err);
+
+      // If we exceeded localStorage quota (large image data URLs), try
+      // saving a trimmed version without heavy binary data (gallery/heroImage).
+      try {
+        const trimmedList = synchronizedList.map((p) => {
+          const { gallery, heroImage, ...rest } = p as any;
+          return {
+            ...rest,
+            // keep metadata but drop large image payloads to reduce size
+            gallery: [],
+            heroImage: "",
+          } as PackageForm;
+        });
+
+        localStorage.setItem("packages", JSON.stringify(trimmedList));
+        toast.success(
+          `Package ${packageId ? "updated" : "created"} saved (images omitted due to storage limits).`,
+        );
+        router.push("/dashboard/packages");
+        return;
+      } catch (err2) {
+        console.error("Trimmed localStorage save failed:", err2);
+        toast.error(
+          "Failed to save package: local storage quota exceeded. Remove some images or use a smaller payload.",
+        );
+        return;
+      }
+    }
   };
 
   /* ==========================================

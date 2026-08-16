@@ -1,0 +1,26 @@
+[
+  {
+    "id": "ad-1",
+    "title": "Summer Trek Promo",
+    "image": "/assets/ads/summer-trek.jpg",
+    "position": "homepage-top",
+    "status": "active",
+    "clicks": 123,
+    "impressions": 4123,
+    "startDate": "2026-07-01",
+    "endDate": "2026-08-31",
+    "order": 1
+  },
+  {
+    "id": "ad-2",
+    "title": "Discount Camps",
+    "image": "/assets/ads/discount-camps.jpg",
+    "position": "sidebar-1",
+    "status": "paused",
+    "clicks": 34,
+    "impressions": 987,
+    "startDate": "2026-06-15",
+    "endDate": "2026-09-30",
+    "order": 2
+  }
+]

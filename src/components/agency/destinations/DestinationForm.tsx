@@ -1,12 +1,15 @@
 "use client";
 
-import { ChangeEvent, DragEvent, useState } from "react";
+import { ChangeEvent, DragEvent, useState, useEffect } from "react";
+import Toggle from '@/components/ui/Toggle';
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { ImagePlus, X } from "lucide-react";
 
 type DestinationFormProps = {
   isNew?: boolean;
+  initialData?: Partial<DestinationFormData> & { id?: string; featuredImage?: string } | null;
+  destinationId?: string | null;
 };
 
 type DestinationFormData = {
@@ -16,7 +19,7 @@ type DestinationFormData = {
   longDescription: string;
   region: string;
   difficulty: string;
-  activities: string;
+  activities: string[];
   durationMin: string;
   durationMax: string;
   altitudeMin: string;
@@ -60,30 +63,7 @@ function Section({
   );
 }
 
-// Same toggle pattern used in PackageBuilderForm.tsx.
-function Toggle({
-  checked,
-  onChange,
-}: {
-  checked: boolean;
-  onChange: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onChange}
-      className={`relative inline-flex h-6 w-12 items-center rounded-full transition ${
-        checked ? "bg-primary-900" : "bg-neutral-200"
-      }`}
-    >
-      <span
-        className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${
-          checked ? "translate-x-6" : "translate-x-1"
-        }`}
-      />
-    </button>
-  );
-}
+// Toggle component imported from shared UI.
 
 const initialFormState: DestinationFormData = {
   name: "",
@@ -92,7 +72,7 @@ const initialFormState: DestinationFormData = {
   longDescription: "",
   region: "",
   difficulty: "",
-  activities: "",
+  activities: [],
   durationMin: "",
   durationMax: "",
   altitudeMin: "",
@@ -106,6 +86,8 @@ const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6MB
 
 export default function DestinationForm({
   isNew = true,
+  initialData = null,
+  destinationId = null,
 }: DestinationFormProps) {
   const router = useRouter();
 
@@ -113,12 +95,57 @@ export default function DestinationForm({
     useState<DestinationFormData>(initialFormState);
   const [featuredImage, setFeaturedImage] = useState<string>("");
   const [isDragging, setIsDragging] = useState(false);
+  const [newActivity, setNewActivity] = useState("");
+
+  // hydrate initial data when editing
+  useEffect(() => {
+    if (initialData) {
+      // handle activities which may be string or array in initialData
+      const incoming = { ...(initialData as Partial<DestinationFormData>) } as any;
+      if (incoming.activities && !Array.isArray(incoming.activities)) {
+        incoming.activities = String(incoming.activities).split(',').map((s: string) => s.trim()).filter(Boolean);
+      }
+      setFormData((prev) => ({ ...prev, ...incoming }));
+      if (initialData.featuredImage) setFeaturedImage(initialData.featuredImage);
+    }
+  }, [initialData]);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const ACTIVITY_OPTIONS = [
+    "trekking",
+    "hiking",
+    "camping",
+    "sightseeing",
+    "photography",
+    "wildlife",
+  ];
+
+  const addActivity = (val: string) => {
+    const v = String(val).trim();
+    if (!v) return;
+    setFormData((prev) => {
+      const list = Array.isArray(prev.activities) ? prev.activities : [];
+      if (list.includes(v)) return prev;
+      return { ...prev, activities: [...list, v] } as DestinationFormData;
+    });
+    setNewActivity("");
+  };
+
+  const removeActivity = (val: string) => {
+    setFormData((prev) => ({ ...prev, activities: (prev.activities || []).filter((a) => a !== val) } as DestinationFormData));
+  };
+
+  const onActivityKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (newActivity.trim()) addActivity(newActivity.trim());
+    }
   };
 
   const readFile = (file: File): Promise<string> => {
@@ -186,25 +213,41 @@ export default function DestinationForm({
       return;
     }
 
-    const stored = localStorage.getItem("destinations");
-    const database: (DestinationFormData & {
-      id: string;
-      featuredImage: string;
-    })[] = stored ? JSON.parse(stored) : [];
+    try {
+      const stored = localStorage.getItem("destinations");
+      const database: (DestinationFormData & { id: string; featuredImage: string })[] = stored
+        ? JSON.parse(stored)
+        : [];
 
-    const payload = {
-      ...formData,
-      featuredImage,
-      id: `dest-${Date.now()}`,
-    };
-
-    localStorage.setItem(
-      "destinations",
-      JSON.stringify([...database, payload]),
-    );
-
-    toast.success("Destination created successfully.");
-    router.push("/dashboard/destinations");
+      if (isNew) {
+        const payload = {
+          ...formData,
+          featuredImage,
+          id: `dest-${Date.now()}`,
+        };
+        localStorage.setItem("destinations", JSON.stringify([...database, payload]));
+        toast.success("Destination created successfully.");
+        router.push("/dashboard/destinations");
+      } else {
+        // update existing
+        if (!destinationId) {
+          toast.error("Missing destination id for update.");
+          return;
+        }
+        const updated = database.map((item) => {
+          if (item.id === destinationId) {
+            return { ...(item as any), ...formData, featuredImage, id: destinationId };
+          }
+          return item;
+        });
+        localStorage.setItem("destinations", JSON.stringify(updated));
+        toast.success("Destination updated successfully.");
+        router.push("/dashboard/destinations");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to save destination.");
+    }
   };
 
   return (
@@ -390,21 +433,36 @@ export default function DestinationForm({
             <label htmlFor="activities" className={labelClassName}>
               Activities (optional)
             </label>
-            <select
-              id="activities"
-              name="activities"
-              value={formData.activities}
-              onChange={handleChange}
-              className={fieldClassName}
-            >
-              <option value="">Select activities</option>
-              <option value="trekking">Trekking</option>
-              <option value="hiking">Hiking</option>
-              <option value="camping">Camping</option>
-              <option value="sightseeing">Sightseeing</option>
-              <option value="photography">Photography</option>
-              <option value="wildlife">Wildlife</option>
-            </select>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-wrap gap-2">
+                {(formData.activities || []).map((a) => (
+                  <span
+                    key={a}
+                    className="inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs"
+                    style={{ background: 'var(--color-primary-50)', color: 'var(--color-primary-700)' }}
+                  >
+                    <span>{a}</span>
+                    <button type="button" onClick={() => removeActivity(a)} style={{ color: 'var(--color-primary-700)' }} className="ml-1">×</button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newActivity}
+                  onChange={(e) => setNewActivity(e.target.value)}
+                  onKeyDown={onActivityKeyDown}
+                  placeholder="Add activity and press Enter"
+                  className={fieldClassName}
+                />
+                <button type="button" onClick={() => newActivity.trim() && addActivity(newActivity.trim())} className="rounded-md bg-primary-900 px-3 py-2 text-sm text-white">Add</button>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs text-neutral-500">
+                {ACTIVITY_OPTIONS.filter((o) => !(formData.activities || []).includes(o)).map((o) => (
+                  <button key={o} type="button" onClick={() => addActivity(o)} className="rounded-full bg-neutral-50 px-2 py-1">{o}</button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div>

@@ -125,10 +125,14 @@ export default function NotificationsPage() {
   const [readIds, setReadIds] = useState<string[]>([]);
   const [mounted, setMounted] = useState(false);
 
+  // Initialize mounted/read ids asynchronously to avoid synchronous setState in effect.
   useEffect(() => {
-  setMounted(true);
-  setReadIds(getReadNotificationIds());
-}, []);
+    const t = setTimeout(() => {
+      setMounted(true);
+      setReadIds(getReadNotificationIds());
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
 
   const notifications = useMemo(() => {
     return MOCK_NOTIFICATIONS.map((n) => ({
