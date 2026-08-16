@@ -1,29 +1,43 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import {
   BriefcaseBusiness,
   ChevronRight,
   Plus,
   ShieldCheck,
-  Trash2,
   Users,
 } from "lucide-react";
 import { useRoles } from "@/hooks/useRoles";
 import { useStaff } from "@/hooks/useStaff";
+import { Modal } from "@/components/ui/modal";
+import { Pagination } from "@/components/ui/pagination";
+import { DeleteOutlineOutlined, EditOutlined } from "@mui/icons-material";
 
 export default function RolesPage() {
   const { roles, deleteRole } = useRoles();
   const { staff } = useStaff();
+  const [roleToDelete, setRoleToDelete] = useState<
+    (typeof roles)[number] | null
+  >(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  const handleDelete = (roleId: string, roleName: string) => {
-    if (window.confirm(`Delete the ${roleName} role? This cannot be undone.`)) {
-      deleteRole(roleId);
-    }
+  const handleDelete = () => {
+    if (!roleToDelete) return;
+    deleteRole(roleToDelete.id);
+    setRoleToDelete(null);
   };
 
+  const rolesPerPage = 8;
+  const totalPages = Math.max(1, Math.ceil(roles.length / rolesPerPage));
+  const paginatedRoles = roles.slice(
+    (currentPage - 1) * rolesPerPage,
+    currentPage * rolesPerPage,
+  );
+
   return (
-    <div className="mx-auto w-full max-w-6xl py-2 sm:py-4">
+    <div className="space-y-4 w-full">
       <div className="mb-7 flex flex-col gap-4 border-b border-neutral-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-1 text-xs text-neutral-500">
@@ -31,7 +45,6 @@ export default function RolesPage() {
             <ChevronRight size={15} />
             <Link
               href="/dashboard/staff"
-              className="transition hover:text-primary-700 "
             >
               Staff &amp; Roles
             </Link>
@@ -46,7 +59,7 @@ export default function RolesPage() {
           </p>
         </div>
         <Link
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-800"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700"
           href="/dashboard/roles/new"
         >
           <Plus size={18} /> Create role
@@ -69,7 +82,7 @@ export default function RolesPage() {
         </div>
       </div>
       <section className="grid gap-5 md:grid-cols-2">
-        {roles.map((role) => {
+        {paginatedRoles.map((role) => {
           const members = staff.filter((member) => member.role === role.id);
           const summary =
             role.permissions.length === 10
@@ -101,26 +114,66 @@ export default function RolesPage() {
                   {summary}
                 </p>
               </div>
-              <div className="flex h-fit items-center gap-2">
+              <div className="flex h-fit gap-2">
                 <Link
                   href={`/dashboard/roles/${role.id}`}
-                  className="rounded-lg bg-primary-50 px-3 py-1.5 text-xs font-bold text-primary-700 hover:bg-primary-100"
+                  className="rounded-md bg-warning-100 p-2 text-warning-600 hover:bg-warning-200"
                 >
-                  Edit
+                  <EditOutlined sx={{ fontSize: 18 }} />
                 </Link>
                 <button
                   type="button"
-                  onClick={() => handleDelete(role.id, role.name)}
-                  className="inline-flex items-center gap-1 rounded-lg bg-danger-50 px-3 py-1.5 text-xs font-bold text-danger-700 hover:bg-danger-100"
+
+                  onClick={() => setRoleToDelete(role)}
+                  className="rounded-md bg-danger-100 p-2 text-danger-500 transition hover:bg-danger-200"
                   aria-label={`Delete ${role.name}`}
                 >
-                  <Trash2 size={14} /> Delete
+                  <DeleteOutlineOutlined sx={{ fontSize: 18 }} /> 
                 </button>
               </div>
             </article>
           );
         })}
       </section>
+      <div className="mt-4 w-full">
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      </div>
+      <Modal
+        isOpen={!!roleToDelete}
+        onClose={() => setRoleToDelete(null)}
+        title="Delete Role"
+        size="md"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-neutral-600">
+            Are you sure you want to delete this role{" "}
+            <span className="font-semibold text-neutral-900">
+              {roleToDelete?.name}
+            </span>
+            ? This action cannot be undone.
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setRoleToDelete(null)}
+              className="rounded-2xl border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="rounded-2xl bg-danger-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-danger-700"
+            >
+              Delete role
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
