@@ -128,8 +128,8 @@ const GuideAvatar = ({
 type GuideRow = (typeof guideRows)[number];
 
 export default function GuidesPage() {
-  const defaultExpiryDate = useMemo(() => getDefaultExpiryDate(), []);
   const router = useRouter();
+  const defaultExpiryDate = useMemo(() => getDefaultExpiryDate(), []);
   const [guideRowsState, setGuideRowsState] = useState(guideRows);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");

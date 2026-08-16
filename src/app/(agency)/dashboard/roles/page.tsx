@@ -37,7 +37,7 @@ export default function RolesPage() {
   );
 
   return (
-    <div className="mx-auto w-full max-w-6xl py-2 sm:py-4">
+    <div className="space-y-4 w-full">
       <div className="mb-7 flex flex-col gap-4 border-b border-neutral-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-1 text-xs text-neutral-500">
@@ -45,7 +45,6 @@ export default function RolesPage() {
             <ChevronRight size={15} />
             <Link
               href="/dashboard/staff"
-              className="transition hover:text-primary-700 "
             >
               Staff &amp; Roles
             </Link>
@@ -60,7 +59,7 @@ export default function RolesPage() {
           </p>
         </div>
         <Link
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-800"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700"
           href="/dashboard/roles/new"
         >
           <Plus size={18} /> Create role
