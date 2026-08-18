@@ -32,11 +32,12 @@ export default function StaffForm({ initialData, isNew = true, onSave }: StaffFo
   const [role, setRole] = useState(initialData?.role ?? "");
 
   useEffect(() => {
-    if (!initialData) return;
-    setName(initialData.name ?? "");
-    setEmail(initialData.email ?? "");
-    setPhone(initialData.phone ?? "");
-    setRole(initialData.role ?? "");
+    if (initialData) {
+      setName(initialData.name ?? "");
+      setEmail(initialData.email ?? "");
+      setPhone(initialData.phone ?? "");
+      setRole(initialData.role ?? "");
+    }
   }, [initialData]);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {

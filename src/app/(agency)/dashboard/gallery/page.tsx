@@ -2,19 +2,23 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Plus, Eye, Edit3, Trash2 } from "lucide-react";
+import { Camera, Plus, Globe, FilePen } from "lucide-react";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  VisibilityOutlined,
+} from "@mui/icons-material";
 import { AnalyticsSummaryCard } from "@/components/shared/AnalyticsSummaryCard";
 import { Pagination } from "@/components/ui/pagination";
-import galleryData from "@/../data/gallery.json";
-
-type Gallery = (typeof galleryData)[number];
+import { useGallery, type GalleryImage } from "@/hooks/useGallery";
 
 export default function GalleryPage() {
+  const { gallery } = useGallery();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const rows = useMemo<Gallery[]>(() => galleryData.map((g) => ({ ...g })), []);
+  const rows = useMemo<GalleryImage[]>(() => gallery.map((image) => ({ ...image })), [gallery]);
 
   const stats = useMemo(() => ({ total: rows.length, published: rows.filter((r) => r.status === 'published').length }), [rows]);
 
@@ -35,7 +39,7 @@ export default function GalleryPage() {
   return (
     <div className="space-y-4 w-full min-h-screen">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
+        <div className="space-y-1">
           <div className="flex items-center gap-2 text-sm text-neutral-500">
             <Link href="/dashboard" className="transition hover:text-neutral-900">Dashboard</Link>
             <span className="text-neutral-300">/</span>
@@ -53,15 +57,15 @@ export default function GalleryPage() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <AnalyticsSummaryCard label="Total Photos" value={stats.total} tone="primary" icon={() => null} />
-        <AnalyticsSummaryCard label="Published" value={stats.published} tone="success" icon={() => null} />
-        <AnalyticsSummaryCard label="Drafts" value={stats.total - stats.published} tone="warning" icon={() => null} />
+        <AnalyticsSummaryCard label="Total Photos" value={stats.total} tone="primary" icon={Camera} />
+        <AnalyticsSummaryCard label="Published" value={stats.published} tone="success" icon={Globe} />
+        <AnalyticsSummaryCard label="Drafts" value={stats.total - stats.published} tone="warning" icon={FilePen} />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-[minmax(240px,1fr)_180px_180px]">
         <label className="relative block">
           <input
-            className="w-full rounded-2xl border border-neutral-200 bg-white py-2.5 pl-4 pr-3 text-sm text-neutral-900 outline-none"
+            className="w-full rounded-2xl border border-neutral-200 bg-white py-2.5 pl-4 pr-3 text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
             placeholder="Search gallery"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
@@ -112,14 +116,14 @@ export default function GalleryPage() {
                   <td className="px-4 py-3">{item.status}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <button aria-label={`Preview ${item.title}`} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary-50 text-primary-700">
-                        <Eye className="h-4 w-4" />
+                      <button aria-label={`Preview ${item.title}`} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary-100 text-primary-600 hover:bg-primary-200">
+                        <VisibilityOutlined sx={{ fontSize: 16 }} />
                       </button>
-                      <Link href={`/dashboard/gallery/${item.id}/edit`} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-warning-50 text-warning-700">
-                        <Edit3 className="h-4 w-4" />
-                      </Link>
-                      <button aria-label={`Delete ${item.title}`} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-danger-50 text-danger-700">
-                        <Trash2 className="h-4 w-4" />
+                      <button aria-label={`Preview ${item.id}`} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-warning-100 text-warning-600 hover:bg-warning-200">
+                        <EditOutlined sx={{ fontSize: 16 }} />
+                      </button>
+                      <button aria-label={`Delete ${item.title}`} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-danger-100 text-danger-500 hover:bg-danger-200">
+                        <DeleteOutlined sx={{fontSize: 16}}/>
                       </button>
                     </div>
                   </td>
