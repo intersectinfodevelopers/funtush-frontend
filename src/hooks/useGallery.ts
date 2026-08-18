@@ -25,27 +25,23 @@ const STORAGE_KEY = "funtush-gallery";
 const initialGallery = galleryData as GalleryImage[];
 
 export function useGallery(){
-    const[gallery, setGallery] = useState<GalleryImage[]>(initialGallery);
-
-    const [isLoaded, setIsLoaded] = useState(false);
-
-    //load gallery from localStorage
-    useEffect(()=> {
+    const[gallery, setGallery] = useState<GalleryImage[]>(() => {
         try{
             const storedGallery = localStorage.getItem(STORAGE_KEY);
-
             if(storedGallery){
-                const parsedGallery = JSON.parse(
-                    storedGallery,
-                ) as GalleryImage[];
-
-                setGallery(parsedGallery);
+                return JSON.parse(storedGallery) as GalleryImage[];
             }
         }catch(error){
             console.error("Failed to load gallery", error);
-        }finally{
-            setIsLoaded(true);
         }
+        return initialGallery;
+    });
+
+    const [isLoaded, setIsLoaded] = useState(false);
+
+    //mark as loaded after initial mount
+    useEffect(()=> {
+        setIsLoaded(true);
     }, []);
 
     //save gallery whenever it changes
