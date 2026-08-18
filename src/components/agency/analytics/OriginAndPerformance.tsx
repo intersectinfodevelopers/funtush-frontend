@@ -35,33 +35,36 @@ export default function OriginAndPerformance() {
   return (
     <section>
       <div className="mb-2">
-        <h2 className="font-medium text-lg">Trekker Origin & Package Performance</h2>
+        <h2 className="text-2xl font-semibold text-neutral-900">Trekker Origin & Package Performance</h2>
+        <p className="text-sm leading-6 text-neutral-600">Origin breakdown and package performance for recent bookings.</p>
       </div>
-      <div className="rounded-lg">
-        <div className="grid grid-cols-7 justify-items-center p-2.5 bg-[#6B77A4]">
-          {header.map((item) => (
-            <p key={item} className="text-base font-medium text-white">
-              {item}
-            </p>
-          ))}
-        </div>
-        <div>
-          {data.map((item) => (
-            <div
-              key={item.id}
-              className="grid grid-cols-7 justify-items-center items-center p-2.5 border border-[#D9D9D9]"
-            >
-              <p className="text-base font-medium">{item.id}</p>
-              <p>{item.country}</p>
-              <p>{item.package}</p>
-              <p>{item.bookings}</p>
-              <p>{item.revenue}</p>
-              <p>{item.avgValue}</p>
-              <p>{item.lastBooking}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+
+      <section className="overflow-x-auto border-t border-neutral-200 bg-white rounded-lg">
+        <table className="min-w-full border-collapse text-left text-sm text-neutral-700">
+          <thead className="bg-neutral-50 text-[10px] uppercase tracking-[0.24em] text-neutral-500">
+            <tr>
+              {header.map((item) => (
+                <th key={item} className="px-4 py-3">
+                  {item}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((item) => (
+              <tr key={item.id} className="border-b border-neutral-200 hover:bg-neutral-50">
+                <td className="px-4 py-3 text-neutral-700">{item.id}</td>
+                <td className="px-4 py-3 text-neutral-900">{item.country}</td>
+                <td className="px-4 py-3 text-neutral-700">{item.package}</td>
+                <td className="px-4 py-3 text-neutral-700">{item.bookings}</td>
+                <td className="px-4 py-3 text-neutral-700">{item.revenue}</td>
+                <td className="px-4 py-3 text-neutral-700">{item.avgValue}</td>
+                <td className="px-4 py-3 text-neutral-700">{item.lastBooking}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
     </section>
   );
 }
