@@ -10,16 +10,15 @@ import {
 } from "@mui/icons-material";
 import { AnalyticsSummaryCard } from "@/components/shared/AnalyticsSummaryCard";
 import { Pagination } from "@/components/ui/pagination";
-import galleryData from "@/../data/gallery.json";
-
-type Gallery = (typeof galleryData)[number];
+import { useGallery, type GalleryImage } from "@/hooks/useGallery";
 
 export default function GalleryPage() {
+  const { gallery } = useGallery();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const rows = useMemo<Gallery[]>(() => galleryData.map((g) => ({ ...g })), []);
+  const rows = useMemo<GalleryImage[]>(() => gallery.map((image) => ({ ...image })), [gallery]);
 
   const stats = useMemo(() => ({ total: rows.length, published: rows.filter((r) => r.status === 'published').length }), [rows]);
 
