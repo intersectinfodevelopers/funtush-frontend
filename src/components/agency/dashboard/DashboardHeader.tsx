@@ -12,9 +12,17 @@ export default function DashboardHeader() {
   const [date, setDate] = useState<Date | null>(null);
 
   useEffect(() => {
-    setDate(new Date());
-    const interval = setInterval(() => setDate(new Date()), 60000);
-    return () => clearInterval(interval);
+    const updateDate = () => {
+      setDate(new Date());
+    };
+
+    const timeout = setTimeout(updateDate, 1000);
+    const interval = setInterval(updateDate, 60000);
+
+    return () => {
+      clearTimeout(timeout);
+      clearInterval(interval);
+    };
   }, []);
 
   const user = users[0].name.split(' ')[0];
@@ -28,7 +36,7 @@ export default function DashboardHeader() {
       {/* Greeting */}
       <div className="shrink-0">
         <h1 className="text-lg font-medium sm:text-xl lg:text-2xl">Good Morning, {user}</h1>
-        <p className="text-xs text-neutral-500 sm:text-sm">Here's what's happening with your agency today.</p>
+        <p className="text-xs text-neutral-500 sm:text-sm">Here&apos;s what&apos;s happening with your agency today.</p>
       </div>
 
       {/* Weather + Time + Quick Actions */}
