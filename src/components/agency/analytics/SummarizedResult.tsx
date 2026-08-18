@@ -75,7 +75,7 @@ export default function SummarizedResult({ agencyId }: Props) {
               <ChartWave2 color={item.iconColor} />
               <div className="flex justify-between">
                 {MONTHS.map((month) => (
-                  <span key={month} className="flex-1 text-xs text-neutral-500">
+                  <span key={month} className="flex-1 text-[10px] text-neutral-500">
                     {month}
                   </span>
                 ))}
@@ -113,7 +113,7 @@ export default function SummarizedResult({ agencyId }: Props) {
               <ChartWave3 />
               <div className="flex justify-between">
                 {MONTHS.map((month) => (
-                  <span key={month} className="flex-1 text-xs text-neutral-500">
+                  <span key={month} className="flex-1 text-[10px] text-neutral-500">
                     {month}
                   </span>
                 ))}
@@ -140,7 +140,7 @@ export default function SummarizedResult({ agencyId }: Props) {
                 <ChartWave3 strokeWidth={1.5} />
                 <div className="flex justify-between">
                   {MONTHS.map((month) => (
-                    <span key={month} className="flex-1 text-xs text-neutral-500">
+                    <span key={month} className="flex-1 text-[10px] text-neutral-500">
                       {month}
                     </span>
                   ))}
