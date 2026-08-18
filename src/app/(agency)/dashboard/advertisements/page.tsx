@@ -30,7 +30,7 @@ const statusBadgeVariant = (status: Ad["status"]) => {
     case "paused":
       return "suspended";
     default:
-      return "default";
+      return "draft";
   }
 };
 
