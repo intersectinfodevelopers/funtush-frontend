@@ -56,7 +56,8 @@ export default function SummarizedResult({ agencyId }: Props) {
 
   return (
     <section className="flex flex-col gap-2.5">
-      <h2 className="text-lg font-medium">Summarized Result</h2>
+      <h2 className="text-2xl font-semibold text-neutral-900">Summarized Result</h2>
+      <p className="text-sm leading-6 text-neutral-600">Overview of bookings, revenue, and recent trends for this agency.</p>
       <div className="w-full flex gap-3 justify-between">
         {topStats.map((item) => (
           <div key={item.header} className="flex-1 flex flex-col px-8.5 py-8 bg-white rounded-sm text-neutral-900">
