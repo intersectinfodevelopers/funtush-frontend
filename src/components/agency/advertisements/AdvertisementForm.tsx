@@ -22,6 +22,24 @@ const positions = [
   { label: "Sidebar 2", value: "sidebar-2" },
 ];
 
+const MAX_IMAGE_DIMENSION = 1600;
+const IMAGE_QUALITY = 0.75;
+
+const optimizeImage = async (file: File) => {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(
+    1,
+    MAX_IMAGE_DIMENSION / Math.max(bitmap.width, bitmap.height),
+  );
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+
+  return canvas.toDataURL("image/jpeg", IMAGE_QUALITY);
+};
+
 export default function AdvertisementForm({
   isEdit = false,
   advertisementId,
@@ -48,16 +66,14 @@ export default function AdvertisementForm({
       return;
     }
 
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setImage(reader.result);
+    optimizeImage(file)
+      .then((optimizedImage) => {
+        setImage(optimizedImage);
         setError("");
-      }
-    };
-
-    reader.readAsDataURL(file);
+      })
+      .catch(() => {
+        setError("Unable to process this image. Please select another file.");
+      });
 
     // Only one photo is allowed.
     event.target.value = "";
@@ -87,7 +103,16 @@ export default function AdvertisementForm({
 
     const storedAds = localStorage.getItem("advertisements");
 
-    const ads = storedAds ? JSON.parse(storedAds) : [];
+    let ads = [];
+
+    try {
+      ads = storedAds ? JSON.parse(storedAds) : [];
+    } catch {
+      setError("Saved advertisements are corrupted. Please refresh and try again.");
+      return;
+    }
+
+    let nextAds;
 
     if (isEdit && advertisementId) {
       const updatedAds = ads.map(
@@ -112,7 +137,7 @@ export default function AdvertisementForm({
         },
       );
 
-      localStorage.setItem("advertisements", JSON.stringify(updatedAds));
+      nextAds = updatedAds;
     } else {
       const newAd = {
         id: `ad-${Date.now()}`,
@@ -127,7 +152,14 @@ export default function AdvertisementForm({
         order: ads.length + 1,
       };
 
-      localStorage.setItem("advertisements", JSON.stringify([...ads, newAd]));
+      nextAds = [...ads, newAd];
+    }
+
+    try {
+      localStorage.setItem("advertisements", JSON.stringify(nextAds));
+    } catch {
+      setError("This image is too large to save. Please choose a smaller image.");
+      return;
     }
 
     router.push("/dashboard/advertisements");
