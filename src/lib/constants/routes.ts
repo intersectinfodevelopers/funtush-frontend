@@ -17,6 +17,7 @@ export const ROUTES = {
     REGISTER_TREKKER: '/register/trekker',
     VERIFY: '/verify',
     FORGOT_PASSWORD: '/forgot-password',
+    FORGOT_PASSWORD_CHECK: '/forgot-password/check-email',
     RESET_PASSWORD: '/reset-password',
   },
 
