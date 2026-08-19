@@ -1,9 +1,12 @@
-name: CD - Production Deploy
+name: CD - Manual Production Deploy
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "deploy" to confirm production deployment'
+        required: true
+        type: string
 
 concurrency:
   group: production-deployment
@@ -14,10 +17,21 @@ env:
 
 jobs:
   deploy:
-    name: Automatic Production Deploy
+    name: Manual Production Deploy
     runs-on: ubuntu-latest
 
     steps:
+
+      - name: Verify Deployment Confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "deploy" ]; then
+            echo "Deployment cancelled."
+            echo "You must type: deploy"
+            exit 1
+          fi
+
+          echo "Deployment confirmed."
+
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -34,7 +48,7 @@ jobs:
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
             "hostname && whoami && docker --version && docker compose version"
 
-      - name: Deploy to Production
+      - name: Deploy
         run: |
           ssh -i ~/.ssh/id_rsa \
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" << 'EOF'
@@ -44,38 +58,38 @@ jobs:
           cd /home/rituraj/app/funtush-frontend
 
           echo "======================================"
-          echo "1. Pull latest code"
+          echo "Pulling latest code"
           echo "======================================"
 
           git fetch origin main
           git reset --hard origin/main
 
           echo "======================================"
-          echo "2. Build frontend image"
+          echo "Building frontend image"
           echo "======================================"
 
           docker compose build frontend
 
           echo "======================================"
-          echo "3. Start frontend"
+          echo "Starting frontend"
           echo "======================================"
 
           docker compose up -d frontend
 
           echo "======================================"
-          echo "4. Ensure Nginx is running"
+          echo "Starting Nginx"
           echo "======================================"
 
           docker compose up -d nginx
 
           echo "======================================"
-          echo "5. Container status"
+          echo "Container Status"
           echo "======================================"
 
           docker compose ps
 
           echo "======================================"
-          echo "6. Health check"
+          echo "Health Check"
           echo "======================================"
 
           sleep 10
