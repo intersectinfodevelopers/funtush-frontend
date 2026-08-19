@@ -5,8 +5,6 @@ on:
     branches:
       - main
 
-  workflow_dispatch:
-
 concurrency:
   group: production-deployment
   cancel-in-progress: false
@@ -16,14 +14,10 @@ env:
 
 jobs:
   deploy:
-    name: Deploy to Production
+    name: Automatic Production Deploy
     runs-on: ubuntu-latest
 
     steps:
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
       - name: Setup SSH
         run: |
           mkdir -p ~/.ssh
@@ -40,55 +34,66 @@ jobs:
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
             "hostname && whoami && docker --version && docker compose version"
 
-      - name: Deploy
+      - name: Deploy to Production
         run: |
           ssh -i ~/.ssh/id_rsa \
             "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" << 'EOF'
 
-          set -e
+          set -Eeuo pipefail
 
           cd /home/rituraj/app/funtush-frontend
 
           echo "======================================"
-          echo "Pulling latest code"
+          echo "1. Pull latest code"
           echo "======================================"
 
           git fetch origin main
           git reset --hard origin/main
 
           echo "======================================"
-          echo "Building and starting Docker Compose"
+          echo "2. Build frontend image"
           echo "======================================"
 
-          docker compose up -d --build
+          docker compose build frontend
 
           echo "======================================"
-          echo "Checking containers"
+          echo "3. Start frontend"
+          echo "======================================"
+
+          docker compose up -d frontend
+
+          echo "======================================"
+          echo "4. Ensure Nginx is running"
+          echo "======================================"
+
+          docker compose up -d nginx
+
+          echo "======================================"
+          echo "5. Container status"
           echo "======================================"
 
           docker compose ps
 
           echo "======================================"
-          echo "Waiting for application"
+          echo "6. Health check"
           echo "======================================"
 
           sleep 10
 
-          echo "======================================"
-          echo "Testing frontend"
-          echo "======================================"
-
-          if curl -f http://localhost:80 > /dev/null 2>&1; then
+          if curl -fsS http://localhost:80 > /dev/null; then
               echo "Frontend is LIVE"
           else
-              echo "Frontend health check failed"
+              echo "Deployment failed"
+
               docker compose ps
-              docker compose logs --tail=100
+              docker compose logs --tail=100 frontend
+              docker compose logs --tail=100 nginx
+
               exit 1
           fi
 
           echo "======================================"
-          echo "Deployment successful"
+          echo "DEPLOYMENT SUCCESSFUL"
           echo "======================================"
 
           EOF
