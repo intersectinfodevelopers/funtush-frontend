@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Add,
@@ -37,7 +37,7 @@ const statusBadgeVariant = (status: Ad["status"]) => {
 export default function AdvertisementsPage() {
   const router = useRouter();
 
-  const [ads, setAds] = useState<Ad[]>(adsData.map((ad) => ({ ...ad })));
+  const [ads, setAds] = useState<Ad[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -45,6 +45,24 @@ export default function AdvertisementsPage() {
   const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
 
   const [deleteDialog, setDeleteDialog] = useState<Ad | null>(null);
+  useEffect(() => {
+    const storedAds = localStorage.getItem("advertisements");
+
+    if (storedAds) {
+      try {
+        const parsedAds = JSON.parse(storedAds);
+        setAds(parsedAds);
+      } catch {
+        const initialAds = adsData.map((ad) => ({ ...ad }));
+        setAds(initialAds);
+        localStorage.setItem("advertisements", JSON.stringify(initialAds));
+      }
+    } else {
+      const initialAds = adsData.map((ad) => ({ ...ad }));
+      setAds(initialAds);
+      localStorage.setItem("advertisements", JSON.stringify(initialAds));
+    }
+  }, []);
 
   const filteredAds = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -100,6 +118,7 @@ export default function AdvertisementsPage() {
     const nextAds = ads.filter((ad) => ad.id !== deleteDialog.id);
 
     setAds(nextAds);
+    localStorage.setItem("advertisements", JSON.stringify(nextAds));
     setDeleteDialog(null);
 
     if (paginatedAds.length === 1 && safeCurrentPage > 1) {

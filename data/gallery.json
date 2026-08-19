@@ -1,7 +1,8 @@
 [
   {
     "id": "g-001",
-    "image": "/images/gallery/khumbu.jpg",
+    "images": ["/images/gallery/khumbu.jpg"],
+    "featuredImage": "/images/gallery/khumbu.jpg",
     "title": "Khumbu Valley Sunset",
     "description": "Sunset over the Khumbu valley during our trek.",
     "category": "Nature",
@@ -12,7 +13,8 @@
   },
   {
     "id": "g-002",
-    "image": "/images/gallery/camp.jpg",
+    "images": ["/images/gallery/camp.jpg"],
+    "featuredImage": "/images/gallery/camp.jpg",
     "title": "Camp Morning",
     "description": "Morning at the base camp with steaming tea.",
     "category": "People",

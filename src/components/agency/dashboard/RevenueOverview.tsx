@@ -87,7 +87,7 @@ export default function RevenueOverview({ agencyId }: Props) {
       </div>
 
       <div className="h-[160px] w-full md:h-[200px] lg:h-[230px]">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
           <LineChart data={chartData} margin={{ top: 10, right: 15, left: 15, bottom: 5 }}>
             <CartesianGrid stroke="#e5e5e5" vertical horizontal />
             <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#737373' }} tickMargin={10} />

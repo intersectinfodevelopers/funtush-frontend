@@ -2,7 +2,7 @@
   {
     "id": "ad-1",
     "title": "Summer Trek Promo",
-    "image": "/assets/ads/summer-trek.jpg",
+    "image": "/assets/everest.png",
     "position": "homepage-top",
     "status": "active",
     "clicks": 123,
@@ -14,7 +14,7 @@
   {
     "id": "ad-2",
     "title": "Discount Camps",
-    "image": "/assets/ads/discount-camps.jpg",
+    "image": "/assets/ghorepani.png",
     "position": "sidebar-1",
     "status": "paused",
     "clicks": 34,

@@ -74,7 +74,7 @@ export function ReviewAnalytics({ reviews }: ReviewAnalyticsProps) {
           <h3 className="text-sm font-bold text-slate-700">Rating Distribution</h3>
         </div>
         <div className="h-48 w-full text-xs flex-1" style={{ minHeight: '192px', minWidth: '100%' }}>
-          <ResponsiveContainer width="100%" minHeight={192}>
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <BarChart data={distribution} layout="vertical" margin={{ left: -10, right: 10, top: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
               <XAxis type="number" stroke="#94a3b8" />
@@ -93,7 +93,7 @@ export function ReviewAnalytics({ reviews }: ReviewAnalyticsProps) {
           <h3 className="text-sm font-bold text-slate-700">6-Month Rating Trend</h3>
         </div>
         <div className="h-48 w-full text-xs flex-1" style={{ minHeight: '192px', minWidth: '100%' }}>
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
             <LineChart data={trendData} margin={{ left: -10, right: 10, top: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="month" stroke="#94a3b8" tickLine={false} />

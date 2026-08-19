@@ -1,0 +1,113 @@
+name: CD - Manual Production Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "deploy" to confirm production deployment'
+        required: true
+        type: string
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+env:
+  APP_DIR: /home/rituraj/app/funtush-frontend
+
+jobs:
+  deploy:
+    name: Manual Production Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Verify Deployment Confirmation
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" != "deploy" ]; then
+            echo "Deployment cancelled."
+            echo "You must type: deploy"
+            exit 1
+          fi
+
+          echo "Deployment confirmed."
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          echo "${{ secrets.SERVER_SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+
+          ssh-keyscan -H "${{ secrets.SERVER_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Test SSH
+        run: |
+          ssh -i ~/.ssh/id_rsa \
+            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" \
+            "hostname && whoami && docker --version && docker compose version"
+
+      - name: Deploy
+        run: |
+          ssh -i ~/.ssh/id_rsa \
+            "${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}" << 'EOF'
+
+          set -Eeuo pipefail
+
+          cd /home/rituraj/app/funtush-frontend
+
+          echo "======================================"
+          echo "Pulling latest code"
+          echo "======================================"
+
+          git fetch origin main
+          git reset --hard origin/main
+
+          echo "======================================"
+          echo "Building frontend image"
+          echo "======================================"
+
+          docker compose build frontend
+
+          echo "======================================"
+          echo "Starting frontend"
+          echo "======================================"
+
+          docker compose up -d frontend
+
+          echo "======================================"
+          echo "Starting Nginx"
+          echo "======================================"
+
+          docker compose up -d nginx
+
+          echo "======================================"
+          echo "Container Status"
+          echo "======================================"
+
+          docker compose ps
+
+          echo "======================================"
+          echo "Health Check"
+          echo "======================================"
+
+          sleep 10
+
+          if curl -fsS http://localhost:80 > /dev/null; then
+              echo "Frontend is LIVE"
+          else
+              echo "Deployment failed"
+
+              docker compose ps
+              docker compose logs --tail=100 frontend
+              docker compose logs --tail=100 nginx
+
+              exit 1
+          fi
+
+          echo "======================================"
+          echo "DEPLOYMENT SUCCESSFUL"
+          echo "======================================"
+
+          EOF
