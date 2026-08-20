@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useState } from "react";
+import { ChangeEvent, DragEvent, FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImagePlus, X } from "lucide-react";
 
@@ -78,6 +78,31 @@ export default function AdvertisementForm({
     // Only one photo is allowed.
     event.target.value = "";
   };
+  const handleDrop = (event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+
+    const file = event.dataTransfer.files?.[0];
+
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file.");
+      return;
+    }
+
+    optimizeImage(file)
+      .then((optimizedImage) => {
+        setImage(optimizedImage);
+        setError("");
+      })
+      .catch(() => {
+        setError("Unable to process this image. Please select another file.");
+      });
+  };
+
+  const handleDragOver = (event: DragEvent<HTMLLabelElement>) => {
+    event.preventDefault();
+  };
 
   const removeImage = () => {
     setImage("");
@@ -108,7 +133,9 @@ export default function AdvertisementForm({
     try {
       ads = storedAds ? JSON.parse(storedAds) : [];
     } catch {
-      setError("Saved advertisements are corrupted. Please refresh and try again.");
+      setError(
+        "Saved advertisements are corrupted. Please refresh and try again.",
+      );
       return;
     }
 
@@ -158,7 +185,9 @@ export default function AdvertisementForm({
     try {
       localStorage.setItem("advertisements", JSON.stringify(nextAds));
     } catch {
-      setError("This image is too large to save. Please choose a smaller image.");
+      setError(
+        "This image is too large to save. Please choose a smaller image.",
+      );
       return;
     }
 
@@ -202,17 +231,21 @@ export default function AdvertisementForm({
             {!image ? (
               <label
                 htmlFor="advertisement-image"
-                className="flex min-h-48 cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-neutral-300 bg-neutral-50 px-6 py-8 text-center hover:border-primary-400"
+                onDragOver={(event) => {
+                  event.preventDefault();
+                }}
+                onDrop={handleDrop}
+                className="flex min-h-48 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-neutral-200 bg-white transition hover:border-primary-300"
               >
-                <ImagePlus className="mb-3 h-9 w-9 text-neutral-400" />
+                <ImagePlus size={24} className="text-neutral-400" />
 
-                <p className="text-sm font-semibold text-neutral-700">
-                  Upload advertisement photo
+                <p className="text-xs text-neutral-500">
+                  Drag &amp; drop an image here
                 </p>
 
-                <p className="mt-1 text-xs text-neutral-500">
-                  Only one photo can be uploaded
-                </p>
+                <span className="mt-1 inline-flex cursor-pointer items-center justify-center rounded-full bg-primary-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-primary-800">
+                  Choose file
+                </span>
 
                 <input
                   id="advertisement-image"
@@ -233,10 +266,11 @@ export default function AdvertisementForm({
                 <button
                   type="button"
                   onClick={removeImage}
-                  className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-md hover:bg-red-50"
-                  aria-label="Remove photo"
+                  title="Remove image"
+                  aria-label="Remove image"
+                  className="absolute right-3 top-3 rounded-full bg-black/60 p-1.5 text-white shadow-md transition hover:bg-black/80"
                 >
-                  <X className="h-5 w-5" />
+                  <X size={14} />
                 </button>
               </div>
             )}
