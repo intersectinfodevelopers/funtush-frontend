@@ -83,7 +83,7 @@ export default function BranchesPage() {
     }
 
     return sorted;
-  }, [branches, searchTerm, sortBy, staff, manager]);
+  }, [branches, searchTerm, sortBy, manager]);
 
   /*
    * Pagination
@@ -268,6 +268,7 @@ export default function BranchesPage() {
           <table className="w-full min-w-[800px] text-left">
             <thead className="border-b border-neutral-200 bg-neutral-50">
               <tr>
+                <th className="px-4 py-3">S.NO</th>
                 <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   Branch
                 </th>
@@ -291,91 +292,88 @@ export default function BranchesPage() {
             </thead>
 
             <tbody className="divide-y divide-neutral-100">
-              {pageItems.map((branch) => (
-                <tr
-                  key={branch.id}
-                  className="transition hover:bg-neutral-50"
-                >
-                  {/* Branch */}
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-3">
+  {pageItems.map((branch, index) => (
+    <tr
+      key={branch.id}
+      className="transition hover:bg-neutral-50"
+    >
+      {/* S.NO */}
+      <td className="px-4 py-4 text-sm font-medium text-neutral-500">
+        {(safeCurrentPage - 1) * 6 + index + 1}
+      </td>
 
+      {/* Branch */}
+      <td className="px-5 py-4">
+        <div>
+          <p className="font-semibold text-neutral-900">
+            {branch.name}
+          </p>
 
-                      <div>
-                        <p className="font-semibold text-neutral-900">
-                          {branch.name}
-                        </p>
+          <p className="mt-0.5 text-xs text-neutral-500">
+            Branch
+          </p>
+        </div>
+      </td>
 
-                        <p className="mt-0.5 text-xs text-neutral-500">
-                          Branch
-                        </p>
-                      </div>
-                    </div>
-                  </td>
+      {/* Address */}
+      <td className="px-5 py-4">
+        <div className="flex items-center gap-2 text-sm text-neutral-700">
+          <span>{branch.address}</span>
+        </div>
+      </td>
 
-                  {/* Address */}
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-2 text-sm text-neutral-700">
+      {/* Phone */}
+      <td className="px-5 py-4">
+        <div className="flex items-center gap-2 text-sm text-neutral-700">
+          <span>{branch.phone || "—"}</span>
+        </div>
+      </td>
 
-                      <span>{branch.address}</span>
-                    </div>
-                  </td>
+      {/* Manager */}
+      <td className="px-5 py-4">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-neutral-900">
+            {manager(branch.managerId)}
+          </span>
+        </div>
+      </td>
 
-                  {/* Phone */}
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-2 text-sm text-neutral-700">
+      {/* Actions */}
+      <td className="px-5 py-4">
+        <div className="flex justify-end gap-2">
+          {/* Preview */}
+          <button
+            type="button"
+            title="Preview"
+            onClick={() => setSelectedBranch(branch)}
+            className="grid h-8 w-8 place-items-center rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100"
+          >
+            <Eye size={16} />
+          </button>
 
-                      <span>{branch.phone || "—"}</span>
-                    </div>
-                  </td>
+          {/* Edit */}
+          <Link
+            href={`/dashboard/branches/${branch.id}`}
+            title="Edit"
+            className="grid h-8 w-8 place-items-center rounded-lg bg-warning-50 text-warning-700 hover:bg-warning-100"
+          >
+            <Edit size={16} />
+          </Link>
 
-                  {/* Manager */}
-                  <td className="px-5 py-4">
-                    <div className="flex items-center gap-2">
-
-
-                      <span className="text-sm font-medium text-neutral-900">
-                        {manager(branch.managerId)}
-                      </span>
-                    </div>
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-5 py-4">
-                    <div className="flex justify-end gap-2">
-                      {/* Preview */}
-                      <button
-                        type="button"
-                        title="Preview"
-                        onClick={() => setSelectedBranch(branch)}
-                        className="grid h-8 w-8 place-items-center rounded-lg bg-primary-50 text-primary-700 hover:bg-primary-100"
-                      >
-                        <Eye size={16} />
-                      </button>
-
-                      {/* Edit */}
-                      <Link
-                        href={`/dashboard/branches/${branch.id}`}
-                        title="Edit"
-                        className="grid h-8 w-8 place-items-center rounded-lg bg-warning-50 text-warning-700 hover:bg-warning-100"
-                      >
-                        <Edit size={16} />
-                      </Link>
-
-                      {/* Delete */}
-                      <button
-                        type="button"
-                        title="Delete"
-                        onClick={() => handleDeleteBranch(branch.id)}
-                        className="grid h-8 w-8 place-items-center rounded-lg bg-danger-50 text-danger-700 hover:bg-danger-100"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
+          {/* Delete */}
+          <button
+            type="button"
+            title="Delete"
+            onClick={() => handleDeleteBranch(branch.id)}
+            className="grid h-8 w-8 place-items-center rounded-lg bg-danger-50 text-danger-700 hover:bg-danger-100"
+          >
+            <Trash2 size={16} />
+          </button>
+        </div>
+      </td>
+    </tr>
+  ))}
+</tbody>
           </table>
         </div>
       </div>
