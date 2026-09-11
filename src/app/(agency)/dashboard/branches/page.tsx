@@ -265,10 +265,12 @@ export default function BranchesPage() {
       {/* Branch Table */}
       <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[800px] text-left">
+          <table className="w-full min-w-200 text-left">
             <thead className="border-b border-neutral-200 bg-neutral-50">
               <tr>
-                <th className="px-4 py-3">S.NO</th>
+                <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
+                  S.NO
+                </th>
                 <th className="px-5 py-3 text-xs font-semibold uppercase tracking-wide text-neutral-500">
                   Branch
                 </th>
@@ -298,21 +300,15 @@ export default function BranchesPage() {
       className="transition hover:bg-neutral-50"
     >
       {/* S.NO */}
-      <td className="px-4 py-4 text-sm font-medium text-neutral-500">
+      <td className="px-5 py-4 text-sm font-medium text-neutral-500">
         {(safeCurrentPage - 1) * 6 + index + 1}
       </td>
 
       {/* Branch */}
       <td className="px-5 py-4">
-        <div>
-          <p className="font-semibold text-neutral-900">
-            {branch.name}
-          </p>
-
-          <p className="mt-0.5 text-xs text-neutral-500">
-            Branch
-          </p>
-        </div>
+        <p className="font-semibold text-neutral-900">
+          {branch.name}
+        </p>
       </td>
 
       {/* Address */}
