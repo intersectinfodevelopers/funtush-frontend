@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Save, Upload, Eye } from 'lucide-react';
+import { SettingsHeader } from '@/components/agency/settings/settings-kit';
 import Image from 'next/image';
 
 // Font options
@@ -75,25 +76,24 @@ export default function BrandingSettingsPage() {
   } as React.CSSProperties;
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Branding</h1>
-          <p className="text-sm text-neutral-500">Customize your agency brand appearance</p>
-        </div>
-        <button
-          onClick={handleSave}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors"
-        >
-          <Save size={18} />
-          Save Changes
-        </button>
-      </div>
+    <div className="space-y-6">
+      <SettingsHeader
+        title="Branding"
+        description="Customize your agency brand appearance"
+        action={
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-800"
+          >
+            <Save size={18} />
+            Save changes
+          </button>
+        }
+      />
 
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed top-4 right-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg z-50">
+        <div className="fixed top-4 right-4 bg-success-50 border border-success-200 text-success-800 px-4 py-3 rounded-xl shadow-lg z-50">
           Settings saved successfully! 🎉
         </div>
       )}
@@ -102,7 +102,7 @@ export default function BrandingSettingsPage() {
         {/* Left Column - Settings */}
         <div className="space-y-6">
           {/* Primary Color */}
-          <div className="bg-white border border-neutral-200 rounded-lg p-4">
+          <div className="bg-white border border-neutral-200 rounded-xl p-4">
             <label className="block text-sm font-medium text-neutral-700 mb-2">
               Primary Color
             </label>
@@ -111,26 +111,26 @@ export default function BrandingSettingsPage() {
                 type="color"
                 value={settings.primaryColor}
                 onChange={(e) => handleColorChange(e.target.value)}
-                className="w-12 h-12 rounded cursor-pointer border border-neutral-200"
+                className="w-12 h-12 rounded-lg cursor-pointer border border-neutral-200"
               />
               <input
                 type="text"
                 value={settings.primaryColor}
                 onChange={(e) => handleColorChange(e.target.value)}
-                className="flex-1 border border-neutral-300 rounded px-3 py-1.5 text-sm"
+                className="flex-1 border border-neutral-300 rounded-lg px-3 py-1.5 text-sm"
               />
             </div>
           </div>
 
           {/* Font Selector */}
-          <div className="bg-white border border-neutral-200 rounded-lg p-4">
+          <div className="bg-white border border-neutral-200 rounded-xl p-4">
             <label className="block text-sm font-medium text-neutral-700 mb-2">
               Font
             </label>
             <select
               value={settings.font}
               onChange={(e) => handleFontChange(e.target.value)}
-              className="w-full border border-neutral-300 rounded px-3 py-1.5 text-sm"
+              className="w-full border border-neutral-300 rounded-lg px-3 py-1.5 text-sm"
               style={{ fontFamily: settings.font }}
             >
               {fontOptions.map((font) => (
@@ -142,7 +142,7 @@ export default function BrandingSettingsPage() {
           </div>
 
           {/* Logo Upload */}
-          <div className="bg-white border border-neutral-200 rounded-lg p-4">
+          <div className="bg-white border border-neutral-200 rounded-xl p-4">
             <label className="block text-sm font-medium text-neutral-700 mb-2">
               Logo
             </label>
@@ -154,7 +154,7 @@ export default function BrandingSettingsPage() {
                   className="h-16 w-auto object-contain border border-neutral-200 rounded"
                 />
               )}
-              <label className="flex items-center gap-2 px-4 py-2 border border-neutral-300 rounded-lg text-sm hover:bg-neutral-50 cursor-pointer transition-colors">
+              <label className="flex items-center gap-2 px-4 py-2 border border-neutral-300 rounded-xl text-sm hover:bg-neutral-50 cursor-pointer transition-colors">
                 <Upload size={16} />
                 Upload Logo
                 <input
@@ -168,7 +168,7 @@ export default function BrandingSettingsPage() {
           </div>
 
           {/* Favicon Upload */}
-          <div className="bg-white border border-neutral-200 rounded-lg p-4">
+          <div className="bg-white border border-neutral-200 rounded-xl p-4">
             <label className="block text-sm font-medium text-neutral-700 mb-2">
               Favicon
             </label>
@@ -180,7 +180,7 @@ export default function BrandingSettingsPage() {
                   className="w-10 h-10 object-contain border border-neutral-200 rounded"
                 />
               )}
-              <label className="flex items-center gap-2 px-4 py-2 border border-neutral-300 rounded-lg text-sm hover:bg-neutral-50 cursor-pointer transition-colors">
+              <label className="flex items-center gap-2 px-4 py-2 border border-neutral-300 rounded-xl text-sm hover:bg-neutral-50 cursor-pointer transition-colors">
                 <Upload size={16} />
                 Upload Favicon
                 <input
@@ -196,14 +196,14 @@ export default function BrandingSettingsPage() {
 
         {/* Right Column - Live Preview */}
         <div>
-          <div className="bg-white border border-neutral-200 rounded-lg p-4 sticky top-4">
+          <div className="bg-white border border-neutral-200 rounded-xl p-4 sticky top-4">
             <div className="flex items-center gap-2 mb-4">
               <Eye size={18} className="text-neutral-400" />
               <h3 className="text-sm font-medium text-neutral-700">Live Preview</h3>
             </div>
 
             <div
-              className="border border-neutral-200 rounded-lg p-6"
+              className="border border-neutral-200 rounded-xl p-6"
               style={previewStyle}
             >
               {/* Header Preview */}
@@ -212,7 +212,7 @@ export default function BrandingSettingsPage() {
                   {settings.logo ? (
                     <Image src={settings.logo} alt="Logo" className="h-8 w-auto" />
                   ) : (
-                    <div className="w-8 h-8 rounded bg-neutral-200"></div>
+                    <div className="w-8 h-8 rounded-lg bg-neutral-200"></div>
                   )}
                   <span className="text-lg font-bold" style={{ color: settings.primaryColor }}>
                     Green Agency
@@ -228,7 +228,7 @@ export default function BrandingSettingsPage() {
 
               {/* Card Preview */}
               <div
-                className="border rounded-lg p-4"
+                className="border rounded-xl p-4"
                 style={{ borderColor: settings.primaryColor }}
               >
                 <h4 className="font-semibold mb-1" style={{ fontFamily: settings.font }}>
@@ -238,7 +238,7 @@ export default function BrandingSettingsPage() {
                   This is how your brand will look with the selected settings.
                 </p>
                 <button
-                  className="mt-3 px-4 py-1.5 rounded text-sm text-white"
+                  className="mt-3 px-4 py-1.5 rounded-lg text-sm text-white"
                   style={{ backgroundColor: settings.primaryColor }}
                 >
                   Get Started

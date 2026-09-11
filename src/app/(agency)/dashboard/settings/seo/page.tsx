@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Save, Upload } from 'lucide-react';
+import { SettingsHeader } from '@/components/agency/settings/settings-kit';
 import Image from 'next/image';
 
 const defaultSettings = {
@@ -48,32 +49,31 @@ export default function SeoSettingsPage() {
   };
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">SEO</h1>
-          <p className="text-sm text-neutral-500">Optimize your site for search engines</p>
-        </div>
-        <button
-          onClick={handleSave}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors"
-        >
-          <Save size={18} />
-          Save Changes
-        </button>
-      </div>
+    <div className="space-y-6">
+      <SettingsHeader
+        title="SEO"
+        description="Optimize your site for search engines"
+        action={
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-800"
+          >
+            <Save size={18} />
+            Save changes
+          </button>
+        }
+      />
 
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed top-4 right-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg z-50">
+        <div className="fixed top-4 right-4 bg-success-50 border border-success-200 text-success-800 px-4 py-3 rounded-xl shadow-lg z-50">
           SEO settings saved successfully! 🎉
         </div>
       )}
 
       <div className="space-y-6">
         {/* Page Title Format */}
-        <div className="bg-white border text-black border-neutral-200 rounded-lg p-4">
+        <div className="bg-white border text-black border-neutral-200 rounded-xl p-4">
           <label className="block text-sm font-medium text-neutral-700 mb-1">
             Page Title Format
           </label>
@@ -81,7 +81,7 @@ export default function SeoSettingsPage() {
             type="text"
             value={settings.pageTitleFormat}
             onChange={(e) => setSettings({ ...settings, pageTitleFormat: e.target.value })}
-            className="w-full  border border-neutral-300 rounded px-3 py-1.5 text-sm font-mono"
+            className="w-full  border border-neutral-300 rounded-lg px-3 py-1.5 text-sm font-mono"
             placeholder="{page} | {agency}"
           />
           <div className="flex flex-wrap gap-3 mt-2">
@@ -102,7 +102,7 @@ export default function SeoSettingsPage() {
         </div>
 
         {/* Meta Description */}
-        <div className="bg-white border text-black border-neutral-200 rounded-lg p-4">
+        <div className="bg-white border text-black border-neutral-200 rounded-xl p-4">
           <label className="block text-sm font-medium text-neutral-700 mb-1">
             Meta Description
           </label>
@@ -110,7 +110,7 @@ export default function SeoSettingsPage() {
             value={settings.metaDescription}
             onChange={(e) => setSettings({ ...settings, metaDescription: e.target.value })}
             rows={3}
-            className="w-full border border-neutral-300 rounded px-3 py-1.5 text-sm"
+            className="w-full border border-neutral-300 rounded-lg px-3 py-1.5 text-sm"
             placeholder={"Your agency's meta description for search engines"}
           />
           <p className="text-xs text-neutral-500 mt-1">
@@ -119,7 +119,7 @@ export default function SeoSettingsPage() {
         </div>
 
         {/* OG Image */}
-        <div className="bg-white text-black border border-neutral-200 rounded-lg p-4">
+        <div className="bg-white text-black border border-neutral-200 rounded-xl p-4">
           <label className="block text-sm font-medium text-neutral-700 mb-1">
             Open Graph Image
           </label>
@@ -131,7 +131,7 @@ export default function SeoSettingsPage() {
                 className="h-24 w-auto object-contain border border-neutral-200 rounded"
               />
             )}
-            <label className="flex items-center gap-2 px-4 py-2 border border-neutral-300 rounded-lg text-sm hover:bg-neutral-50 cursor-pointer transition-colors">
+            <label className="flex items-center gap-2 px-4 py-2 border border-neutral-300 rounded-xl text-sm hover:bg-neutral-50 cursor-pointer transition-colors">
               <Upload size={16} />
               Upload Image
               <input

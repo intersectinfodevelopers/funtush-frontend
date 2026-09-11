@@ -1,50 +1,211 @@
-'use client';
+"use client";
 
-import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ArrowRight, Bell, Building2, CheckCircle2, ChevronRight, CreditCard, Globe2, KeyRound, LayoutGrid, LockKeyhole, Mail, Palette, Search, SearchCode, Share2, Shield, Sparkles, Users, Wallet } from 'lucide-react';
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import {
+  ArrowRight,
+  Building2,
+  Palette,
+  Globe2,
+  LayoutGrid,
+  SearchCode,
+  Share2,
+  Sparkles,
+  Wallet,
+  Puzzle,
+  KeyRound,
+  Bell,
+  Mail,
+  ShieldCheck,
+  Users,
+  ChevronRight,
+  ExternalLink,
+  CheckCircle2,
+  Circle,
+} from "lucide-react";
+import { SettingsHeader } from "@/components/agency/settings/settings-kit";
 
-type SettingItem = { label: string; description: string; href: string; icon: typeof Palette; tone: 'primary' | 'success' | 'warning' | 'accent' };
+type Tone = "primary" | "success" | "warning" | "accent";
+type Item = { label: string; description: string; href: string; icon: typeof Palette; tone: Tone };
 
-const groups: Array<{ title: string; description: string; items: SettingItem[] }> = [
-  { title: 'Agency & website', description: 'Manage how your agency appears to trekkers.', items: [
-    { label: 'Agency Info', description: 'Business name, contact details, and address.', href: '/dashboard/settings/agency-info', icon: Building2, tone: 'primary' },
-    { label: 'Branding', description: 'Logo, colors, fonts, and visual identity.', href: '/dashboard/settings/branding', icon: Palette, tone: 'accent' },
-    { label: 'Domain', description: 'Connect and manage your custom domain.', href: '/dashboard/settings/domain', icon: Globe2, tone: 'success' },
-    { label: 'Navigation', description: 'Organize the menus on your public site.', href: '/dashboard/settings/navigation', icon: LayoutGrid, tone: 'warning' },
-    { label: 'SEO', description: 'Improve search visibility and page metadata.', href: '/dashboard/settings/seo', icon: SearchCode, tone: 'primary' },
-    { label: 'Social', description: 'Connect your social media profiles.', href: '/dashboard/settings/social', icon: Share2, tone: 'accent' },
-  ] },
-  { title: 'Operations & billing', description: 'Configure payments, plans, and operational tools.', items: [
-    { label: 'Payments', description: 'Payment methods and collection preferences.', href: '/dashboard/settings/payments', icon: Wallet, tone: 'success' },
-    { label: 'Subscription', description: 'Review your plan and available features.', href: '/dashboard/settings/subscription', icon: Sparkles, tone: 'warning' },
-    { label: 'Billing', description: 'Invoices, receipts, and billing history.', href: '/dashboard/settings/billing', icon: CreditCard, tone: 'primary' },
-    { label: 'Widgets', description: 'Choose the tools shown across your site.', href: '/dashboard/settings/widgets', icon: LayoutGrid, tone: 'accent' },
-  ] },
-  { title: 'Team & security', description: 'Control access, alerts, and account protection.', items: [
-    { label: 'Team', description: 'Manage staff members and roles.', href: '/dashboard/settings/team', icon: Users, tone: 'primary' },
-    { label: 'Security', description: 'Account security and access controls.', href: '/dashboard/settings/security', icon: Shield, tone: 'warning' },
-    { label: 'Notifications', description: 'Choose which updates you receive.', href: '/dashboard/settings/notifications', icon: Bell, tone: 'warning' },
-    { label: 'Email', description: 'Configure sender and email preferences.', href: '/dashboard/settings/email', icon: Mail, tone: 'success' },
-    { label: 'Password', description: 'Change your account password.', href: '/dashboard/settings/password', icon: LockKeyhole, tone: 'accent' },
-    { label: 'API Keys', description: 'Manage integrations and API access.', href: '/dashboard/settings/api-keys', icon: KeyRound, tone: 'primary' },
-  ] },
+const GROUPS: { title: string; description: string; items: Item[] }[] = [
+  {
+    title: "Website",
+    description: "How your agency looks to trekkers on your white-label site.",
+    items: [
+      { label: "Agency info", description: "Name, contact details, address, operating regions.", href: "/dashboard/settings/agency-info", icon: Building2, tone: "primary" },
+      { label: "Branding", description: "Logo, colours, fonts and favicon.", href: "/dashboard/settings/branding", icon: Palette, tone: "accent" },
+      { label: "Domain", description: "Connect and verify a custom domain.", href: "/dashboard/settings/domain", icon: Globe2, tone: "success" },
+      { label: "Navigation", description: "Menus and the Book Now button.", href: "/dashboard/settings/navigation", icon: LayoutGrid, tone: "warning" },
+      { label: "SEO", description: "Page titles, meta description, OG image.", href: "/dashboard/settings/seo", icon: SearchCode, tone: "primary" },
+      { label: "Social links", description: "Instagram, Facebook, TikTok and more.", href: "/dashboard/settings/social", icon: Share2, tone: "accent" },
+      { label: "Site status", description: "Coming-soon mode and the Funtush badge.", href: "/dashboard/settings/site", icon: Globe2, tone: "warning" },
+    ],
+  },
+  {
+    title: "Billing",
+    description: "Your plan and how you collect payments.",
+    items: [
+      { label: "Subscription", description: "Current plan, limits and upgrades.", href: "/dashboard/settings/subscription", icon: Sparkles, tone: "warning" },
+      { label: "Payments", description: "Gateways and payout preferences.", href: "/dashboard/settings/payments", icon: Wallet, tone: "success" },
+    ],
+  },
+  {
+    title: "Integrations",
+    description: "Third-party tools and API access.",
+    items: [
+      { label: "Widgets", description: "Weather, currency, WhatsApp and chat.", href: "/dashboard/settings/widgets", icon: Puzzle, tone: "accent" },
+      { label: "API keys", description: "Keys for programmatic access.", href: "/dashboard/settings/api-keys", icon: KeyRound, tone: "primary" },
+    ],
+  },
+  {
+    title: "Account",
+    description: "Alerts, sender identity and security.",
+    items: [
+      { label: "Notifications", description: "Which events email or notify you.", href: "/dashboard/settings/notifications", icon: Bell, tone: "warning" },
+      { label: "Email", description: "Sender name, from address and footer.", href: "/dashboard/settings/email", icon: Mail, tone: "success" },
+      { label: "Security", description: "Password, sessions and 2-factor.", href: "/dashboard/settings/security", icon: ShieldCheck, tone: "primary" },
+    ],
+  },
 ];
 
-const toneStyles = { primary: 'bg-primary-50 text-primary-700', success: 'bg-success-50 text-success-700', warning: 'bg-warning-50 text-warning-700', accent: 'bg-accent-50 text-accent-700' };
+const RELATED = [
+  { label: "Staff & permissions", href: "/dashboard/staff", icon: Users },
+  { label: "Roles", href: "/dashboard/roles", icon: ShieldCheck },
+  { label: "Invoices & finance", href: "/dashboard/finance", icon: Wallet },
+];
 
-export default function SettingsPage() {
-  const router = useRouter();
-  const [search, setSearch] = useState('');
-  const filteredGroups = useMemo(() => groups.map((group) => ({ ...group, items: group.items.filter((item) => `${item.label} ${item.description}`.toLowerCase().includes(search.toLowerCase())) })).filter((group) => group.items.length > 0), [search]);
+const TONE: Record<Tone, string> = {
+  primary: "bg-primary-50 text-primary-700",
+  success: "bg-success-50 text-success-700",
+  warning: "bg-warning-50 text-warning-700",
+  accent: "bg-accent-50 text-accent-700",
+};
 
-  return <div className="space-y-5">
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><div className="flex items-center gap-2 text-sm text-neutral-500"><button type="button" onClick={() => router.push('/dashboard')} className="hover:text-neutral-900">Dashboard</button><span>/</span><span className="font-semibold text-neutral-900">Settings</span></div><h1 className="mt-2 text-2xl font-semibold text-neutral-900">Settings</h1><p className="mt-1 text-sm text-neutral-600">Configure your agency workspace, website, and account preferences.</p></div><div className="flex items-center gap-2 rounded-xl border border-success-200 bg-success-50 px-3 py-2 text-xs font-semibold text-success-800"><CheckCircle2 className="h-4 w-4" /> All systems operational</div></div>
-    <div className="relative max-w-xl"><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search settings" className="w-full rounded-2xl border border-neutral-200 bg-white py-3 pl-10 pr-4 text-sm text-neutral-900 outline-none shadow-sm focus:border-primary-400 focus:ring-2 focus:ring-primary-100" /></div>
-    <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]"><section className="rounded-2xl border border-primary-200 bg-primary-900 p-5 text-white shadow-sm"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-200">Workspace setup</p><h2 className="mt-2 text-lg font-semibold">Make your agency feel like yours</h2><p className="mt-2 max-w-lg text-sm leading-6 text-primary-100">Complete your branding, agency information, and domain settings to create a polished public presence.</p></div><Palette className="h-6 w-6 text-primary-200" /></div><button type="button" onClick={() => router.push('/dashboard/settings/branding')} className="mt-5 inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-sm font-semibold text-primary-900 hover:bg-primary-50">Open branding <ArrowRight className="h-4 w-4" /></button></section><section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-3"><div className="rounded-xl bg-warning-50 p-2 text-warning-700"><Shield className="h-5 w-5" /></div><div><h2 className="text-sm font-semibold text-neutral-900">Account protection</h2><p className="mt-1 text-xs text-neutral-500">Keep access secure and controlled.</p></div></div><div className="mt-5 space-y-3"><LinkRow label="Security" href="/dashboard/settings/security" /><LinkRow label="Password" href="/dashboard/settings/password" /><LinkRow label="API Keys" href="/dashboard/settings/api-keys" /></div></section></div>
-    {filteredGroups.length ? filteredGroups.map((group) => <section key={group.title}><div className="mb-3"><h2 className="text-base font-semibold text-neutral-900">{group.title}</h2><p className="mt-1 text-sm text-neutral-500">{group.description}</p></div><div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{group.items.map((item) => <button key={item.href} type="button" onClick={() => router.push(item.href)} className="group flex items-start gap-3 rounded-2xl border border-neutral-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md"><div className={`rounded-xl p-2.5 ${toneStyles[item.tone]}`}><item.icon className="h-5 w-5" /></div><div className="min-w-0 flex-1"><h3 className="text-sm font-semibold text-neutral-900">{item.label}</h3><p className="mt-1 text-xs leading-5 text-neutral-500">{item.description}</p></div><ChevronRight className="mt-1 h-4 w-4 shrink-0 text-neutral-300 transition group-hover:text-primary-700" /></button>)}</div></section>) : <div className="rounded-2xl border border-dashed border-neutral-300 bg-white px-5 py-10 text-center text-sm text-neutral-500">No settings match “{search}”.</div>}
-  </div>;
+// "Setup" checklist — reads the same localStorage keys the sub-pages write.
+const CHECKLIST: { label: string; key: string; href: string }[] = [
+  { label: "Add your agency info", key: "agencyInfoSettings", href: "/dashboard/settings/agency-info" },
+  { label: "Set your branding", key: "brandingSettings", href: "/dashboard/settings/branding" },
+  { label: "Connect a domain", key: "domainSettings", href: "/dashboard/settings/domain" },
+  { label: "Fill in SEO basics", key: "seoSettings", href: "/dashboard/settings/seo" },
+];
+
+function readChecklist(): Record<string, boolean> {
+  const next: Record<string, boolean> = {};
+  for (const c of CHECKLIST) {
+    try {
+      next[c.key] = typeof window !== "undefined" && !!localStorage.getItem(c.key);
+    } catch {
+      next[c.key] = false;
+    }
+  }
+  return next;
 }
 
-function LinkRow({ label, href }: { label: string; href: string }) { return <Link href={href} className="flex items-center justify-between rounded-xl bg-neutral-50 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-primary-50 hover:text-primary-900"><span>{label}</span><ChevronRight className="h-4 w-4 text-neutral-400" /></Link>; }
+export default function SettingsOverviewPage() {
+  const [done] = useState<Record<string, boolean>>(readChecklist);
+
+  const completed = CHECKLIST.filter((c) => done[c.key]).length;
+  const pct = useMemo(() => Math.round((completed / CHECKLIST.length) * 100), [completed]);
+
+  return (
+    <div className="space-y-6">
+      <SettingsHeader
+        title="Overview"
+        description="Configure your agency workspace, white-label website, billing and account."
+      />
+
+      {/* Setup progress + related links */}
+      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <section className="rounded-2xl border border-primary-200 bg-primary-900 p-5 text-white shadow-sm sm:p-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-200">
+                Workspace setup
+              </p>
+              <h2 className="mt-2 text-lg font-bold">Make it feel like yours</h2>
+              <p className="mt-1 text-sm text-primary-100">
+                {completed} of {CHECKLIST.length} steps done
+              </p>
+            </div>
+            <span className="rounded-xl bg-white/10 px-2.5 py-1 text-sm font-bold">{pct}%</span>
+          </div>
+
+          <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-white/15">
+            <div
+              className="h-full rounded-full bg-white transition-all"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+
+          <ul className="mt-4 space-y-1.5">
+            {CHECKLIST.map((c) => (
+              <li key={c.key}>
+                <Link
+                  href={c.href}
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-primary-50 transition hover:bg-white/10"
+                >
+                  {done[c.key] ? (
+                    <CheckCircle2 className="h-4 w-4 text-success-300" />
+                  ) : (
+                    <Circle className="h-4 w-4 text-primary-300" />
+                  )}
+                  <span className={done[c.key] ? "line-through opacity-70" : ""}>{c.label}</span>
+                  <ArrowRight className="ml-auto h-3.5 w-3.5 opacity-50" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
+          <h2 className="text-sm font-bold text-neutral-900">Related</h2>
+          <p className="mt-1 text-xs text-neutral-500">Managed from their own sections.</p>
+          <div className="mt-4 space-y-2">
+            {RELATED.map((r) => (
+              <Link
+                key={r.href}
+                href={r.href}
+                className="flex items-center gap-3 rounded-xl bg-neutral-50 px-3 py-2.5 text-sm font-medium text-neutral-700 transition hover:bg-primary-50 hover:text-primary-900"
+              >
+                <r.icon className="h-4 w-4 text-neutral-400" />
+                <span>{r.label}</span>
+                <ExternalLink className="ml-auto h-3.5 w-3.5 text-neutral-300" />
+              </Link>
+            ))}
+          </div>
+        </section>
+      </div>
+
+      {/* Grouped cards */}
+      {GROUPS.map((group) => (
+        <section key={group.title}>
+          <div className="mb-3">
+            <h2 className="text-base font-bold text-neutral-900">{group.title}</h2>
+            <p className="mt-0.5 text-sm text-neutral-500">{group.description}</p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {group.items.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="group flex items-start gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md"
+              >
+                <span className={`rounded-xl p-2.5 ${TONE[item.tone]}`}>
+                  <item.icon className="h-5 w-5" />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-semibold text-neutral-900">{item.label}</span>
+                  <span className="mt-1 block text-xs leading-5 text-neutral-500">
+                    {item.description}
+                  </span>
+                </span>
+                <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-neutral-300 transition group-hover:text-primary-700" />
+              </Link>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Save, CreditCard, Building2, Smartphone } from 'lucide-react';
+import { SettingsHeader } from '@/components/agency/settings/settings-kit';
 
 // Payment gateway configurations
 interface PaymentGateway {
@@ -70,6 +71,7 @@ const defaultGateways: PaymentGateway[] = [
 
 export default function PaymentsSettingsPage() {
   const [gateways, setGateways] = useState<PaymentGateway[]>(() => {
+    if (typeof window === 'undefined') return defaultGateways;
     try {
       const stored = localStorage.getItem('paymentSettings');
       return stored ? JSON.parse(stored) : defaultGateways;
@@ -111,25 +113,24 @@ export default function PaymentsSettingsPage() {
   };
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Payments</h1>
-          <p className="text-sm text-neutral-500">Configure payment gateways</p>
-        </div>
-        <button
-          onClick={handleSave}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors"
-        >
-          <Save size={18} />
-          Save Changes
-        </button>
-      </div>
+    <div className="space-y-6">
+      <SettingsHeader
+        title="Payments"
+        description="Configure payment gateways"
+        action={
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-800"
+          >
+            <Save size={18} />
+            Save changes
+          </button>
+        }
+      />
 
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed top-4 right-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg z-50">
+        <div className="fixed top-4 right-4 bg-success-50 border border-success-200 text-success-800 px-4 py-3 rounded-xl shadow-lg z-50">
           Payment settings saved successfully! 🎉
         </div>
       )}
@@ -138,7 +139,7 @@ export default function PaymentsSettingsPage() {
         {gateways.map((gateway) => (
           <div
             key={gateway.id}
-            className="bg-white border border-neutral-200 rounded-lg p-4"
+            className="bg-white border border-neutral-200 rounded-xl p-4"
           >
             {/* Gateway Toggle */}
             <div className="flex items-center justify-between mb-3">
@@ -153,7 +154,7 @@ export default function PaymentsSettingsPage() {
                   onChange={() => toggleGateway(gateway.id)}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-neutral-300 peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                <div className="w-11 h-6 bg-neutral-300 peer-focus:ring-2 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-900"></div>
               </label>
             </div>
 
@@ -171,7 +172,7 @@ export default function PaymentsSettingsPage() {
                       onChange={(e) =>
                         updateCredential(gateway.id, key, e.target.value)
                       }
-                      className="w-full text-black border border-neutral-300 rounded px-3 py-1.5 text-sm"
+                      className="w-full text-black border border-neutral-300 rounded-lg px-3 py-1.5 text-sm"
                       placeholder={`Enter ${key.replace(/([A-Z])/g, ' $1').trim().toLowerCase()}`}
                     />
                   </div>

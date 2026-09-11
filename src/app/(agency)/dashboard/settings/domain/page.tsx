@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Save, Copy, CheckCircle, Globe } from 'lucide-react';
+import { SettingsHeader } from '@/components/agency/settings/settings-kit';
 
 const defaultSettings = {
   subdomain: 'greenagency',
@@ -43,44 +44,43 @@ export default function DomainSettingsPage() {
   };
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Domain</h1>
-          <p className="text-sm text-neutral-500">Manage your domain settings</p>
-        </div>
-        <button
-          onClick={handleSave}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors"
-        >
-          <Save size={18} />
-          Save Changes
-        </button>
-      </div>
+    <div className="space-y-6">
+      <SettingsHeader
+        title="Domain"
+        description="Manage your domain settings"
+        action={
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-800"
+          >
+            <Save size={18} />
+            Save changes
+          </button>
+        }
+      />
 
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed top-4 right-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg z-50">
+        <div className="fixed top-4 right-4 bg-success-50 border border-success-200 text-success-800 px-4 py-3 rounded-xl shadow-lg z-50">
           Settings saved successfully! 🎉
         </div>
       )}
 
       <div className="space-y-6">
         {/* Current Subdomain */}
-        <div className="bg-white border border-neutral-200 rounded-lg p-4">
+        <div className="bg-white border border-neutral-200 rounded-xl p-4">
           <label className="block text-sm font-medium text-neutral-700 mb-1">
             Current Subdomain (read-only)
           </label>
           <div className="flex items-center gap-3">
-            <div className="flex-1 bg-neutral-50 border border-neutral-200 rounded px-3 py-1.5 text-sm text-neutral-600">
+            <div className="flex-1 bg-neutral-50 border border-neutral-200 rounded-lg px-3 py-1.5 text-sm text-neutral-600">
               {settings.subdomain}.greenagency.com
             </div>
             <button
               onClick={() => handleCopy(`${settings.subdomain}.greenagency.com`)}
-              className="flex items-center gap-2 px-3 py-1.5 border border-neutral-300 rounded text-sm hover:bg-neutral-50 transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 border border-neutral-300 rounded-lg text-sm hover:bg-neutral-50 transition-colors"
             >
-              {copied ? <CheckCircle size={16} className="text-green-600" /> : <Copy size={16} />}
+              {copied ? <CheckCircle size={16} className="text-success-700" /> : <Copy size={16} />}
               {copied ? 'Copied!' : 'Copy'}
             </button>
           </div>
@@ -90,7 +90,7 @@ export default function DomainSettingsPage() {
         </div>
 
         {/* Custom Domain */}
-        <div className="bg-white border border-neutral-200 rounded-lg p-4">
+        <div className="bg-white border border-neutral-200 rounded-xl p-4">
           <label className="block text-sm font-medium text-neutral-700 mb-1">
             Custom Domain
           </label>
@@ -98,7 +98,7 @@ export default function DomainSettingsPage() {
             type="text"
             value={settings.customDomain}
             onChange={(e) => setSettings({ ...settings, customDomain: e.target.value })}
-            className="w-full text-black border border-neutral-300 rounded px-3 py-1.5 text-sm"
+            className="w-full text-black border border-neutral-300 rounded-lg px-3 py-1.5 text-sm"
             placeholder="example.com"
           />
           <p className="text-xs text-neutral-500 mt-1">
@@ -107,12 +107,12 @@ export default function DomainSettingsPage() {
         </div>
 
         {/* CNAME Instructions */}
-        <div className="bg-white border border-neutral-200 rounded-lg p-4">
+        <div className="bg-white border border-neutral-200 rounded-xl p-4">
           <h3 className="text-sm font-medium text-neutral-700 mb-3">CNAME Configuration</h3>
           <p className="text-sm text-neutral-600 mb-2">
             To connect your custom domain, add a CNAME record in your DNS settings:
           </p>
-          <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-3 space-y-2">
+          <div className="bg-neutral-50 border border-neutral-200 rounded-xl p-3 space-y-2">
             <div className="flex justify-between items-center text-sm">
               <span className="text-neutral-600">Type:</span>
               <span className="font-mono font-medium">CNAME</span>
@@ -127,7 +127,7 @@ export default function DomainSettingsPage() {
                 <span className="font-mono font-medium">{settings.subdomain}.greenagency.com</span>
                 <button
                   onClick={() => handleCopy(`${settings.subdomain}.greenagency.com`)}
-                  className="text-blue-600 hover:text-blue-700"
+                  className="text-primary-700 hover:text-primary-700"
                 >
                   <Copy size={14} />
                 </button>
@@ -141,12 +141,12 @@ export default function DomainSettingsPage() {
         </div>
 
         {/* DNS Propagation Note */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <div className="bg-primary-50 border border-primary-200 rounded-xl p-4">
           <div className="flex items-start gap-3">
-            <Globe size={20} className="text-blue-600 mt-0.5" />
+            <Globe size={20} className="text-primary-700 mt-0.5" />
             <div>
-              <h4 className="text-sm font-medium text-blue-800">DNS Propagation</h4>
-              <p className="text-sm text-blue-600 mt-1">
+              <h4 className="text-sm font-medium text-primary-800">DNS Propagation</h4>
+              <p className="text-sm text-primary-700 mt-1">
                 DNS changes can take up to 48 hours to propagate. Once propagated, your custom domain
                 will automatically point to your agency dashboard.
               </p>

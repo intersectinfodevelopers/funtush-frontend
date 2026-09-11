@@ -1,0 +1,273 @@
+"use client";
+
+/**
+ * Shared building blocks for every agency Settings page, so they all share one
+ * look: token-based colours, rounded-2xl cards, the standard field/label/hint
+ * rhythm, a toast, and a sticky save bar. Frontend-only (mock + localStorage).
+ */
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import Link from "next/link";
+import { Check, ChevronRight } from "lucide-react";
+
+/* ── Toast ──────────────────────────────────────────────────────────────── */
+
+type ToastFn = (message?: string) => void;
+const ToastCtx = createContext<ToastFn>(() => {});
+
+export function SettingsToastProvider({ children }: { children: ReactNode }) {
+  const [msg, setMsg] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const show = useCallback((message = "Changes saved") => {
+    setMsg(message);
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setMsg(null), 2600);
+  }, []);
+
+  useEffect(() => () => void (timer.current && clearTimeout(timer.current)), []);
+
+  return (
+    <ToastCtx.Provider value={show}>
+      {children}
+      {msg && (
+        <div className="pointer-events-none fixed right-4 top-4 z-50 flex items-center gap-2 rounded-xl border border-success-200 bg-success-50 px-4 py-3 text-sm font-semibold text-success-800 shadow-lg">
+          <Check className="h-4 w-4" />
+          {msg}
+        </div>
+      )}
+    </ToastCtx.Provider>
+  );
+}
+
+export const useSettingsToast = () => useContext(ToastCtx);
+
+/* ── Persisted form state (mock: localStorage) ──────────────────────────── */
+
+function readStore<T extends object>(storageKey: string, defaults: T): T {
+  if (typeof window === "undefined") return defaults;
+  try {
+    const raw = localStorage.getItem(storageKey);
+    return raw ? { ...defaults, ...(JSON.parse(raw) as Partial<T>) } : defaults;
+  } catch {
+    return defaults;
+  }
+}
+
+export function useSettingsForm<T extends object>(storageKey: string, defaults: T) {
+  const [value, setValue] = useState<T>(() => readStore(storageKey, defaults));
+  const [saved, setSaved] = useState<T>(() => readStore(storageKey, defaults));
+  const toast = useSettingsToast();
+
+  const dirty = useMemo(() => JSON.stringify(value) !== JSON.stringify(saved), [value, saved]);
+
+  const patch = useCallback((next: Partial<T>) => setValue((v) => ({ ...v, ...next })), []);
+
+  const save = useCallback(() => {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(value));
+    } catch {
+      /* ignore */
+    }
+    setSaved(value);
+    toast();
+  }, [storageKey, value, toast]);
+
+  const reset = useCallback(() => setValue(saved), [saved]);
+
+  return { value, patch, setValue, dirty, save, reset };
+}
+
+/* ── Page header ────────────────────────────────────────────────────────── */
+
+export function SettingsHeader({
+  title,
+  description,
+  action,
+}: {
+  title: string;
+  description?: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-3 border-b border-neutral-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <div className="flex items-center gap-1 text-xs text-neutral-500">
+          <Link href="/dashboard" className="hover:text-neutral-900">
+            Dashboard
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <Link href="/dashboard/settings" className="hover:text-neutral-900">
+            Settings
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="font-semibold text-primary-900">{title}</span>
+        </div>
+        <h1 className="mt-2 text-2xl font-bold text-neutral-900">{title}</h1>
+        {description && <p className="mt-1 text-sm text-neutral-600">{description}</p>}
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
+    </div>
+  );
+}
+
+/* ── Card / section ─────────────────────────────────────────────────────── */
+
+export function SettingsSection({
+  title,
+  description,
+  action,
+  children,
+}: {
+  title?: string;
+  description?: string;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
+      {(title || action) && (
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            {title && <h2 className="text-base font-bold text-neutral-900">{title}</h2>}
+            {description && <p className="mt-1 text-sm text-neutral-500">{description}</p>}
+          </div>
+          {action && <div className="shrink-0">{action}</div>}
+        </div>
+      )}
+      {children}
+    </section>
+  );
+}
+
+/* ── Field ──────────────────────────────────────────────────────────────── */
+
+const fieldClass =
+  "w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-primary-500 focus:ring-4 focus:ring-primary-50";
+
+export function Field({
+  label,
+  hint,
+  required,
+  htmlFor,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  required?: boolean;
+  htmlFor?: string;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <label
+        htmlFor={htmlFor}
+        className="mb-1.5 block text-sm font-semibold text-neutral-700"
+      >
+        {label}
+        {required && <span className="ml-1 text-danger-600">*</span>}
+      </label>
+      {children}
+      {hint && <p className="mt-1 text-xs text-neutral-400">{hint}</p>}
+    </div>
+  );
+}
+
+export function TextInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return <input {...props} className={`${fieldClass} ${props.className ?? ""}`} />;
+}
+
+export function TextArea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea {...props} className={`${fieldClass} ${props.className ?? ""}`} />;
+}
+
+/* ── Toggle row ─────────────────────────────────────────────────────────── */
+
+export function ToggleRow({
+  label,
+  description,
+  checked,
+  onChange,
+  disabled,
+}: {
+  label: string;
+  description?: string;
+  checked: boolean;
+  onChange: (next: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 rounded-xl border border-neutral-200 p-3.5">
+      <div className="min-w-0">
+        <p className="text-sm font-semibold text-neutral-800">{label}</p>
+        {description && <p className="mt-0.5 text-xs text-neutral-500">{description}</p>}
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        aria-label={`Toggle ${label}`}
+        disabled={disabled}
+        onClick={() => onChange(!checked)}
+        className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full p-1 transition disabled:opacity-40 ${
+          checked ? "bg-primary-600" : "bg-neutral-300"
+        }`}
+      >
+        <span
+          className={`h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+            checked ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
+
+/* ── Sticky save bar ────────────────────────────────────────────────────── */
+
+export function SaveBar({
+  dirty,
+  onSave,
+  onReset,
+}: {
+  dirty: boolean;
+  onSave: () => void;
+  onReset?: () => void;
+}) {
+  return (
+    <div
+      className={`sticky bottom-0 -mx-3 flex items-center justify-end gap-3 border-t border-neutral-200 bg-white/90 px-3 py-3 backdrop-blur transition sm:-mx-4 sm:px-4 ${
+        dirty ? "opacity-100" : "pointer-events-none opacity-0"
+      }`}
+    >
+      <span className="mr-auto text-xs font-medium text-neutral-500">
+        You have unsaved changes
+      </span>
+      {onReset && (
+        <button
+          type="button"
+          onClick={onReset}
+          className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
+        >
+          Discard
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={onSave}
+        className="rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-800"
+      >
+        Save changes
+      </button>
+    </div>
+  );
+}

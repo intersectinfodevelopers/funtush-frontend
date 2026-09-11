@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Crown, Check, X } from 'lucide-react';
+import { SettingsHeader } from '@/components/agency/settings/settings-kit';
 
 // Tier data
 const tiers = [
@@ -80,18 +81,15 @@ const featureLabels = {
 };
 
 export default function SubscriptionSettingsPage() {
-  const [currentTier, setCurrentTier] = useState('free');
-  const [showToast, setShowToast] = useState(false);
-
-  // Load from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem('subscriptionTier');
-    if (stored) {
-      setTimeout(() => {
-        setCurrentTier(stored);
-      }, 0);
+  const [currentTier, setCurrentTier] = useState(() => {
+    if (typeof window === 'undefined') return 'free';
+    try {
+      return localStorage.getItem('subscriptionTier') || 'free';
+    } catch {
+      return 'free';
     }
-  }, []);
+  });
+  const [showToast, setShowToast] = useState(false);
 
   const handleUpgrade = (tierId: string) => {
     setCurrentTier(tierId);
@@ -106,24 +104,21 @@ export default function SubscriptionSettingsPage() {
   const featureKeys = Object.keys(featureLabels) as (keyof typeof featureLabels)[];
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Subscription</h1>
-          <p className="text-sm text-neutral-500">Manage your subscription plan</p>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <SettingsHeader
+        title="Subscription"
+        description="Manage your subscription plan"
+      />
 
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed top-4 right-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg z-50">
+        <div className="fixed top-4 right-4 bg-success-50 border border-success-200 text-success-800 px-4 py-3 rounded-xl shadow-lg z-50">
           Subscription updated successfully! 🎉
         </div>
       )}
 
       {/* Current Tier Card */}
-      <div className="bg-white border border-neutral-200 rounded-lg p-6 mb-6">
+      <div className="bg-white border border-neutral-200 rounded-xl p-6 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Crown size={32} className="text-yellow-500" />
@@ -135,7 +130,7 @@ export default function SubscriptionSettingsPage() {
             </div>
           </div>
           <div className="text-right">
-            <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+            <span className="inline-block px-3 py-1 bg-success-100 text-success-800 rounded-full text-sm font-medium">
               Active
             </span>
           </div>
@@ -156,7 +151,7 @@ export default function SubscriptionSettingsPage() {
       </div>
 
       {/* Tier Comparison Table */}
-      <div className="bg-white text-black border border-neutral-200 rounded-lg overflow-hidden">
+      <div className="bg-white text-black border border-neutral-200 rounded-xl overflow-hidden">
         <div className="p-4 border-b border-neutral-200">
           <h3 className="text-sm font-medium text-neutral-900">Compare Plans</h3>
         </div>
@@ -188,14 +183,14 @@ export default function SubscriptionSettingsPage() {
                       <td
                         key={tier.id}
                         className={`px-4 py-3 text-center text-sm ${
-                          isCurrent ? 'bg-blue-50' : ''
+                          isCurrent ? 'bg-primary-50' : ''
                         }`}
                       >
                         {typeof value === 'boolean' ? (
                           value ? (
-                            <Check size={18} className="text-green-600 mx-auto" />
+                            <Check size={18} className="text-success-700 mx-auto" />
                           ) : (
-                            <X size={18} className="text-red-400 mx-auto" />
+                            <X size={18} className="text-danger-400 mx-auto" />
                           )
                         ) : (
                           <span className="text-sm">{value}</span>
@@ -212,13 +207,13 @@ export default function SubscriptionSettingsPage() {
                     {tier.id !== currentTier && tier.id !== 'free' && (
                       <button
                         onClick={() => handleUpgrade(tier.id)}
-                        className="bg-blue-600 text-white px-3 py-1.5 rounded text-xs hover:bg-blue-700 transition-colors"
+                        className="bg-primary-900 text-white px-3 py-1.5 rounded-lg text-xs hover:bg-primary-800 transition-colors"
                       >
                         Upgrade
                       </button>
                     )}
                     {tier.id === currentTier && (
-                      <span className="text-xs text-green-600 font-medium">Current</span>
+                      <span className="text-xs text-success-700 font-medium">Current</span>
                     )}
                     {tier.id === 'free' && tier.id !== currentTier && (
                       <span className="text-xs text-neutral-400">Free</span>

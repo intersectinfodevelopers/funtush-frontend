@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Save, GripVertical, Plus, Trash2 } from 'lucide-react';
+import { SettingsHeader } from '@/components/agency/settings/settings-kit';
 
 interface NavLink {
   id: string;
@@ -77,32 +78,31 @@ export default function NavigationSettingsPage() {
   };
 
   return (
-    <div>
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Navigation</h1>
-          <p className="text-sm text-neutral-500">Manage your website navigation menu</p>
-        </div>
-        <button
-          onClick={handleSave}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors"
-        >
-          <Save size={18} />
-          Save Changes
-        </button>
-      </div>
+    <div className="space-y-6">
+      <SettingsHeader
+        title="Navigation"
+        description="Manage your website navigation menu"
+        action={
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-800"
+          >
+            <Save size={18} />
+            Save changes
+          </button>
+        }
+      />
 
       {/* Toast Notification */}
       {showToast && (
-        <div className="fixed top-4 right-4 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-lg z-50">
+        <div className="fixed top-4 right-4 bg-success-50 border border-success-200 text-success-800 px-4 py-3 rounded-xl shadow-lg z-50">
           Navigation settings saved successfully! 🎉
         </div>
       )}
 
       <div className="space-y-6">
         {/* Current Navigation Items */}
-        <div className="bg-white border border-neutral-200 rounded-lg p-4">
+        <div className="bg-white border border-neutral-200 rounded-xl p-4">
           <h3 className="text-sm font-medium text-neutral-700 mb-3">Menu Items</h3>
           <div className="space-y-2">
             {navItems.length === 0 ? (
@@ -117,8 +117,8 @@ export default function NavigationSettingsPage() {
                   onDragStart={() => handleDragStart(index)}
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
-                  className={`flex items-center gap-3 p-3 bg-neutral-50 border border-neutral-200 rounded-lg cursor-move transition-colors ${
-                    draggedIndex === index ? 'opacity-50 border-blue-400' : ''
+                  className={`flex items-center gap-3 p-3 bg-neutral-50 border border-neutral-200 rounded-xl cursor-move transition-colors ${
+                    draggedIndex === index ? 'opacity-50 border-primary-400' : ''
                   }`}
                 >
                   <GripVertical size={18} className="text-neutral-400" />
@@ -126,7 +126,7 @@ export default function NavigationSettingsPage() {
                   <span className="text-sm text-neutral-500">{item.href}</span>
                   <button
                     onClick={() => removeLink(item.id)}
-                    className="text-red-500 hover:text-red-700"
+                    className="text-danger-600 hover:text-danger-700"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -140,7 +140,7 @@ export default function NavigationSettingsPage() {
         </div>
 
         {/* Add New Link */}
-        <div className="bg-white border border-neutral-200 rounded-lg p-4">
+        <div className="bg-white border border-neutral-200 rounded-xl p-4">
           <h3 className="text-sm font-medium text-neutral-700 mb-3">Add New Link</h3>
           <div className="flex flex-col text-black sm:flex-row gap-3">
             <div className="flex-1">
@@ -151,7 +151,7 @@ export default function NavigationSettingsPage() {
                 type="text"
                 value={newLabel}
                 onChange={(e) => setNewLabel(e.target.value)}
-                className="w-full border border-neutral-300 rounded px-3 py-1.5 text-sm"
+                className="w-full border border-neutral-300 rounded-lg px-3 py-1.5 text-sm"
                 placeholder="e.g., About Us"
               />
             </div>
@@ -163,14 +163,14 @@ export default function NavigationSettingsPage() {
                 type="text"
                 value={newHref}
                 onChange={(e) => setNewHref(e.target.value)}
-                className="w-full border border-neutral-300 rounded px-3 py-1.5 text-sm"
+                className="w-full border border-neutral-300 rounded-lg px-3 py-1.5 text-sm"
                 placeholder="e.g., /about"
               />
             </div>
             <div className="flex items-end">
               <button
                 onClick={addLink}
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-2 bg-primary-900 text-white px-4 py-1.5 rounded-lg text-sm hover:bg-primary-800 transition-colors"
               >
                 <Plus size={16} />
                 Add
