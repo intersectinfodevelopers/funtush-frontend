@@ -1,233 +1,294 @@
 'use client';
 
 import React, { useState } from 'react';
-import toast from "react-hot-toast";
-import { Skeleton } from "@/components/ui/skeleton";
-import SupportIcon from '@mui/icons-material/Support'; 
-import { Input } from "@/components/ui/input";
+import toast from 'react-hot-toast';
+import {
+  LifeBuoy,
+  Mail,
+  MessageCircle,
+  BookOpen,
+  Clock,
+  Megaphone,
+} from 'lucide-react';
 
 interface BugReport {
   id: string;
   title: string;
-  status: "Submitted" | "Under Review" | "Fixed" | "Closed";
+  status: 'Submitted' | 'Under Review' | 'Fixed' | 'Closed';
   date: string;
   notes?: string;
 }
 
-const mockAnnouncements = [
-  { id: "p-1", text: "Scheduled API Patch: Funtush core gateways will undergo minor routing updates on Saturday at 02:00 UTC." },
-  { id: "p-2", text: "Pro-Tip: Attach full network response JSON steps when reporting mapping telemetry errors to secure faster processing times." }
+const announcements = [
+  'Scheduled API patch: core gateways undergo minor routing updates Saturday at 02:00 UTC.',
+  'Pro tip: attach the full network response when reporting a mapping error — it gets triaged faster.',
 ];
 
 const initialReports: BugReport[] = [
-  { id: "BUG-104", title: "Leaflet map markers failing to render on mobile Safari builds", status: "Under Review", date: "2026-06-24", notes: "Engineering looking into WebKit render calculation inconsistencies." },
-  { id: "BUG-089", title: "Dashboard metric summary component flashing empty layout states during routing", status: "Fixed", date: "2026-06-19", notes: "Resolved via dynamic fallback transitions patch." }
+  {
+    id: 'BUG-104',
+    title: 'Map markers failing to render on mobile Safari',
+    status: 'Under Review',
+    date: '2026-06-24',
+    notes: 'Engineering is looking into a WebKit rendering inconsistency.',
+  },
+  {
+    id: 'BUG-089',
+    title: 'Dashboard summary cards flash an empty layout while loading',
+    status: 'Fixed',
+    date: '2026-06-19',
+    notes: 'Resolved with a fallback transition patch.',
+  },
 ];
+
+const STATUS_STYLE: Record<BugReport['status'], string> = {
+  Fixed: 'bg-success-50 text-success-700 border border-success-200',
+  'Under Review': 'bg-warning-50 text-warning-700 border border-warning-200',
+  Closed: 'bg-neutral-100 text-neutral-600 border border-neutral-200',
+  Submitted: 'bg-primary-50 text-primary-700 border border-primary-200',
+};
+
+const fieldClass =
+  'w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-primary-500 focus:ring-4 focus:ring-primary-50';
 
 export default function SupportPage() {
   const [reports, setReports] = useState<BugReport[]>(initialReports);
-  const [isLoading, setIsLoading] = useState(false);
-  const [title, setTitle] = useState("");
-  const [desc, setDesc] = useState("");
-  const [steps, setSteps] = useState("");
+  const [title, setTitle] = useState('');
+  const [desc, setDesc] = useState('');
+  const [steps, setSteps] = useState('');
   const [screenshot, setScreenshot] = useState<File | null>(null);
-
-  const [errors, setErrors] = useState({
-    title: "",
-    desc: ""
-  });
+  const [errors, setErrors] = useState({ title: '', desc: '' });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const newErrors = { title: "", desc: "" };
-    let hasError = false;
+    const newErrors = { title: '', desc: '' };
+    if (!title.trim()) newErrors.title = 'Give your issue a short title.';
+    if (!desc.trim()) newErrors.desc = 'Describe what happened.';
 
-    if (!title.trim()) {
-      newErrors.title = "Please fill the issue title below.";
-      hasError = true;
-    }
-
-    if (!desc.trim()) {
-      newErrors.desc = "Please provide a detailed description of the bug.";
-      hasError = true;
-    }
-
-    if (hasError) {
+    if (newErrors.title || newErrors.desc) {
       setErrors(newErrors);
-      toast.error("Please fix the validation errors before submitting.");
+      toast.error('Fix the highlighted fields before submitting.');
       return;
     }
 
-    setErrors({ title: "", desc: "" });
-
-    try {
-      const newBug: BugReport = {
-        id: `BUG-${Math.floor(100 + Math.random() * 900)}`,
-        title,
-        status: "Submitted",
-        date: new Date().toISOString().split('T')[0],
-        notes: "Awaiting inspection triage allocation."
-      };
-
-      setReports([newBug, ...reports]);
-      setTitle("");
-      setDesc("");
-      setSteps("");
-      setScreenshot(null);
-      toast.success("Bug reported successfully directly into Funtush support triage!");
-    } catch (err) {
-      setIsLoading(false)
-      console.error("Error submitting bug report:", err);
-      toast.error("Failed to submit bug report. Please try again.");
-    }
+    setErrors({ title: '', desc: '' });
+    const newBug: BugReport = {
+      id: `BUG-${Math.floor(100 + Math.random() * 900)}`,
+      title: title.trim(),
+      status: 'Submitted',
+      date: new Date().toISOString().split('T')[0],
+      notes: 'Awaiting triage.',
+    };
+    setReports([newBug, ...reports]);
+    setTitle('');
+    setDesc('');
+    setSteps('');
+    setScreenshot(null);
+    toast.success('Report submitted — we’ll follow up here.');
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Help Center & Bug Report Hub</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Submit technical bugs directly to the Funtush development engine and monitor engineering triage notes.</p>
+        <h1 className="text-2xl font-bold text-neutral-900">Support</h1>
+        <p className="mt-1 text-sm text-neutral-600">
+          Get help, report a bug, or reach the Funtush team directly.
+        </p>
       </div>
 
-      {/* HintsBanner Announcements */}
-      <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 space-y-2">
-        {mockAnnouncements.map((ann) => (
-          <div key={ann.id} className="text-xs text-slate-600 font-medium flex items-start gap-2">
-            <span className="leading-relaxed">{ann.text}</span>
+      {/* Announcements */}
+      {announcements.length > 0 && (
+        <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+          <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-neutral-400">
+            <Megaphone className="h-3.5 w-3.5" />
+            Announcements
           </div>
-        ))}
+          <ul className="space-y-1.5">
+            {announcements.map((text) => (
+              <li key={text} className="text-sm text-neutral-600">
+                {text}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Contact & resources */}
+      <div className="grid gap-4 sm:grid-cols-3">
+        <ContactCard
+          icon={<Mail className="h-5 w-5" />}
+          title="Email support"
+          description="support@funtush.com"
+          href="mailto:support@funtush.com"
+        />
+        <ContactCard
+          icon={<MessageCircle className="h-5 w-5" />}
+          title="Live chat"
+          description="Mon–Fri, 9am–6pm NPT"
+          href="#"
+        />
+        <ContactCard
+          icon={<BookOpen className="h-5 w-5" />}
+          title="Help center & docs"
+          description="Guides, FAQs, API reference"
+          href="#"
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Bug Report Form */}
-        <div className="bg-white p-5 rounded-xl border border-slate-200/60 shadow-xs lg:col-span-2">
-          <h3 className="text-sm font-bold text-slate-800 border-b border-slate-100 pb-2.5 mb-4">Report an Operational System Bug</h3>
-          <form onSubmit={handleSubmit} className="space-y-4 text-xs" noValidate>
-            
-            <Input
-              label="Issue Title *"
-              placeholder="e.g., GPS telemetry track failing to push update coords"
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                if (errors.title) setErrors(prev => ({ ...prev, title: "" }));
-              }}
-              error={errors.title}
-            />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Bug report form */}
+        <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm lg:col-span-2">
+          <h2 className="border-b border-neutral-100 pb-3 text-base font-bold text-neutral-900">
+            Report a bug
+          </h2>
+          <form onSubmit={handleSubmit} className="mt-4 space-y-4" noValidate>
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-neutral-700">
+                Issue title <span className="text-danger-600">*</span>
+              </label>
+              <input
+                value={title}
+                onChange={(e) => {
+                  setTitle(e.target.value);
+                  if (errors.title) setErrors((prev) => ({ ...prev, title: '' }));
+                }}
+                placeholder="e.g., Live tracking map not updating on mobile"
+                className={`${fieldClass} ${errors.title ? 'border-danger-300 focus:border-danger-400 focus:ring-danger-50' : ''}`}
+              />
+              {errors.title && <p className="mt-1 text-xs font-medium text-danger-600">{errors.title}</p>}
+            </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Detailed Description *</label>
+              <label className="mb-1.5 block text-sm font-semibold text-neutral-700">
+                Detailed description <span className="text-danger-600">*</span>
+              </label>
               <textarea
                 rows={3}
-                placeholder="Describe what occurred, expected result, and system details..."
                 value={desc}
                 onChange={(e) => {
                   setDesc(e.target.value);
-                  if (errors.desc) setErrors(prev => ({ ...prev, desc: "" }));
+                  if (errors.desc) setErrors((prev) => ({ ...prev, desc: '' }));
                 }}
-                className={`w-full border rounded-lg p-2.5 text-slate-700 focus:outline-hidden focus:ring-1 font-medium ${
-                  errors.desc ? "border-red-500 focus:ring-red-500 bg-red-50/30" : "border-slate-200 focus:ring-blue-500"
-                }`}
+                placeholder="What happened, what you expected, and any relevant details."
+                className={`${fieldClass} ${errors.desc ? 'border-danger-300 focus:border-danger-400 focus:ring-danger-50' : ''}`}
               />
-              {errors.desc && (
-                <p className="text-red-500 text-[11px] font-semibold mt-1">
-                  {errors.desc}
-                </p>
-              )}
+              {errors.desc && <p className="mt-1 text-xs font-medium text-danger-600">{errors.desc}</p>}
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Steps to Reproduce</label>
+              <label className="mb-1.5 block text-sm font-semibold text-neutral-700">
+                Steps to reproduce
+              </label>
               <textarea
                 rows={2}
-                placeholder="1. Navigate to live tracking canvas&#10;2. Select an active trek&#10;3. Trigger manual coordinate recalculation..."
                 value={steps}
                 onChange={(e) => setSteps(e.target.value)}
-                className="w-full border border-slate-200 rounded-lg p-2.5 text-slate-700 font-mono focus:outline-hidden focus:ring-1 focus:ring-blue-500"
+                placeholder={'1. Open the live tracking map\n2. Select an active trek\n3. Wait for a position update'}
+                className={`${fieldClass} font-mono`}
               />
             </div>
 
             <div>
-              <label className="block font-bold text-slate-700 mb-1">Upload Log / Screenshot</label>
+              <label className="mb-1.5 block text-sm font-semibold text-neutral-700">
+                Attach a screenshot
+              </label>
               <div className="flex items-center gap-3">
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
-                  className="block text-xs text-slate-500 file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+                  className="block text-xs text-neutral-500 file:mr-3 file:rounded-lg file:border-0 file:bg-primary-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-primary-700 hover:file:bg-primary-100"
                 />
-                {screenshot && <span className="text-slate-400 font-mono truncate max-w-[150px]">{screenshot.name}</span>}
+                {screenshot && (
+                  <span className="truncate text-xs font-mono text-neutral-400">{screenshot.name}</span>
+                )}
               </div>
             </div>
 
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl transition-colors shadow-xs cursor-pointer"
+              className="rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-800"
             >
-              Dispatch Ticket to Funtush Core
+              Submit report
             </button>
           </form>
         </div>
 
-        {/* My Reports List with Loading & Empty State Handling */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200/60 shadow-xs h-full">
-          <h3 className="font-bold text-slate-800 text-sm mb-3">My Submitted Tickets</h3>
-          
-          <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
-            {isLoading ? (
-              Array.from({ length: 2 }).map((_, index) => (
-                <div key={index} className="p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-2">
-                  <div className="flex justify-between items-center">
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-4 w-16" />
-                  </div>
-                  <Skeleton className="h-10 w-full" />
-                  <div className="flex justify-between pt-1">
-                    <Skeleton className="h-3 w-20" />
-                    <Skeleton className="h-3 w-20" />
-                  </div>
-                </div>
-              ))
-            ) : reports.length === 0 ? (
-              <div className="text-center py-10 px-4 space-y-3">
-                <div className="bg-blue-50 text-blue-600 w-12 h-12 rounded-full flex items-center justify-center mx-auto">
-                  <SupportIcon className="w-6 h-6" />
-                </div>
-                <h4 className="text-xs font-bold text-slate-700">No support tickets found</h4>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
-                  You haven&apos;t submitted any bug reports yet. Use the form on the left to log your first system ticket.
-                </p>
+        {/* Ticket list */}
+        <div className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+          <h2 className="mb-3 text-base font-bold text-neutral-900">Your reports</h2>
+
+          {reports.length === 0 ? (
+            <div className="space-y-3 px-2 py-8 text-center">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-50 text-primary-600">
+                <LifeBuoy className="h-6 w-6" />
               </div>
-            ) : (
-              reports.map((report) => (
-                <div key={report.id} className="p-3 bg-slate-50 border border-slate-100 rounded-lg space-y-2">
-                  <div className="flex justify-between items-start gap-2">
-                    <h4 className="font-bold text-slate-800 text-xs leading-tight">{report.title}</h4>
-                    <span className={`inline-flex px-1.5 py-0.5 rounded text-[9px] font-black tracking-wider uppercase whitespace-nowrap ${
-                      report.status === "Fixed" ? "bg-emerald-50 text-emerald-700 border border-emerald-100" :
-                      report.status === "Under Review" ? "bg-amber-50 text-amber-700 border border-amber-100" :
-                      report.status === "Closed" ? "bg-slate-200 text-slate-600" : "bg-blue-50 text-blue-700 border border-blue-100"
-                    }`}>
+              <p className="text-sm font-semibold text-neutral-700">No reports yet</p>
+              <p className="text-xs leading-relaxed text-neutral-400">
+                Use the form to log your first bug report.
+              </p>
+            </div>
+          ) : (
+            <div className="max-h-125 space-y-3 overflow-y-auto pr-1">
+              {reports.map((report) => (
+                <div key={report.id} className="space-y-2 rounded-xl border border-neutral-100 bg-neutral-50 p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-xs font-bold leading-tight text-neutral-800">{report.title}</h3>
+                    <span
+                      className={`inline-flex shrink-0 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${STATUS_STYLE[report.status]}`}
+                    >
                       {report.status}
                     </span>
                   </div>
                   {report.notes && (
-                    <p className="text-[11px] text-slate-500 bg-white p-2 rounded border border-slate-200/40 leading-relaxed">
-                      <strong className="text-slate-700 font-semibold block text-[10px] uppercase text-slate-400 mb-0.5">Funtush Dev Team Note:</strong>
+                    <p className="rounded-lg border border-neutral-200 bg-white p-2 text-[11px] leading-relaxed text-neutral-500">
+                      <span className="mb-0.5 block text-[10px] font-semibold uppercase text-neutral-400">
+                        Funtush team note
+                      </span>
                       {report.notes}
                     </p>
                   )}
-                  <div className="flex justify-between items-center text-[10px] text-slate-400 pt-1 font-medium">
-                    <span>ID: {report.id}</span>
-                    <span>Logged: {report.date}</span>
+                  <div className="flex items-center justify-between pt-1 text-[10px] font-medium text-neutral-400">
+                    <span>{report.id}</span>
+                    <span>{report.date}</span>
                   </div>
                 </div>
-              ))
-            )}
+              ))}
+            </div>
+          )}
+
+          <div className="mt-4 flex items-center gap-2 rounded-xl bg-neutral-50 px-3 py-2 text-xs text-neutral-500">
+            <Clock className="h-3.5 w-3.5 shrink-0" />
+            Typical first response: under 4 business hours.
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function ContactCard({
+  icon,
+  title,
+  description,
+  href,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  href: string;
+}) {
+  return (
+    <a
+      href={href}
+      className="flex items-start gap-3 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary-200 hover:shadow-md"
+    >
+      <span className="rounded-xl bg-primary-50 p-2.5 text-primary-700">{icon}</span>
+      <span>
+        <span className="block text-sm font-semibold text-neutral-900">{title}</span>
+        <span className="mt-0.5 block text-xs text-neutral-500">{description}</span>
+      </span>
+    </a>
   );
 }

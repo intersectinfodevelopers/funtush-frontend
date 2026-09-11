@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Save, Upload, Eye } from 'lucide-react';
 import { SettingsHeader } from '@/components/agency/settings/settings-kit';
-import Image from 'next/image';
 
-// Font options
+// Font options — value must match the Google Fonts family name exactly.
 const fontOptions = [
   { value: 'Inter', label: 'Inter' },
   { value: 'Poppins', label: 'Poppins' },
@@ -22,6 +21,34 @@ const defaultSettings = {
   favicon: '',
 };
 
+/** The Google Fonts stylesheet URL for a font family name. */
+function googleFontHref(family: string): string {
+  return `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family).replace(/%20/g, '+')}:wght@400;500;600;700&display=swap`;
+}
+
+const GOOGLE_FONT_LINK_ID = 'branding-preview-font';
+
+/**
+ * Load a Google Font at runtime so the picker and the live preview actually
+ * render in the selected face — `next/font` only handles fonts known at build
+ * time, and this one is chosen by the agency. Inter is already loaded
+ * app-wide, so it needs no network request.
+ */
+function useGoogleFont(family: string) {
+  useEffect(() => {
+    if (family === 'Inter') return;
+
+    let link = document.getElementById(GOOGLE_FONT_LINK_ID) as HTMLLinkElement | null;
+    if (!link) {
+      link = document.createElement('link');
+      link.id = GOOGLE_FONT_LINK_ID;
+      link.rel = 'stylesheet';
+      document.head.appendChild(link);
+    }
+    link.href = googleFontHref(family);
+  }, [family]);
+}
+
 export default function BrandingSettingsPage() {
   const [settings, setSettings] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -31,6 +58,9 @@ export default function BrandingSettingsPage() {
     return defaultSettings;
   });
   const [showToast, setShowToast] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  useGoogleFont(settings.font);
 
   // Save to localStorage
   const handleSave = () => {
@@ -47,26 +77,42 @@ export default function BrandingSettingsPage() {
     setSettings({ ...settings, font });
   };
 
+  const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 2 MB — plenty for a logo/favicon, keeps localStorage happy
+
+  function readImage(
+    file: File,
+    onDone: (dataUrl: string) => void,
+  ) {
+    setUploadError(null);
+    if (!file.type.startsWith('image/')) {
+      setUploadError('Please choose an image file.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setUploadError('Image is too large — please use one under 2 MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => setUploadError('Could not read that file. Please try again.');
+    reader.onload = (event) => {
+      const result = event.target?.result;
+      if (typeof result === 'string') onDone(result);
+    };
+    reader.readAsDataURL(file);
+  }
+
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setSettings({ ...settings, logo: event.target?.result as string });
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    readImage(file, (logo) => setSettings((s: typeof defaultSettings) => ({ ...s, logo })));
+    e.target.value = ''; // allow re-selecting the same file
   };
 
   const handleFaviconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setSettings({ ...settings, favicon: event.target?.result as string });
-      };
-      reader.readAsDataURL(file);
-    }
+    if (!file) return;
+    readImage(file, (favicon) => setSettings((s: typeof defaultSettings) => ({ ...s, favicon })));
+    e.target.value = '';
   };
 
   // Preview styles
@@ -95,6 +141,12 @@ export default function BrandingSettingsPage() {
       {showToast && (
         <div className="fixed top-4 right-4 bg-success-50 border border-success-200 text-success-800 px-4 py-3 rounded-xl shadow-lg z-50">
           Settings saved successfully! 🎉
+        </div>
+      )}
+
+      {uploadError && (
+        <div className="rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-800">
+          {uploadError}
         </div>
       )}
 
@@ -139,6 +191,9 @@ export default function BrandingSettingsPage() {
                 </option>
               ))}
             </select>
+            <p className="mt-1.5 text-xs text-neutral-400">
+              Applied to your white-label site. The preview on the right updates live.
+            </p>
           </div>
 
           {/* Logo Upload */}
@@ -148,7 +203,10 @@ export default function BrandingSettingsPage() {
             </label>
             <div className="flex items-center gap-4">
               {settings.logo && (
-                <Image
+                // A locally-uploaded data: URL preview — next/image needs explicit
+                // dimensions it can't have here, so a plain <img> is the right tool.
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
                   src={settings.logo}
                   alt="Logo"
                   className="h-16 w-auto object-contain border border-neutral-200 rounded"
@@ -165,6 +223,7 @@ export default function BrandingSettingsPage() {
                 />
               </label>
             </div>
+            <p className="mt-1.5 text-xs text-neutral-400">PNG, JPG or SVG. Up to 2 MB.</p>
           </div>
 
           {/* Favicon Upload */}
@@ -174,7 +233,8 @@ export default function BrandingSettingsPage() {
             </label>
             <div className="flex items-center gap-4">
               {settings.favicon && (
-                <Image
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
                   src={settings.favicon}
                   alt="Favicon"
                   className="w-10 h-10 object-contain border border-neutral-200 rounded"
@@ -191,6 +251,9 @@ export default function BrandingSettingsPage() {
                 />
               </label>
             </div>
+            <p className="mt-1.5 text-xs text-neutral-400">
+              Square image recommended, e.g. 512×512 PNG or ICO.
+            </p>
           </div>
         </div>
 
@@ -210,12 +273,13 @@ export default function BrandingSettingsPage() {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   {settings.logo ? (
-                    <Image src={settings.logo} alt="Logo" className="h-8 w-auto" />
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={settings.logo} alt="Logo" className="h-8 w-auto" />
                   ) : (
                     <div className="w-8 h-8 rounded-lg bg-neutral-200"></div>
                   )}
                   <span className="text-lg font-bold" style={{ color: settings.primaryColor }}>
-                    Green Agency
+                    Your Agency
                   </span>
                 </div>
                 <div
@@ -232,7 +296,7 @@ export default function BrandingSettingsPage() {
                 style={{ borderColor: settings.primaryColor }}
               >
                 <h4 className="font-semibold mb-1" style={{ fontFamily: settings.font }}>
-                  Welcome to Green Agency
+                  Welcome to your agency
                 </h4>
                 <p className="text-sm text-neutral-600" style={{ fontFamily: settings.font }}>
                   This is how your brand will look with the selected settings.

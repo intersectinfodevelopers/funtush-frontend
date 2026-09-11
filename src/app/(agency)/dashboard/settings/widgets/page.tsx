@@ -13,42 +13,36 @@ import {
 type Widgets = {
   whatsappEnabled: boolean;
   whatsappNumber: string;
-  liveChatEnabled: boolean;
-  liveChatCode: string;
   googleMapsEnabled: boolean;
+  googleMapsApiKey: string;
   currencyConverterEnabled: boolean;
   weatherEnabled: boolean;
-  instagramFeedEnabled: boolean;
-  youtubeEnabled: boolean;
-  maxYoutubeVideos: number;
 };
 
 const DEFAULTS: Widgets = {
   whatsappEnabled: false,
   whatsappNumber: "",
-  liveChatEnabled: false,
-  liveChatCode: "",
   googleMapsEnabled: true,
+  googleMapsApiKey: "",
   currencyConverterEnabled: false,
   weatherEnabled: false,
-  instagramFeedEnabled: false,
-  youtubeEnabled: false,
-  maxYoutubeVideos: 6,
 };
 
 export default function WidgetsSettingsPage() {
   const { value, patch, dirty, save, reset } = useSettingsForm("widgetSettings", DEFAULTS);
 
+  const mapsMissingKey = value.googleMapsEnabled && value.googleMapsApiKey.trim().length === 0;
+
   return (
     <div className="space-y-6">
       <SettingsHeader
         title="Widgets"
-        description="Optional tools shown across your white-label site. Some require a paid tier."
+        description="Optional tools shown across your white-label site."
       />
 
       <SettingsSection
         title="Contact"
-        description="Ways for visitors to reach you directly from any page."
+        description="The most direct, highest-converting way for a trekker to reach you."
       >
         <div className="space-y-4">
           <ToggleRow
@@ -65,31 +59,32 @@ export default function WidgetsSettingsPage() {
               placeholder="+977 98XXXXXXXX"
             />
           </Field>
-          <ToggleRow
-            label="Live chat"
-            description="Embed a third-party chat widget (Crisp, Tawk.to, Intercom…)."
-            checked={value.liveChatEnabled}
-            onChange={(v) => patch({ liveChatEnabled: v })}
-          />
-          <Field label="Live chat embed code" hint="Paste the <script> snippet from your provider.">
-            <TextInput
-              value={value.liveChatCode}
-              onChange={(e) => patch({ liveChatCode: e.target.value })}
-              disabled={!value.liveChatEnabled}
-              placeholder="<script>…</script>"
-            />
-          </Field>
         </div>
       </SettingsSection>
 
       <SettingsSection title="Utility">
-        <div className="space-y-3">
+        <div className="space-y-4">
           <ToggleRow
             label="Google Maps"
             description="Show an embedded map on contact and destination pages."
             checked={value.googleMapsEnabled}
             onChange={(v) => patch({ googleMapsEnabled: v })}
           />
+          <Field
+            label="Google Maps API key"
+            hint="From the Google Cloud Console — restrict it to the Maps JavaScript API for your domain."
+            required={value.googleMapsEnabled}
+            error={mapsMissingKey ? "Required to show the map." : undefined}
+          >
+            <TextInput
+              type="password"
+              value={value.googleMapsApiKey}
+              onChange={(e) => patch({ googleMapsApiKey: e.target.value })}
+              disabled={!value.googleMapsEnabled}
+              placeholder="AIzaSy…"
+              className={mapsMissingKey ? "border-danger-300 focus:border-danger-400 focus:ring-danger-50" : ""}
+            />
+          </Field>
           <ToggleRow
             label="Currency converter"
             description="Let visitors see prices in their own currency."
@@ -105,34 +100,14 @@ export default function WidgetsSettingsPage() {
         </div>
       </SettingsSection>
 
-      <SettingsSection title="Media">
-        <div className="space-y-4">
-          <ToggleRow
-            label="Instagram feed"
-            description="Pull recent posts from your connected Instagram account."
-            checked={value.instagramFeedEnabled}
-            onChange={(v) => patch({ instagramFeedEnabled: v })}
-          />
-          <ToggleRow
-            label="YouTube embeds"
-            description="Show videos from Manage Video on your site."
-            checked={value.youtubeEnabled}
-            onChange={(v) => patch({ youtubeEnabled: v })}
-          />
-          <Field label="Max videos to show" hint="Between 1 and 12.">
-            <TextInput
-              type="number"
-              min={1}
-              max={12}
-              value={value.maxYoutubeVideos}
-              onChange={(e) =>
-                patch({ maxYoutubeVideos: Math.max(1, Math.min(12, Number(e.target.value) || 1)) })
-              }
-              disabled={!value.youtubeEnabled}
-              className="max-w-32"
-            />
-          </Field>
-        </div>
+      <SettingsSection
+        title="Coming soon"
+        description="Live chat, Instagram feed and YouTube embeds are on the roadmap."
+      >
+        <p className="text-sm text-neutral-500">
+          We&apos;re still working out the right third-party integrations for these — they&apos;ll
+          appear here once ready.
+        </p>
       </SettingsSection>
 
       <SaveBar dirty={dirty} onSave={save} onReset={reset} />

@@ -1,9 +1,14 @@
 "use client";
 
+import { useState } from "react";
+import { Bell, Users } from "lucide-react";
 import {
+  Field,
   SaveBar,
   SettingsHeader,
   SettingsSection,
+  TextInput,
+  ToggleRow,
   useSettingsForm,
 } from "@/components/agency/settings/settings-kit";
 
@@ -22,33 +27,103 @@ const EVENTS: { key: string; label: string; description: string }[] = [
 ];
 
 const DEFAULTS: Prefs = Object.fromEntries(
-  EVENTS.map((e) => [e.key, { email: true, inApp: true }]),
+  EVENTS.map((e) => [e.key, { email: false, inApp: true }]),
 ) as Prefs;
+// SOS is the one event that must always reach you by email, no matter what.
+DEFAULTS.sosTriggered = { email: true, inApp: true };
+
+type VisitorPopup = {
+  enabled: boolean;
+  message: string;
+};
+
+const VISITOR_DEFAULTS: VisitorPopup = {
+  enabled: true,
+  message: "Welcome back! Ready to plan your next trek with us?",
+};
 
 export default function NotificationSettingsPage() {
   const { value, setValue, dirty, save, reset } = useSettingsForm("notificationSettings", DEFAULTS);
+  const visitorForm = useSettingsForm<VisitorPopup>("visitorPopupSettings", VISITOR_DEFAULTS);
+  const [showPreview, setShowPreview] = useState(false);
 
   const toggle = (key: string, ch: keyof Channel) => {
     if (key === "sosTriggered" && ch === "email") return; // enforced on
     setValue({ ...value, [key]: { ...value[key], [ch]: !value[key]?.[ch] } });
   };
 
+  const allDirty = dirty || visitorForm.dirty;
+  const saveAll = () => {
+    save();
+    visitorForm.save();
+  };
+  const resetAll = () => {
+    reset();
+    visitorForm.reset();
+  };
+
   return (
     <div className="space-y-6">
       <SettingsHeader
         title="Notifications"
-        description="Choose how you're told about activity in your workspace. SOS alerts always email you."
+        description="In-app is the default and shows instantly — turn on email only for what you'd want to know about away from your desk."
       />
 
-      <SettingsSection>
+      {/* In-app popup to returning visitors */}
+      <SettingsSection
+        title="Welcome-back popup"
+        description="A one-time in-app popup shown to trekkers who have visited or booked with you before, based on their booking history."
+        icon={<Users className="h-4 w-4" />}
+      >
+        <div className="space-y-4">
+          <ToggleRow
+            label="Show a welcome-back popup to returning trekkers"
+            description="Fires once per visit for a signed-in trekker who has an inquiry, booking, or completed trek with your agency."
+            checked={visitorForm.value.enabled}
+            onChange={(v) => visitorForm.patch({ enabled: v })}
+          />
+          <Field label="Popup message" hint="Keep it short — this appears as a small card, not a full page.">
+            <TextInput
+              value={visitorForm.value.message}
+              onChange={(e) => visitorForm.patch({ message: e.target.value })}
+              disabled={!visitorForm.value.enabled}
+              maxLength={140}
+              placeholder="Welcome back! Ready to plan your next trek with us?"
+            />
+          </Field>
+          <button
+            type="button"
+            onClick={() => setShowPreview((s) => !s)}
+            className="text-xs font-semibold text-primary-700 hover:underline"
+          >
+            {showPreview ? "Hide preview" : "Preview"}
+          </button>
+          {showPreview && (
+            <div className="pointer-events-none flex max-w-xs items-start gap-3 rounded-xl border border-neutral-200 bg-white p-3 shadow-lg">
+              <span className="mt-0.5 rounded-lg bg-primary-50 p-1.5 text-primary-700">
+                <Bell className="h-4 w-4" />
+              </span>
+              <p className="text-sm text-neutral-800">
+                {visitorForm.value.message || "Welcome back! Ready to plan your next trek with us?"}
+              </p>
+            </div>
+          )}
+        </div>
+      </SettingsSection>
+
+      {/* Per-event channels */}
+      <SettingsSection
+        title="Event alerts"
+        description="Choose which events notify you, and how."
+      >
         <div className="hidden grid-cols-[1fr_5rem_5rem] items-center gap-2 pb-2 text-[11px] font-bold uppercase tracking-wide text-neutral-400 sm:grid">
           <span>Event</span>
-          <span className="text-center">Email</span>
           <span className="text-center">In-app</span>
+          <span className="text-center">Email</span>
         </div>
         <ul className="divide-y divide-neutral-100">
           {EVENTS.map((e) => {
-            const ch = value[e.key] ?? { email: false, inApp: false };
+            const ch = value[e.key] ?? { email: false, inApp: true };
             return (
               <li
                 key={e.key}
@@ -62,21 +137,21 @@ export default function NotificationSettingsPage() {
                   <label className="flex items-center gap-2 text-xs text-neutral-500 sm:justify-center">
                     <input
                       type="checkbox"
+                      className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                      checked={ch.inApp}
+                      onChange={() => toggle(e.key, "inApp")}
+                    />
+                    <span className="sm:hidden">In-app</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-neutral-500 sm:justify-center">
+                    <input
+                      type="checkbox"
                       className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500 disabled:opacity-40"
                       checked={ch.email}
                       disabled={e.key === "sosTriggered"}
                       onChange={() => toggle(e.key, "email")}
                     />
                     <span className="sm:hidden">Email</span>
-                  </label>
-                  <label className="flex items-center gap-2 text-xs text-neutral-500 sm:justify-center">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
-                      checked={ch.inApp}
-                      onChange={() => toggle(e.key, "inApp")}
-                    />
-                    <span className="sm:hidden">In-app</span>
                   </label>
                 </div>
               </li>
@@ -85,7 +160,7 @@ export default function NotificationSettingsPage() {
         </ul>
       </SettingsSection>
 
-      <SaveBar dirty={dirty} onSave={save} onReset={reset} />
+      <SaveBar dirty={allDirty} onSave={saveAll} onReset={resetAll} />
     </div>
   );
 }

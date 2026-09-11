@@ -126,20 +126,25 @@ export function SettingsSection({
   title,
   description,
   action,
+  icon,
   children,
 }: {
   title?: string;
   description?: string;
   action?: ReactNode;
+  icon?: ReactNode;
   children: ReactNode;
 }) {
   return (
     <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
       {(title || action) && (
         <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            {title && <h2 className="text-base font-bold text-neutral-900">{title}</h2>}
-            {description && <p className="mt-1 text-sm text-neutral-500">{description}</p>}
+          <div className="flex items-start gap-2">
+            {icon && <span className="mt-0.5 text-neutral-400">{icon}</span>}
+            <div>
+              {title && <h2 className="text-base font-bold text-neutral-900">{title}</h2>}
+              {description && <p className="mt-1 text-sm text-neutral-500">{description}</p>}
+            </div>
           </div>
           {action && <div className="shrink-0">{action}</div>}
         </div>
@@ -158,12 +163,14 @@ export function Field({
   label,
   hint,
   required,
+  error,
   htmlFor,
   children,
 }: {
   label: string;
   hint?: string;
   required?: boolean;
+  error?: string;
   htmlFor?: string;
   children: ReactNode;
 }) {
@@ -177,7 +184,11 @@ export function Field({
         {required && <span className="ml-1 text-danger-600">*</span>}
       </label>
       {children}
-      {hint && <p className="mt-1 text-xs text-neutral-400">{hint}</p>}
+      {error ? (
+        <p className="mt-1 text-xs font-medium text-danger-600">{error}</p>
+      ) : (
+        hint && <p className="mt-1 text-xs text-neutral-400">{hint}</p>
+      )}
     </div>
   );
 }

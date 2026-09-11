@@ -4,18 +4,6 @@ import { useState } from 'react';
 import { Save, Plus, Trash2 } from 'lucide-react';
 import { SettingsHeader } from '@/components/agency/settings/settings-kit';
 
-// Operating regions options
-const regionOptions = [
-  { value: 'nepal', label: 'Nepal' },
-  { value: 'india', label: 'India' },
-  { value: 'china', label: 'China' },
-  { value: 'usa', label: 'USA' },
-  { value: 'uk', label: 'UK' },
-  { value: 'europe', label: 'Europe' },
-  { value: 'australia', label: 'Australia' },
-  { value: 'south-east-asia', label: 'South East Asia' },
-];
-
 type ContactField = {
   value: string;
   showOnWebsite: boolean;
@@ -27,7 +15,6 @@ type AgencySettings = {
   phones: ContactField[];
   emails: ContactField[];
   address: string;
-  operatingRegions: string[];
 };
 
 // Default settings
@@ -37,7 +24,6 @@ const defaultSettings: AgencySettings = {
   phones: [{ value: '', showOnWebsite: true }],
   emails: [{ value: '', showOnWebsite: true }],
   address: '',
-  operatingRegions: [],
 };
 
 export default function AgencyInfoSettingsPage() {
@@ -111,22 +97,6 @@ export default function AgencyInfoSettingsPage() {
     const updated = [...settings.emails];
     updated[index].showOnWebsite = !updated[index].showOnWebsite;
     setSettings({ ...settings, emails: updated });
-  };
-
-  // Region handlers
-  const toggleRegion = (regionValue: string) => {
-    const current = settings.operatingRegions;
-    if (current.includes(regionValue)) {
-      setSettings({
-        ...settings,
-        operatingRegions: current.filter((r) => r !== regionValue),
-      });
-    } else {
-      setSettings({
-        ...settings,
-        operatingRegions: [...current, regionValue],
-      });
-    }
   };
 
   return (
@@ -277,32 +247,6 @@ export default function AgencyInfoSettingsPage() {
             className="w-full border border-neutral-300 rounded-lg px-3 py-1.5 text-sm"
             placeholder="Enter full address"
           />
-        </div>
-
-        {/* Operating Regions */}
-        <div className="bg-white border border-neutral-200 rounded-xl p-4">
-          <label className="block text-sm font-medium text-neutral-700 mb-2">
-            Operating Regions
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {regionOptions.map((region) => {
-              const isSelected = settings.operatingRegions.includes(region.value);
-              return (
-                <button
-                  key={region.value}
-                  onClick={() => toggleRegion(region.value)}
-                  className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                    isSelected
-                      ? 'bg-primary-100 text-primary-700 border border-primary-300'
-                      : 'bg-neutral-100 text-neutral-600 border border-neutral-200 hover:bg-neutral-200'
-                  }`}
-                >
-                  {region.label}
-                </button>
-              );
-            })}
-          </div>
-          <p className="text-xs text-neutral-500 mt-2">Click to select multiple regions</p>
         </div>
       </div>
     </div>
