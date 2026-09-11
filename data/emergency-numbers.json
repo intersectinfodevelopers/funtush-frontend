@@ -1,0 +1,12 @@
+{
+  "country": "Nepal",
+  "updated": "2026-09-01",
+  "numbers": [
+    { "label": "Police", "number": "100", "note": "Nationwide emergency police" },
+    { "label": "Ambulance", "number": "102", "note": "Nepal Ambulance Service (Kathmandu Valley)" },
+    { "label": "Tourist Police", "number": "1144", "note": "English-speaking, for travellers" },
+    { "label": "Himalayan Rescue Association", "number": "+977-1-4440292", "note": "Altitude-sickness advice, Pheriche & Manang aid posts" },
+    { "label": "Nepal Mountaineering Association", "number": "+977-1-4434525", "note": "Permits and rescue coordination" },
+    { "label": "Tribhuvan Univ. Teaching Hospital", "number": "+977-1-4412303", "note": "Kathmandu, 24h emergency" }
+  ]
+}

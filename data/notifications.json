@@ -1,0 +1,62 @@
+[
+  {
+    "id": "ntf-001",
+    "trekker_id": "user-003",
+    "type": "message",
+    "title": "Message from your guide",
+    "message": "Namaste! This is Suresh, your guide for Everest Base Camp. We reach Dingboche today — remember to hydrate and walk slow. Weather looks clear for Kala Patthar.",
+    "created_at": "REL:-3h",
+    "read": false,
+    "link": "/my-treks/bk-2001/active"
+  },
+  {
+    "id": "ntf-002",
+    "trekker_id": "user-003",
+    "type": "guide_assigned",
+    "title": "Guide assigned",
+    "message": "Anita Gurung has been assigned as your guide for the Classic Everest Base Camp Trek departing 5 October.",
+    "created_at": "REL:-1d",
+    "read": false,
+    "link": "/my-treks/bk-1001"
+  },
+  {
+    "id": "ntf-003",
+    "trekker_id": "user-003",
+    "type": "payment_reminder",
+    "title": "Balance due in 14 days",
+    "message": "Complete the $7,200 payment for your 20 October Everest Base Camp departure to keep your 4 slots reserved.",
+    "created_at": "REL:-2d",
+    "read": false,
+    "link": "/my-treks/bk-2011"
+  },
+  {
+    "id": "ntf-004",
+    "trekker_id": "user-003",
+    "type": "booking_confirmed",
+    "title": "Payment received",
+    "message": "We received your $3,600 payment for the 5 October Everest Base Camp Trek. Your booking is confirmed.",
+    "created_at": "REL:-9d",
+    "read": true,
+    "link": "/my-treks/bk-1001"
+  },
+  {
+    "id": "ntf-005",
+    "trekker_id": "user-003",
+    "type": "trek_reminder",
+    "title": "Trek starts tomorrow",
+    "message": "Your Everest Base Camp Trek departs tomorrow. Check-in is at 8:00 AM at the Everest Treks Co. office in Thamel.",
+    "created_at": "REL:-5d",
+    "read": true,
+    "link": "/my-treks/bk-2001"
+  },
+  {
+    "id": "ntf-006",
+    "trekker_id": "user-003",
+    "type": "review_request",
+    "title": "How was your trek?",
+    "message": "You completed the Classic Everest Base Camp Trek with Everest Treks Co. on 14 August. Share a review to help other trekkers.",
+    "created_at": "REL:-26d",
+    "read": true,
+    "link": "/my-treks/bk-2006"
+  }
+]

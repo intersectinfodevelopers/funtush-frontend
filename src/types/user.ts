@@ -34,16 +34,33 @@ export interface EmergencyContact {
   relationship: string;
 }
 
+// ─── Travel Preferences ───────────────────────────────
+
+export type FitnessLevel = 'beginner' | 'moderate' | 'experienced' | 'expert';
+export type TrekDifficultyPref = 'easy' | 'moderate' | 'challenging' | 'strenuous';
+
+export interface TravelPreferences {
+  fitnessLevel: FitnessLevel;
+  preferredDifficulty: TrekDifficultyPref;
+  dietary: string;
+  languages: string[];
+  roomSharing: boolean;
+  newsletterOptIn: boolean;
+}
+
 // ─── Notifications ────────────────────────────────────
 
 export type NotificationType =
   | 'booking_confirmed'
   | 'guide_assigned'
   | 'payment_reminder'
-  | 'trek_reminder';
+  | 'trek_reminder'
+  | 'review_request'
+  | 'message';
 
 export interface Notification {
   id: string;
+  trekker_id?: string;
   type: NotificationType;
   title: string;
   message: string;

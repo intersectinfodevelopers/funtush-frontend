@@ -8,8 +8,11 @@ import { Bell, Menu } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { ROUTES } from '@/lib/constants/routes';
 import { getReadNotificationIds } from '@/lib/auth';
+import { loadNotifications } from '@/lib/mock/trek-content';
+import notificationsData from '../../../../data/notifications.json';
+import type { Notification } from '@/types/user';
 
-const TOTAL_NOTIFICATIONS = 5;
+const ALL_NOTIFICATIONS = notificationsData as Notification[];
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -26,12 +29,15 @@ export function TrekkerTopbar({ onMenuClick }: { onMenuClick: () => void }) {
   useEffect(() => {
     const updateCount = () => {
       const readIds = getReadNotificationIds();
-      setUnreadCount(Math.max(0, TOTAL_NOTIFICATIONS - readIds.length));
+      const unread = loadNotifications(ALL_NOTIFICATIONS, user?.id).filter(
+        (n) => !(n.read || readIds.includes(n.id)),
+      ).length;
+      setUnreadCount(unread);
     };
     updateCount();
     window.addEventListener('focus', updateCount);
     return () => window.removeEventListener('focus', updateCount);
-  }, [pathname]);
+  }, [pathname, user?.id]);
 
   const userName = user?.name ?? 'Guest';
   const initials = getInitials(userName);

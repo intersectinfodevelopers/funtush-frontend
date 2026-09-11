@@ -1,0 +1,29 @@
+{
+  "pkg-001": [
+    { "day": 1, "title": "Fly to Lukla, trek to Phakding", "description": "Scenic 35-minute mountain flight to Lukla (2,840 m), then an easy descent along the Dudh Koshi to Phakding.", "distanceKm": 6.2, "ascentM": 60, "altitudeM": 2610, "nightAt": "Phakding" },
+    { "day": 2, "title": "Trek to Namche Bazaar", "description": "Cross the Dudh Koshi on high suspension bridges and climb steeply through pine forest to the Sherpa capital, Namche.", "distanceKm": 10.5, "ascentM": 820, "altitudeM": 3440, "nightAt": "Namche Bazaar" },
+    { "day": 3, "title": "Acclimatisation day in Namche", "description": "Hike to the Everest View Hotel for a first sight of Everest, Lhotse and Ama Dablam, then rest in Namche.", "distanceKm": 5, "ascentM": 300, "altitudeM": 3440, "nightAt": "Namche Bazaar" },
+    { "day": 4, "title": "Trek to Tengboche", "description": "Contour above the river with mountain views, drop to Phunki Thenga, then climb to the famous Tengboche Monastery.", "distanceKm": 9.5, "ascentM": 660, "altitudeM": 3860, "nightAt": "Tengboche" },
+    { "day": 5, "title": "Trek to Dingboche", "description": "Descend to Deboche, cross the Imja Khola and climb past Pangboche into the broad Imja Valley.", "distanceKm": 11, "ascentM": 550, "altitudeM": 4410, "nightAt": "Dingboche" },
+    { "day": 6, "title": "Acclimatisation day in Dingboche", "description": "Climb Nangkartshang ridge (5,080 m) for views of Makalu, then descend to sleep low.", "distanceKm": 4, "ascentM": 670, "altitudeM": 4410, "nightAt": "Dingboche" },
+    { "day": 7, "title": "Trek to Lobuche", "description": "Gentle valley walk to Thukla, a steep climb past the climbers' memorials, then along the Khumbu Glacier moraine.", "distanceKm": 8.5, "ascentM": 530, "altitudeM": 4940, "nightAt": "Lobuche" },
+    { "day": 8, "title": "Gorak Shep & Everest Base Camp", "description": "Trek to Gorak Shep, then out across the glacier to Everest Base Camp (5,364 m). Return to Gorak Shep for the night.", "distanceKm": 13, "ascentM": 420, "altitudeM": 5164, "nightAt": "Gorak Shep" },
+    { "day": 9, "title": "Kala Patthar sunrise, trek to Pheriche", "description": "Pre-dawn climb of Kala Patthar (5,545 m) for the classic Everest panorama, then a long descent to Pheriche.", "distanceKm": 15, "ascentM": 380, "altitudeM": 4240, "nightAt": "Pheriche" },
+    { "day": 10, "title": "Trek to Namche Bazaar", "description": "Retrace the trail through Tengboche and back down to Namche — noticeably easier with more oxygen.", "distanceKm": 19, "ascentM": 300, "altitudeM": 3440, "nightAt": "Namche Bazaar" },
+    { "day": 11, "title": "Trek to Lukla", "description": "Final descent to the river and the last climb of the trek back up to Lukla. Celebration dinner with the crew.", "distanceKm": 18.5, "ascentM": 500, "altitudeM": 2840, "nightAt": "Lukla" },
+    { "day": 12, "title": "Fly to Kathmandu", "description": "Morning flight back to Kathmandu (weather permitting). Afternoon at leisure.", "distanceKm": 0, "altitudeM": 1400, "nightAt": "Kathmandu" },
+    { "day": 13, "title": "Contingency / rest day in Kathmandu", "description": "Buffer day for flight delays. If not needed, explore Patan or Boudhanath.", "distanceKm": 0, "altitudeM": 1400, "nightAt": "Kathmandu" },
+    { "day": 14, "title": "Departure", "description": "Transfer to the airport for your onward flight.", "distanceKm": 0, "altitudeM": 1400 }
+  ],
+  "pkg-1002": [
+    { "day": 1, "title": "Fly to Lukla, trek to Monjo", "description": "Mountain flight to Lukla, then a gentle trek down the Dudh Koshi valley to Monjo at the park gate.", "distanceKm": 8, "ascentM": 100, "altitudeM": 2835, "nightAt": "Monjo" },
+    { "day": 2, "title": "Trek to Namche Bazaar", "description": "Enter Sagarmatha National Park and climb the long hill to Namche, with a first glimpse of Everest en route.", "distanceKm": 6.5, "ascentM": 600, "altitudeM": 3440, "nightAt": "Namche Bazaar" },
+    { "day": 3, "title": "Acclimatisation in Namche", "description": "Short hike to Syangboche and the Everest View Hotel, then a relaxed afternoon exploring Namche's market.", "distanceKm": 5, "ascentM": 300, "altitudeM": 3440, "nightAt": "Namche Bazaar" },
+    { "day": 4, "title": "Trek to Tengboche", "description": "The panoramic balcony trail to Tengboche Monastery, with Ama Dablam dominating the skyline.", "distanceKm": 9.5, "ascentM": 650, "altitudeM": 3860, "nightAt": "Tengboche" },
+    { "day": 5, "title": "Explore Tengboche, trek to Khumjung", "description": "Attend the morning puja at the monastery, then trek to the traditional Sherpa village of Khumjung.", "distanceKm": 10, "ascentM": 200, "altitudeM": 3790, "nightAt": "Khumjung" },
+    { "day": 6, "title": "Trek to Monjo", "description": "Descend past the Khumjung school and Everest View Hotel, rejoining the main trail down to Monjo.", "distanceKm": 11, "ascentM": 150, "altitudeM": 2835, "nightAt": "Monjo" },
+    { "day": 7, "title": "Trek to Lukla", "description": "The final valley walk and the last uphill push back to Lukla. Farewell dinner with the crew.", "distanceKm": 8, "ascentM": 250, "altitudeM": 2840, "nightAt": "Lukla" },
+    { "day": 8, "title": "Fly to Kathmandu", "description": "Return flight to Kathmandu. Rest of the day free.", "distanceKm": 0, "altitudeM": 1400, "nightAt": "Kathmandu" },
+    { "day": 9, "title": "Departure", "description": "Airport transfer for your onward journey.", "distanceKm": 0, "altitudeM": 1400 }
+  ]
+}

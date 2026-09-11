@@ -2,13 +2,15 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Map, Bell, User as UserIcon, Mountain, LogOut } from 'lucide-react';
+import { Map, Compass, Star, Bell, User as UserIcon, Mountain, LogOut } from 'lucide-react';
 import { ROUTES } from '@/lib/constants/routes';
 import { cn } from '@/lib/utils/cn';
 import { useAuth } from '@/hooks/useAuth';
 
 const NAV_LINKS = [
   { key: 'my-treks', label: 'My Treks', href: ROUTES.TREKKER.MY_TREKS, icon: Map },
+  { key: 'discovery', label: 'Discover', href: ROUTES.TREKKER.DISCOVERY, icon: Compass },
+  { key: 'reviews', label: 'Reviews', href: ROUTES.TREKKER.REVIEWS, icon: Star },
   { key: 'notifications', label: 'Notifications', href: '/notifications', icon: Bell },
   { key: 'profile', label: 'Profile', href: ROUTES.TREKKER.PROFILE, icon: UserIcon },
 ];
