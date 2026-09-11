@@ -41,7 +41,7 @@ const STRENGTH_COLOR = ["bg-danger-500", "bg-danger-400", "bg-warning-500", "bg-
 
 export default function SecuritySettingsPage() {
   const toast = useSettingsToast();
-  const { value, patch, save } = useSettingsForm("securitySettings", { twoFactor: false });
+  const { value, patch } = useSettingsForm("securitySettings", { twoFactor: false });
 
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
@@ -132,8 +132,17 @@ export default function SecuritySettingsPage() {
           description="Uses an authenticator app (Google Authenticator, 1Password, Authy)."
           checked={value.twoFactor}
           onChange={(v) => {
+            // `save()` closes over this render's pre-patch `value` — persist
+            // the merged object directly instead of racing patch()+save()
+            // across renders (they'd otherwise write the *previous* toggle
+            // state on every click).
             patch({ twoFactor: v });
-            save();
+            try {
+              localStorage.setItem("securitySettings", JSON.stringify({ ...value, twoFactor: v }));
+            } catch {
+              /* ignore */
+            }
+            toast(v ? "Two-factor turned on" : "Two-factor turned off");
           }}
         />
         {value.twoFactor && (

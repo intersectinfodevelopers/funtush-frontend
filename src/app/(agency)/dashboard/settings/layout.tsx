@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Building2,
-  Palette,
   Globe2,
   LayoutGrid,
   SearchCode,
@@ -29,12 +28,10 @@ const GROUPS: NavGroup[] = [
     title: "Website",
     items: [
       { label: "Agency info", href: "/dashboard/settings/agency-info", icon: Building2 },
-      { label: "Branding", href: "/dashboard/settings/branding", icon: Palette },
       { label: "Domain", href: "/dashboard/settings/domain", icon: Globe2 },
       { label: "Navigation", href: "/dashboard/settings/navigation", icon: LayoutGrid },
       { label: "SEO", href: "/dashboard/settings/seo", icon: SearchCode },
       { label: "Social links", href: "/dashboard/settings/social", icon: Share2 },
-      { label: "Site status", href: "/dashboard/settings/site", icon: Globe2 },
     ],
   },
   {

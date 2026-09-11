@@ -3,15 +3,27 @@
 import { useState } from 'react';
 import { Save, Plus, Trash2 } from 'lucide-react';
 import { SettingsHeader } from '@/components/agency/settings/settings-kit';
+import { ComplianceSection } from '@/components/agency/settings/ComplianceSection';
+import { KycVerificationSection } from '@/components/agency/settings/KycVerificationSection';
 
 type ContactField = {
   value: string;
   showOnWebsite: boolean;
 };
 
+const BUSINESS_CATEGORIES = [
+  'Trekking & Mountaineering',
+  'Adventure Tourism',
+  'Expedition Operator',
+  'Travel & Tours',
+  'Cultural Tourism',
+  'Wildlife & Nature Tours',
+];
+
 type AgencySettings = {
   companyName: string;
   description: string;
+  businessCategory: string;
   phones: ContactField[];
   emails: ContactField[];
   address: string;
@@ -21,6 +33,7 @@ type AgencySettings = {
 const defaultSettings: AgencySettings = {
   companyName: '',
   description: '',
+  businessCategory: BUSINESS_CATEGORIES[0],
   phones: [{ value: '', showOnWebsite: true }],
   emails: [{ value: '', showOnWebsite: true }],
   address: '',
@@ -123,18 +136,37 @@ export default function AgencyInfoSettingsPage() {
       )}
 
       <div className="space-y-6">
-        {/* Company Name */}
-        <div className="bg-white border border-neutral-200 rounded-xl p-4">
-          <label className="block text-sm font-medium text-neutral-700 mb-1">
-            Company Name *
-          </label>
-          <input
-            type="text"
-            value={settings.companyName}
-            onChange={(e) => setSettings({ ...settings, companyName: e.target.value })}
-            className="w-full border border-neutral-300 rounded-lg px-3 py-1.5 text-sm"
-            placeholder="Enter company name"
-          />
+        {/* Company Name + Business Category */}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="bg-white border border-neutral-200 rounded-xl p-4">
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
+              Company Name *
+            </label>
+            <input
+              type="text"
+              value={settings.companyName}
+              onChange={(e) => setSettings({ ...settings, companyName: e.target.value })}
+              className="w-full border border-neutral-300 rounded-lg px-3 py-1.5 text-sm"
+              placeholder="Enter company name"
+            />
+          </div>
+
+          <div className="bg-white border border-neutral-200 rounded-xl p-4">
+            <label className="block text-sm font-medium text-neutral-700 mb-1">
+              Business Category *
+            </label>
+            <select
+              value={settings.businessCategory}
+              onChange={(e) => setSettings({ ...settings, businessCategory: e.target.value })}
+              className="w-full border border-neutral-300 rounded-lg px-3 py-1.5 text-sm text-neutral-900"
+            >
+              {BUSINESS_CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Description */}
@@ -249,6 +281,9 @@ export default function AgencyInfoSettingsPage() {
           />
         </div>
       </div>
+
+      <ComplianceSection />
+      <KycVerificationSection />
     </div>
   );
 }

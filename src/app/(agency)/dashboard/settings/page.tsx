@@ -33,13 +33,11 @@ const GROUPS: { title: string; description: string; items: Item[] }[] = [
     title: "Website",
     description: "How your agency looks to trekkers on your white-label site.",
     items: [
-      { label: "Agency info", description: "Name, contact details, address, operating regions.", href: "/dashboard/settings/agency-info", icon: Building2, tone: "primary" },
-      { label: "Branding", description: "Logo, colours, fonts and favicon.", href: "/dashboard/settings/branding", icon: Palette, tone: "accent" },
+      { label: "Agency info", description: "Name, contact details, address, and compliance information.", href: "/dashboard/settings/agency-info", icon: Building2, tone: "primary" },
       { label: "Domain", description: "Connect and verify a custom domain.", href: "/dashboard/settings/domain", icon: Globe2, tone: "success" },
       { label: "Navigation", description: "Menus and the Book Now button.", href: "/dashboard/settings/navigation", icon: LayoutGrid, tone: "warning" },
       { label: "SEO", description: "Page titles, meta description, OG image.", href: "/dashboard/settings/seo", icon: SearchCode, tone: "primary" },
       { label: "Social links", description: "Instagram, Facebook, TikTok and more.", href: "/dashboard/settings/social", icon: Share2, tone: "accent" },
-      { label: "Site status", description: "Coming-soon mode and the Funtush badge.", href: "/dashboard/settings/site", icon: Globe2, tone: "warning" },
     ],
   },
   {
@@ -70,6 +68,7 @@ const GROUPS: { title: string; description: string; items: Item[] }[] = [
 ];
 
 const RELATED = [
+  { label: "Appearance", href: "/dashboard/appearance", icon: Palette },
   { label: "Staff & permissions", href: "/dashboard/staff", icon: Users },
   { label: "Roles", href: "/dashboard/roles", icon: ShieldCheck },
   { label: "Invoices & finance", href: "/dashboard/finance", icon: Wallet },
@@ -85,7 +84,7 @@ const TONE: Record<Tone, string> = {
 // "Setup" checklist — reads the same localStorage keys the sub-pages write.
 const CHECKLIST: { label: string; key: string; href: string }[] = [
   { label: "Add your agency info", key: "agencyInfoSettings", href: "/dashboard/settings/agency-info" },
-  { label: "Set your branding", key: "brandingSettings", href: "/dashboard/settings/branding" },
+  { label: "Set your branding", key: "brandingSettings", href: "/dashboard/appearance" },
   { label: "Connect a domain", key: "domainSettings", href: "/dashboard/settings/domain" },
   { label: "Fill in SEO basics", key: "seoSettings", href: "/dashboard/settings/seo" },
 ];

@@ -28,6 +28,7 @@ import {
   Ticket,
   Lock,
   X,
+  Palette,
 } from 'lucide-react';
 
 interface AgencySidebarProps {
@@ -73,6 +74,7 @@ const navItems: NavItem[] = [
 
   // Account
   { label: 'Profile', href: '/dashboard/profile', icon: <User size={20} />, section: 'account' },
+  { label: 'Appearance', href: '/dashboard/appearance', icon: <Palette size={20} />, section: 'account' },
   { label: 'Settings', href: '/dashboard/settings', icon: <Settings size={20} />, section: 'account' },
   { label: 'Support', href: '/dashboard/support', icon: <LifeBuoy size={20} />, section: 'account' },
 ];
