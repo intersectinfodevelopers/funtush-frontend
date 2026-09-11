@@ -50,7 +50,7 @@ export default function StaffDetailPage() {
   return (
     <div className="p-4 max-w-3xl mx-auto">
       {/* Back link */}
-      <Link href="/dashboard/staff" className="text-sm text-blue-600 hover:underline mb-4 inline-block">
+      <Link href="/dashboard/staff" className="text-sm text-primary-600 hover:underline mb-4 inline-block">
         ← Back to Staff
       </Link>
 
@@ -69,12 +69,12 @@ export default function StaffDetailPage() {
             )}
           </div>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-black">{staff.name}</h1>
+            <h1 className="text-2xl font-bold text-neutral-900">{staff.name}</h1>
             <p className="text-neutral-600">{staff.email}</p>
             <p className="text-neutral-600 text-sm">{staff.phone}</p>
             <div className="flex items-center gap-3 mt-2">
               <span className={`inline-block text-sm font-medium px-2.5 py-1 rounded-full ${
-                staff.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                staff.active ? 'bg-success-100 text-success-800' : 'bg-danger-100 text-danger-800'
               }`}>
                 {staff.active ? 'Active' : 'Deactivated'}
               </span>
@@ -86,7 +86,7 @@ export default function StaffDetailPage() {
           <div className="flex gap-2">
             <button
               onClick={() => setShowDeactivateModal(true)}
-              className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700"
+              className="bg-danger-600 text-white px-4 py-2 rounded text-sm hover:bg-danger-700"
             >
               Deactivate
             </button>
@@ -100,7 +100,7 @@ export default function StaffDetailPage() {
             <select
               value={newRole}
               onChange={(e) => setNewRole(e.target.value)}
-              className="border border-neutral-300 rounded px-3 py-1.5 text-sm text-black"
+              className="border border-neutral-300 rounded px-3 py-1.5 text-sm text-neutral-900"
             >
               <option value="">Select new role...</option>
               {roles.map((r) => (
@@ -112,7 +112,7 @@ export default function StaffDetailPage() {
             <button
               onClick={handleChangeRole}
               disabled={!newRole}
-              className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+              className="bg-primary-600 text-white px-4 py-1.5 rounded text-sm hover:bg-primary-700 disabled:opacity-50"
             >
               Update Role
             </button>
@@ -124,7 +124,7 @@ export default function StaffDetailPage() {
       {/* Activity Log */}
       <div className="mt-6">
         <h2 className="text-xl font-semibold mb-4">Activity Log</h2>
-        <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden text-black">
+        <div className="bg-white border border-neutral-200 rounded-lg overflow-hidden text-neutral-900">
           {staff.activityLog.length === 0 ? (
             <p className="p-4 text-neutral-500">No activity recorded.</p>
           ) : (
@@ -153,7 +153,7 @@ export default function StaffDetailPage() {
       {showDeactivateModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-bold text-red-600">Deactivate Staff</h3>
+            <h3 className="text-lg font-bold text-danger-600">Deactivate Staff</h3>
             <p className="mt-2 text-neutral-600">
               This will immediately revoke their access to the system.
             </p>
@@ -163,7 +163,7 @@ export default function StaffDetailPage() {
             <div className="flex gap-3 mt-4">
               <button
                 onClick={handleDeactivate}
-                className="bg-red-600 text-white px-4 py-2 rounded text-sm hover:bg-red-700 flex-1"
+                className="bg-danger-600 text-white px-4 py-2 rounded text-sm hover:bg-danger-700 flex-1"
               >
                 Yes, Deactivate
               </button>

@@ -147,7 +147,7 @@ export default function AdvertisementsPage() {
             </span>
           </div>
 
-          <h1 className="text-2xl font-semibold text-neutral-900">
+          <h1 className="text-2xl font-bold text-neutral-900">
             Manage Advertisements
           </h1>
 

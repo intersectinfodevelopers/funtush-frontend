@@ -74,7 +74,7 @@ export default function PackageDetailPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="text-sm text-gray-500 animate-pulse">Loading package...</div>
+          <div className="text-sm text-neutral-500 animate-pulse">Loading package...</div>
         </div>
       ) : !packageData ? (
         <div className="p-6 text-sm text-neutral-500">Package not found.</div>

@@ -15,7 +15,7 @@ export default function BlogDetailPage() {
       <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
         <button type="button" onClick={() => router.push("/dashboard/blog")} className="text-sm font-medium text-primary-900 hover:underline">← Back to blogs</button>
         <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
-          <div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Blog post</p><h1 className="mt-1 text-2xl font-semibold text-neutral-900">{post.title}</h1><p className="mt-1 text-sm text-neutral-600">{post.description}</p></div>
+          <div><p className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Blog post</p><h1 className="mt-1 text-2xl font-bold text-neutral-900">{post.title}</h1><p className="mt-1 text-sm text-neutral-600">{post.description}</p></div>
           <span className={`rounded-full px-3 py-1 text-xs font-semibold ${post.status === "Published" ? "bg-success-50 text-success-700" : "bg-warning-50 text-warning-700"}`}>{post.status}</span>
         </div>
       </div>

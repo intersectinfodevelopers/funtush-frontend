@@ -73,7 +73,7 @@ export default function SeoSettingsPage() {
 
       <div className="space-y-6">
         {/* Page Title Format */}
-        <div className="bg-white border text-black border-neutral-200 rounded-xl p-4">
+        <div className="bg-white border text-neutral-900 border-neutral-200 rounded-xl p-4">
           <label className="block text-sm font-medium text-neutral-700 mb-1">
             Page Title Format
           </label>
@@ -102,7 +102,7 @@ export default function SeoSettingsPage() {
         </div>
 
         {/* Meta Description */}
-        <div className="bg-white border text-black border-neutral-200 rounded-xl p-4">
+        <div className="bg-white border text-neutral-900 border-neutral-200 rounded-xl p-4">
           <label className="block text-sm font-medium text-neutral-700 mb-1">
             Meta Description
           </label>
@@ -119,7 +119,7 @@ export default function SeoSettingsPage() {
         </div>
 
         {/* OG Image */}
-        <div className="bg-white text-black border border-neutral-200 rounded-xl p-4">
+        <div className="bg-white text-neutral-900 border border-neutral-200 rounded-xl p-4">
           <label className="block text-sm font-medium text-neutral-700 mb-1">
             Open Graph Image
           </label>

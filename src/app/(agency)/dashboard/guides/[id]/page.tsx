@@ -6,9 +6,9 @@ import Link from "next/link";
 
 
 const statusMap: Record<string, { label: string; color: string }> = {
-  available: { label: "Available", color: "bg-green-100 text-green-800" },
-  on_trek: { label: "On Trek", color: "bg-yellow-100 text-yellow-800" },
-  unavailable: { label: "Unavailable", color: "bg-red-100 text-red-800" },
+  available: { label: "Available", color: "bg-success-100 text-success-800" },
+  on_trek: { label: "On Trek", color: "bg-warning-100 text-warning-800" },
+  unavailable: { label: "Unavailable", color: "bg-danger-100 text-danger-800" },
 };
 
 export default async function GuideDetailPage({
@@ -28,7 +28,7 @@ export default async function GuideDetailPage({
       {/* Back link */}
       <Link
         href="/dashboard/guides"
-        className="text-sm text-blue-600 hover:underline mb-4 inline-block"
+        className="text-sm text-primary-600 hover:underline mb-4 inline-block"
       >
         ← Back to Guides
       </Link>
@@ -76,7 +76,7 @@ export default async function GuideDetailPage({
           </div>
 
           <div className="bg-neutral-50 p-3 rounded text-center border border-neutral-200">
-            <div className="text-xl font-bold text-black">★ {guide.rating ?? "—"}</div>
+            <div className="text-xl font-bold text-neutral-900">★ {guide.rating ?? "—"}</div>
             <div className="text-xs text-neutral-500">Rating</div>
           </div>
         </CardContent>

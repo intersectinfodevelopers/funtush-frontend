@@ -185,7 +185,7 @@ export default function BookingsPage() {
             <span className="text-neutral-300">/</span>
             <span className="font-semibold text-neutral-900">All Bookings</span>
           </div>
-          <h1 className="text-3xl font-semibold text-neutral-900">
+          <h1 className="text-2xl font-bold text-neutral-900">
             Booking Approval
           </h1>
         </div>

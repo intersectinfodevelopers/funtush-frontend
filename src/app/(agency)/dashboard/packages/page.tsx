@@ -170,7 +170,7 @@ export default function PackagesPage() {
             <span className="text-neutral-300">/</span>
             <span className="font-semibold text-neutral-900">All Packages</span>
           </div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Agency Packages</h1>
+          <h1 className="text-2xl font-bold text-neutral-900">Agency Packages</h1>
           <p className="text-sm leading-6 text-neutral-600">Manage package listings from JSON data in a clean dashboard layout.</p>
         </div>
 

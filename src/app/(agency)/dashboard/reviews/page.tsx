@@ -97,8 +97,8 @@ export default function Page() {
   return (
     <div className="space-y-4 relative overflow-hidden">
       <div>
-        <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Reviews Overview</h1>
-        <p className="text-sm text-slate-500 mt-0.5">Manage, filter, and sort your package reviews alongside historical metrics.</p>
+        <h1 className="text-2xl font-bold text-neutral-900">Reviews Overview</h1>
+        <p className="text-sm text-neutral-500 mt-0.5">Manage, filter, and sort your package reviews alongside historical metrics.</p>
       </div>
 
       <ReviewStatsSummary
@@ -111,7 +111,7 @@ export default function Page() {
       {mounted ? (
         <ReviewAnalytics reviews={reviewsData as ReviewItem[]} />
       ) : (
-        <div className="h-48 bg-slate-50 rounded-xl animate-pulse border border-slate-200/60" />
+        <div className="h-48 bg-neutral-50 rounded-xl animate-pulse border border-neutral-200/60" />
       )}
 
       <ReviewFilterToolbar
@@ -123,11 +123,11 @@ export default function Page() {
         setSortBy={setSortBy}
       />
 
-      <div className="bg-white rounded-xl border border-slate-200/60 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-xl border border-neutral-200/60 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-400 text-xs font-bold tracking-wider uppercase">
+              <tr className="bg-neutral-50 border-b border-neutral-200 text-neutral-400 text-xs font-bold tracking-wider uppercase">
                 <th className="p-4">Trekker Name</th>
                 <th className="p-4">Package ID</th>
                 <th className="p-4">Star Rating</th>
@@ -135,7 +135,7 @@ export default function Page() {
                 <th className="p-4 text-right">Date</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+            <tbody className="divide-y divide-slate-100 text-sm text-neutral-700">
               {finalFilteredReviews.length > 0 ? (
                 finalFilteredReviews.map((review) => (
                   <ReviewTableRow
@@ -148,7 +148,7 @@ export default function Page() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="p-12 text-center text-slate-400 font-medium">
+                  <td colSpan={5} className="p-12 text-center text-neutral-400 font-medium">
                     No matching reviews found matching your selected filters.
                   </td>
                 </tr>

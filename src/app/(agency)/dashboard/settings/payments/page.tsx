@@ -190,7 +190,7 @@ export default function PaymentsSettingsPage() {
                             type={isSecret && !revealed[revealKey] ? 'password' : 'text'}
                             value={value}
                             onChange={(e) => updateCredential(gateway.id, key, e.target.value)}
-                            className={`w-full text-black border rounded-lg px-3 py-1.5 text-sm ${
+                            className={`w-full text-neutral-900 border rounded-lg px-3 py-1.5 text-sm ${
                               isSecret ? 'pr-9 font-mono' : ''
                             } ${
                               showErrors && empty

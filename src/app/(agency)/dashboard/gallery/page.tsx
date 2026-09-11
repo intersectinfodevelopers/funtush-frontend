@@ -79,7 +79,7 @@ export default function GalleryPage() {
             <span className="text-neutral-300">/</span>
             <strong className="text-neutral-900">Gallery</strong>
           </div>
-          <h1 className="text-2xl font-semibold text-neutral-900">
+          <h1 className="text-2xl font-bold text-neutral-900">
             Manage Gallery
           </h1>
           <p className="text-sm text-neutral-600">

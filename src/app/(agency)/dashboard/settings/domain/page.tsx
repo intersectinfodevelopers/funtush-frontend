@@ -213,7 +213,7 @@ export default function DomainSettingsPage() {
                         setDomainInput(e.target.value);
                         setDomainError(null);
                       }}
-                      className="flex-1 text-black border border-neutral-300 rounded-lg px-3 py-1.5 text-sm"
+                      className="flex-1 text-neutral-900 border border-neutral-300 rounded-lg px-3 py-1.5 text-sm"
                       placeholder="trekkingagency.com"
                     />
                     <button

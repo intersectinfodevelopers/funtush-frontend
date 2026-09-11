@@ -58,7 +58,7 @@ export default function SocialSettingsPage() {
 
       <div className="space-y-4">
         {/* Facebook */}
-        <div className="bg-white border text-black border-neutral-200 rounded-xl p-4">
+        <div className="bg-white border text-neutral-900 border-neutral-200 rounded-xl p-4">
           <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-1">
             <Link size={18} className="text-primary-700" />
             Facebook URL
@@ -73,7 +73,7 @@ export default function SocialSettingsPage() {
         </div>
 
         {/* Instagram */}
-        <div className="bg-white text-black border border-neutral-200 rounded-xl p-4">
+        <div className="bg-white text-neutral-900 border border-neutral-200 rounded-xl p-4">
           <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-1">
             <span className="text-pink-600">📸</span>
             Instagram URL
@@ -88,9 +88,9 @@ export default function SocialSettingsPage() {
         </div>
 
         {/* TikTok */}
-        <div className="bg-white text-black border border-neutral-200 rounded-xl p-4">
+        <div className="bg-white text-neutral-900 border border-neutral-200 rounded-xl p-4">
           <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-1">
-            <span className="text-black">🎵</span>
+            <span className="text-neutral-900">🎵</span>
             TikTok URL
           </label>
           <input
@@ -103,7 +103,7 @@ export default function SocialSettingsPage() {
         </div>
 
         {/* WhatsApp */}
-        <div className="bg-white text-black border border-neutral-200 rounded-xl p-4">
+        <div className="bg-white text-neutral-900 border border-neutral-200 rounded-xl p-4">
           <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-1">
             <Phone size={18} className="text-success-700" />
             WhatsApp Number
@@ -121,7 +121,7 @@ export default function SocialSettingsPage() {
         </div>
 
         {/* YouTube */}
-        <div className="bg-white text-black border border-neutral-200 rounded-xl p-4">
+        <div className="bg-white text-neutral-900 border border-neutral-200 rounded-xl p-4">
           <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-1">
             <Video size={18} className="text-danger-600" />
             YouTube Channel URL

@@ -11,7 +11,7 @@ const positions = [
 export default function Page() {
   return (
     <div className="p-4">
-      <h1 className="mb-4 text-2xl font-bold">Advertisement Positions</h1>
+      <h1 className="mb-4 text-2xl font-bold text-neutral-900">Advertisement Positions</h1>
 
       <div className="rounded-lg border bg-white p-3">
         <ul className="space-y-2 text-sm">

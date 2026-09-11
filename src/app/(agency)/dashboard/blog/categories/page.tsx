@@ -72,7 +72,7 @@ export default function CategoriesPage() {
             <span className="text-neutral-300">/</span>
             <span className="font-semibold text-neutral-900">Manage Categories</span>
           </div>
-          <h1 className="mt-2 text-2xl font-semibold text-neutral-900">Manage Categories</h1>
+          <h1 className="mt-2 text-2xl font-bold text-neutral-900">Manage Categories</h1>
           <p className="mt-1 text-sm text-neutral-600">Create, manage, and maintain blog categories.</p>
         </div>
         <button
@@ -248,7 +248,7 @@ function SummaryCard({ label, value, tone }: { label: string; value: number | st
         <NorthEastOutlined className="h-4 w-4 text-success-600" />
       </div>
       <p className="mt-3 text-sm font-semibold text-neutral-700">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-neutral-900">{value}</p>
+      <p className="mt-1 text-2xl font-bold text-neutral-900">{value}</p>
       <p className="mt-2 flex items-center gap-1 text-xs text-neutral-600"><span className="font-semibold text-success-700">12.5%</span> from last month</p>
     </div>
   );

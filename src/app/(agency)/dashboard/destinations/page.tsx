@@ -98,7 +98,7 @@ export default function DestinationsPage() {
             <span className="text-neutral-300">/</span>
             <span className="font-semibold text-neutral-900">Destinations</span>
           </div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Destinations</h1>
+          <h1 className="text-2xl font-bold text-neutral-900">Destinations</h1>
           <p className="text-sm leading-6 text-neutral-600">Manage trekking destinations and seasonal information.</p>
         </div>
 
@@ -177,7 +177,7 @@ export default function DestinationsPage() {
                   <td className="px-4 py-3 text-neutral-700">{d.category ?? '-'}</td>
                   <td className="px-4 py-3 text-neutral-700">
                     <div className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-yellow-400" />
+                      <Star className="h-4 w-4 text-warning-400" />
                       <div className="text-sm">{typeof d.rating === 'number' ? (d.rating as number).toFixed(1) : (d.rating ? String(d.rating) : '-')}</div>
                       <div className="text-xs text-neutral-400">({d.reviewCount ?? 0})</div>
                     </div>
@@ -197,8 +197,8 @@ export default function DestinationsPage() {
                             try { localStorage.setItem('destinations', JSON.stringify(updated)); } catch {}
                           }}
                         />
-                        <span className={`inline-flex items-center gap-2 rounded-full px-2 py-0.5 text-sm font-semibold ${d.published ? 'text-green-700 bg-green-50' : 'text-neutral-700 bg-neutral-100'}`}>
-                          <span className={`h-2 w-2 rounded-full ${d.published ? 'bg-green-600' : 'bg-neutral-400'}`} />
+                        <span className={`inline-flex items-center gap-2 rounded-full px-2 py-0.5 text-sm font-semibold ${d.published ? 'text-success-700 bg-success-50' : 'text-neutral-700 bg-neutral-100'}`}>
+                          <span className={`h-2 w-2 rounded-full ${d.published ? 'bg-success-600' : 'bg-neutral-400'}`} />
                           <span>{d.published ? 'Published' : 'Draft'}</span>
                         </span>
                       </div>
@@ -229,7 +229,7 @@ export default function DestinationsPage() {
                         onClick={() => setActionDialog({ type: 'feature', destination: d })}
                         className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-md transition"
                       >
-                        <Star className={`h-4 w-4 ${d.featured ? 'text-amber-500' : 'text-neutral-400'}`} />
+                        <Star className={`h-4 w-4 ${d.featured ? 'text-warning-500' : 'text-neutral-400'}`} />
                       </button>
                       <button
                         type="button"

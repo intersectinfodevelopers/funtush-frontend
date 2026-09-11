@@ -60,7 +60,7 @@ export default function DestinationDetailPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <div className="text-sm text-gray-500 animate-pulse">Loading destination...</div>
+          <div className="text-sm text-neutral-500 animate-pulse">Loading destination...</div>
         </div>
       ) : !destination ? (
         <div className="p-6 text-sm text-neutral-500">Destination not found.</div>

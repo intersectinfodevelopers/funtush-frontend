@@ -134,7 +134,7 @@ function SummaryCard({
       </div>
       <div className="flex items-end justify-between gap-3">
         <div>
-          <p className="text-2xl font-semibold text-neutral-950">{value}</p>
+          <p className="text-2xl font-bold text-neutral-900">{value}</p>
           <p className="mt-1 text-sm font-medium text-success-600">
             <span aria-hidden="true">up </span>
             {change}
@@ -232,7 +232,7 @@ export default function AgencyFinancePage() {
     <div className="w-full space-y-6 pb-6">
       <header className="flex flex-col gap-4 border-b border-neutral-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-neutral-950">Finance</h1>
+          <h1 className="text-2xl font-bold text-neutral-900">Finance</h1>
           <nav
             className="mt-2 flex items-center gap-2 text-sm"
             aria-label="Breadcrumb"

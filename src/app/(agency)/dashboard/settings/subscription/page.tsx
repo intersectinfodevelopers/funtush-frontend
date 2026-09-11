@@ -121,7 +121,7 @@ export default function SubscriptionSettingsPage() {
       <div className="bg-white border border-neutral-200 rounded-xl p-6 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Crown size={32} className="text-yellow-500" />
+            <Crown size={32} className="text-warning-500" />
             <div>
               <h2 className="text-lg font-semibold text-neutral-900">
                 {currentTierData?.name} Plan
@@ -151,7 +151,7 @@ export default function SubscriptionSettingsPage() {
       </div>
 
       {/* Tier Comparison Table */}
-      <div className="bg-white text-black border border-neutral-200 rounded-xl overflow-hidden">
+      <div className="bg-white text-neutral-900 border border-neutral-200 rounded-xl overflow-hidden">
         <div className="p-4 border-b border-neutral-200">
           <h3 className="text-sm font-medium text-neutral-900">Compare Plans</h3>
         </div>

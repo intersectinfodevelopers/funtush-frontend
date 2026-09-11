@@ -77,7 +77,7 @@ function BookingStatusBadge({ status }: { status: string }) {
   const normalizedStatus = status.toLowerCase();
 
   const variants: Record<string, string> = {
-    inquiry: "border border-amber-200 bg-amber-50 text-amber-700",
+    inquiry: "border border-warning-200 bg-warning-50 text-warning-700",
     payment: "border border-primary-200 bg-primary-50 text-primary-700",
     confirmed: "border border-success-200 bg-success-50 text-success-700",
     active: "border border-success-600 bg-success-600 text-white",
@@ -319,7 +319,7 @@ export default function BookingDetailPage() {
           </div>
 
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold text-neutral-900">Booking details</h1>
+            <h1 className="text-2xl font-bold text-neutral-900">Booking details</h1>
             <p className="text-sm text-neutral-600">
               Review traveler, package, schedule, and next actions for this request.
             </p>
@@ -704,7 +704,7 @@ export default function BookingDetailPage() {
                         key={star}
                         type="button"
                         aria-label={`${star} star${star === 1 ? "" : "s"}`}
-                        className={`text-2xl leading-none ${star <= reviewRating ? "text-amber-500" : "text-neutral-300"}`}
+                        className={`text-2xl leading-none ${star <= reviewRating ? "text-warning-500" : "text-neutral-300"}`}
                         onClick={() => setReviewRating(star)}
                       >
                         {star <= reviewRating ? "★" : "☆"}
@@ -830,7 +830,7 @@ export default function BookingDetailPage() {
               />
 
               <button
-                className="mt-3 rounded-2xl bg-red-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-700"
+                className="mt-3 rounded-2xl bg-danger-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-danger-700"
                 onClick={() => {
                   updateBooking({
                     status: "cancelled",

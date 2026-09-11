@@ -62,7 +62,7 @@ export default function GuidesPage() {
             <span className="text-neutral-300">/</span>
             <span className="font-semibold text-neutral-900">All Guides</span>
           </div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Guides</h1>
+          <h1 className="text-2xl font-bold text-neutral-900">Guides</h1>
           <p className="text-sm leading-6 text-neutral-600">Manage trek guide profiles, certifications, and availability.</p>
         </div>
 
@@ -129,7 +129,7 @@ export default function GuidesPage() {
                   <td className="px-4 py-3 text-neutral-700">{(safePage - 1) * perPage + idx + 1}</td>
                   <td className="px-4 py-3 text-neutral-900">
                     <div className="flex items-center gap-3">
-                      <div className="h-11 w-11 rounded-full bg-violet-600 text-white flex items-center justify-center text-sm font-semibold">
+                      <div className="h-11 w-11 rounded-full bg-accent-600 text-white flex items-center justify-center text-sm font-semibold">
                         {guide.name.split(" ").map((p: string) => p[0]).slice(0,2).join("")}
                       </div>
                       <div>
@@ -151,7 +151,7 @@ export default function GuidesPage() {
                   </td>
                   <td className="px-4 py-3 text-neutral-700">{guide.rating ?? '—'}</td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-2 rounded-full px-2 py-0.5 text-sm font-semibold ${guide.status === 'available' ? 'text-emerald-700 bg-emerald-50' : guide.status === 'on_trek' ? 'text-sky-700 bg-sky-50' : 'text-rose-700 bg-rose-50'}`}>
+                    <span className={`inline-flex items-center gap-2 rounded-full px-2 py-0.5 text-sm font-semibold ${guide.status === 'available' ? 'text-success-700 bg-success-50' : guide.status === 'on_trek' ? 'text-accent-700 bg-accent-50' : 'text-danger-700 bg-danger-50'}`}>
                       <span>{guide.status === 'available' ? 'Available' : guide.status === 'on_trek' ? 'On Trek' : 'Unavailable'}</span>
                     </span>
                   </td>

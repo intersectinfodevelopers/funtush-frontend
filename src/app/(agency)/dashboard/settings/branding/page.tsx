@@ -150,7 +150,7 @@ export default function BrandingSettingsPage() {
         </div>
       )}
 
-      <div className="grid text-black grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid text-neutral-900 grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column - Settings */}
         <div className="space-y-6">
           {/* Primary Color */}

@@ -294,7 +294,7 @@ export default function NavigationSettingsPage() {
         {/* Add New Item */}
         <div className="bg-white border border-neutral-200 rounded-xl p-4">
           <h3 className="text-sm font-medium text-neutral-700 mb-3">Add New Menu Item</h3>
-          <div className="flex flex-col text-black sm:flex-row gap-3">
+          <div className="flex flex-col text-neutral-900 sm:flex-row gap-3">
             <div className="flex-1">
               <label className="block text-xs font-medium text-neutral-600 mb-0.5">Label</label>
               <input

@@ -98,7 +98,7 @@ export default function StaffPage() {
 
   return (
     <div className="space-y-4 w-full">
-      <h1 className="mt-2 text-2xl font-semibold text-neutral-900">Staff & Roles</h1>
+      <h1 className="mt-2 text-2xl font-bold text-neutral-900">Staff & Roles</h1>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
           <div className="flex items-center gap-2 text-sm text-neutral-500">
@@ -334,7 +334,7 @@ export default function StaffPage() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-neutral-200 bg-slate-50 p-5">
+            <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-5">
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">
                 Staff ID
               </p>

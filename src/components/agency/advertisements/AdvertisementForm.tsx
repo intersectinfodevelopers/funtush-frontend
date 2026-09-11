@@ -218,7 +218,7 @@ export default function AdvertisementForm({
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder="Enter advertisement title"
-              className="w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm font-medium text-black placeholder:text-neutral-400 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
+              className="w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm font-medium text-neutral-900 placeholder:text-neutral-400 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
             />
           </div>
 

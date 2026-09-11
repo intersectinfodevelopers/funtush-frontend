@@ -49,7 +49,7 @@ export default function VideosPage() {
             <span className="text-neutral-300">/</span>
             <strong className="text-neutral-900">Manage Videos</strong>
           </div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Manage Videos</h1>
+          <h1 className="text-2xl font-bold text-neutral-900">Manage Videos</h1>
           <p className="text-sm leading-6 text-neutral-600">Add and manage YouTube videos used on the site.</p>
         </div>
 

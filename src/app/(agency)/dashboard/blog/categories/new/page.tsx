@@ -44,7 +44,7 @@ export default function NewCategoryPage() {
             <span className="text-neutral-300">/</span>
             <span className="font-semibold text-neutral-900">New Category</span>
           </div>
-          <h1 className="mt-2 text-2xl font-semibold text-neutral-900">Add New Category</h1>
+          <h1 className="mt-2 text-2xl font-bold text-neutral-900">Add New Category</h1>
           <p className="mt-1 text-sm text-neutral-600">Create a new category to organize your blog posts.</p>
         </div>
       </header>

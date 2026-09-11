@@ -69,7 +69,7 @@ export default function CustomersPage() {
             <span className="text-neutral-300">/</span>
             <span className="font-semibold text-neutral-900">All Customers</span>
           </div>
-          <h1 className="mt-2 text-2xl font-semibold text-neutral-900">Customers</h1>
+          <h1 className="mt-2 text-2xl font-bold text-neutral-900">Customers</h1>
           <p className="mt-1 text-sm text-neutral-600">Manage trekker profiles and booking history.</p>
         </div>
       </header>
