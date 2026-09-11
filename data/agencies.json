@@ -6,11 +6,22 @@
     "logo": "/images/agencies/everest-treks.png",
     "rating": 4.9,
     "tier": "large",
-    "destinations": ["everest-region", "khumbu-valley"],
+    "destinations": [
+      "everest-region",
+      "khumbu-valley"
+    ],
     "description": "Specialist operator for high-altitude treks in the Everest region.",
     "joined_date": "2018-06-15",
     "status": "active",
-    "subdomain": "everest"
+    "subdomain": "everest",
+    "kyc_verified": true,
+    "safety_certified": true,
+    "review_count": 214,
+    "established_year": 2018,
+    "regions": [
+      "Everest Region",
+      "Khumbu Valley"
+    ]
   },
   {
     "id": "ag-002",
@@ -19,11 +30,20 @@
     "logo": "/images/agencies/annapurna.png",
     "rating": 4.6,
     "tier": "medium",
-    "destinations": ["annapurna-region"],
+    "destinations": [
+      "annapurna-region"
+    ],
     "description": "Guided experiences around the Annapurna circuit and short treks.",
     "joined_date": "2019-03-02",
     "status": "active",
-    "subdomain": "annapurna"
+    "subdomain": "annapurna",
+    "kyc_verified": true,
+    "safety_certified": true,
+    "review_count": 98,
+    "established_year": 2015,
+    "regions": [
+      "Annapurna Region"
+    ]
   },
   {
     "id": "ag-003",
@@ -32,11 +52,22 @@
     "logo": "/images/agencies/gosaikunda.png",
     "rating": 4.4,
     "tier": "small",
-    "destinations": ["langtang", "gosainkunda"],
+    "destinations": [
+      "langtang",
+      "gosainkunda"
+    ],
     "description": "Family-run operator for Langtang and nearby regions.",
     "joined_date": "2020-09-10",
     "status": "active",
-    "subdomain": "gosaikunda"
+    "subdomain": "gosaikunda",
+    "kyc_verified": true,
+    "safety_certified": false,
+    "review_count": 41,
+    "established_year": 2019,
+    "regions": [
+      "Langtang",
+      "Gosainkunda"
+    ]
   },
   {
     "id": "ag-004",
@@ -45,11 +76,22 @@
     "logo": "/images/agencies/pioneer.png",
     "rating": 4.2,
     "tier": "free",
-    "destinations": ["manaslu", "nepal-west"],
+    "destinations": [
+      "manaslu",
+      "nepal-west"
+    ],
     "description": "Budget-friendly treks with a local touch.",
     "joined_date": "2021-11-05",
     "status": "trial",
-    "subdomain": "pioneer"
+    "subdomain": "pioneer",
+    "kyc_verified": false,
+    "safety_certified": false,
+    "review_count": 12,
+    "established_year": 2022,
+    "regions": [
+      "Manaslu",
+      "West Nepal"
+    ]
   },
   {
     "id": "ag-005",
@@ -58,11 +100,22 @@
     "logo": "/images/agencies/himalayan-explore.png",
     "rating": 4.7,
     "tier": "medium",
-    "destinations": ["mustang", "muktinath"],
+    "destinations": [
+      "mustang",
+      "muktinath"
+    ],
     "description": "Custom itineraries across remote Himalayan regions.",
     "joined_date": "2017-01-20",
     "status": "active",
-    "subdomain": "himalayan"
+    "subdomain": "himalayan",
+    "kyc_verified": true,
+    "safety_certified": true,
+    "review_count": 132,
+    "established_year": 2013,
+    "regions": [
+      "Mustang",
+      "Muktinath"
+    ]
   },
   {
     "id": "ag-006",
@@ -71,11 +124,22 @@
     "logo": "/images/agencies/sherpa-steps.png",
     "rating": 4.9,
     "tier": "large",
-    "destinations": ["everest-region", "gokyo-lakes"],
+    "destinations": [
+      "everest-region",
+      "gokyo-lakes"
+    ],
     "description": "Elite local Sherpa-led climbing expeditions and high mountain treks.",
     "joined_date": "2016-04-12",
     "status": "active",
-    "subdomain": "sherpasteps"
+    "subdomain": "sherpasteps",
+    "kyc_verified": true,
+    "safety_certified": true,
+    "review_count": 187,
+    "established_year": 2016,
+    "regions": [
+      "Everest Region",
+      "Gokyo Lakes"
+    ]
   },
   {
     "id": "ag-007",
@@ -84,11 +148,22 @@
     "logo": "/images/agencies/mardi-trails.png",
     "rating": 4.5,
     "tier": "small",
-    "destinations": ["annapurna-region", "mardi-himal"],
+    "destinations": [
+      "annapurna-region",
+      "mardi-himal"
+    ],
     "description": "Eco-conscious touring agency specializing in short ridge-line trails.",
     "joined_date": "2022-02-18",
     "status": "active",
-    "subdomain": "mardi"
+    "subdomain": "mardi",
+    "kyc_verified": true,
+    "safety_certified": true,
+    "review_count": 63,
+    "established_year": 2020,
+    "regions": [
+      "Annapurna Region",
+      "Mardi Himal"
+    ]
   },
   {
     "id": "ag-008",
@@ -97,23 +172,43 @@
     "logo": "/images/agencies/wild-west.png",
     "rating": 4.3,
     "tier": "medium",
-    "destinations": ["rara-lake", "dolpo"],
+    "destinations": [
+      "rara-lake",
+      "dolpo"
+    ],
     "description": "Off-the-beaten-track true wilderness adventures in remote western Nepal.",
     "joined_date": "2021-05-24",
     "status": "active",
-    "subdomain": "wildwest"
+    "subdomain": "wildwest",
+    "kyc_verified": false,
+    "safety_certified": true,
+    "review_count": 29,
+    "established_year": 2021,
+    "regions": [
+      "Rara Lake",
+      "Dolpo"
+    ]
   },
   {
     "id": "ag-009",
     "slug": "summit-horizon",
     "name": "Summit Horizon Hub",
     "logo": "/images/agencies/summit-horizon.png",
-    "rating": 4.0,
+    "rating": 4,
     "tier": "free",
-    "destinations": ["langtang"],
+    "destinations": [
+      "langtang"
+    ],
     "description": "Basic group porter and entry-level guide matchmaking services.",
     "joined_date": "2024-01-05",
     "status": "suspended",
-    "subdomain": "summithub"
+    "subdomain": "summithub",
+    "kyc_verified": false,
+    "safety_certified": false,
+    "review_count": 8,
+    "established_year": 2023,
+    "regions": [
+      "Langtang"
+    ]
   }
 ]
