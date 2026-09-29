@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import {
   Bell,
   Search,
@@ -172,7 +173,7 @@ export default function DashboardTopbar({ onMenuClick }: DashboardTopbarProps) {
             </div>
             <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium overflow-hidden shrink-0">
               {avatarUrl ? (
-                <img src={avatarUrl} alt={userName} className="w-full h-full object-cover" />
+                <Image src={avatarUrl} alt={userName} width={36} height={36} unoptimized className="w-full h-full object-cover" />
               ) : (
                 initial
               )}

@@ -2,6 +2,7 @@
 
 import { Fragment, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
@@ -164,7 +165,7 @@ export default function ReviewsPage() {
                         <td colSpan={6} className="px-4 py-4">
                           <div className="flex items-center gap-2 text-xs text-neutral-500">{r.verified && <span className="rounded-full bg-success-50 px-2 py-0.5 font-semibold text-success-700">verified</span>}{fmtLong(r.createdAt)}</div>
                           <p className="mt-2 whitespace-pre-wrap text-sm text-neutral-800">{r.text}</p>
-                          {r.photos.length > 0 && <div className="mt-2 flex gap-2">{r.photos.map((u) => /* eslint-disable-next-line @next/next/no-img-element */ <img key={u} src={u} alt="" className="h-16 w-16 rounded-lg object-cover" />)}</div>}
+                          {r.photos.length > 0 && <div className="mt-2 flex gap-2">{r.photos.map((u) => <Image key={u} src={u} alt="" width={64} height={64} unoptimized className="h-16 w-16 rounded-lg object-cover" />)}</div>}
                           {r.response && <div className="mt-3 rounded-xl bg-primary-50 p-3 text-sm"><p className="text-xs font-semibold text-primary-800">Your reply · {fmtLong(r.response.respondedAt)}</p><p className="mt-1 whitespace-pre-wrap text-neutral-800">{r.response.responseText}</p></div>}
                           <div className="mt-3 flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
                             {!r.response && <button type="button" onClick={() => { setReplyTo(r); setText(""); }} className="rounded-full bg-primary-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-800">Reply</button>}

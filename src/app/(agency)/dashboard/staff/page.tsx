@@ -28,7 +28,7 @@ export default function StaffPage() {
   const [page, setPage] = useState(1);
   const [removing, setRemoving] = useState<StaffMember | null>(null);
 
-  const staff = data ?? [];
+  const staff = useMemo(() => data ?? [], [data]);
   const activeCount = staff.filter((s) => s.isActive).length;
 
   const filtered = useMemo(() => {

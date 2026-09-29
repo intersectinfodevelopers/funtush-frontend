@@ -29,7 +29,7 @@ export default function FinanceOverviewPage() {
   const invoices = useInvoiceList({ limit: 100 });
 
   const p = pnl.data;
-  const points = trend.data ?? [];
+  const points = useMemo(() => trend.data ?? [], [trend.data]);
   const current = points[points.length - 1];
   const previous = points[points.length - 2];
 
@@ -37,7 +37,7 @@ export default function FinanceOverviewPage() {
   const profitSeries = useMemo(() => points.map((pt) => ({ label: shortMonth(pt.period), v: pt.netProfit })), [points]);
   const pnlChartData = useMemo(() => points.map((pt) => ({ label: shortMonth(pt.period), netProfit: pt.netProfit })), [points]);
 
-  const dailyBookings = bookingsOverview.data?.charts.bookingsByDay ?? [];
+  const dailyBookings = useMemo(() => bookingsOverview.data?.charts.bookingsByDay ?? [], [bookingsOverview.data?.charts.bookingsByDay]);
   const bookingsSeries = useMemo(() => dailyBookings.map((b) => ({ label: shortDay(b.date), v: b.count })), [dailyBookings]);
   const totalBookings30d = dailyBookings.reduce((s, b) => s + b.count, 0);
   // Split the 30-day window in half for an honest trend comparison — a "vs last month" figure

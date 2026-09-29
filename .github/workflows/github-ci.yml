@@ -20,7 +20,7 @@ jobs:
           node-version: 24
       - name: Install pnpm
         run: |
-          npm install -g pnpm@latest
+          npm install -g pnpm@10.33.1
           pnpm --version
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -45,7 +45,7 @@ jobs:
           node-version: 24
       - name: Install pnpm
         run: |
-          npm install -g pnpm@latest
+          npm install -g pnpm@10.33.1
           pnpm --version
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -53,7 +53,7 @@ jobs:
         if: github.event_name == 'pull_request'
         run: |
           git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=1 || true
-          CHANGED=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD | grep -E '\.(ts|tsx)$' || true)
+          CHANGED=$(git diff --name-only --diff-filter=ACMRT origin/${{ github.event.pull_request.base.ref }}...HEAD | grep -E '\.(ts|tsx)$' || true)
           if [ -z "$CHANGED" ]; then
             echo "No TypeScript/TSX changes to lint"
             exit 0

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Mail, Lock, MapPin, AlertTriangle, ShoppingBag, Check, Mountain } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
 import { AuthLeftPanel } from '@/components/auth/AuthLeftPanel';
 import { ROLE_REDIRECT } from '@/lib/auth';
 import { loginAgency, loginTrekker } from '@/lib/api/auth';

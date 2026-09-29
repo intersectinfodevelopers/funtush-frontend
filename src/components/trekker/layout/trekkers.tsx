@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { Bell, Menu } from 'lucide-react';
 import { useUnreadCount } from '@/hooks/useTrekker';
 
@@ -16,7 +15,6 @@ function getInitials(name: string): string {
 }
 
 export function TrekkerTopbar({ onMenuClick }: { onMenuClick: () => void }) {
-  const pathname = usePathname();
   const { user } = useAuth();
 
   const unread = useUnreadCount().data ?? 0;

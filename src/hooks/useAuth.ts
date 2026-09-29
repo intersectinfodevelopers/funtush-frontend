@@ -31,7 +31,6 @@ export function useAuth(): UseAuthReturn {
   // appears right after hydration. Reading localStorage in the initial render
   // instead made server and client HTML differ (a hydration error).
   const snapshot = useSyncExternalStore(subscribe, getSessionSnapshot, () => '');
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- `snapshot` is the cache key for the stored session
   const user = useMemo<SessionUser | null>(() => (snapshot ? getSession() : null), [snapshot]);
 
   const logout = useCallback(() => {

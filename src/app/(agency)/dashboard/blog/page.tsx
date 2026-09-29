@@ -27,7 +27,7 @@ export default function BlogPage() {
   const [tab, setTab] = useState<Tab>("All");
   const [removing, setRemoving] = useState<BlogPost | null>(null);
 
-  const posts = data?.data ?? [];
+  const posts = useMemo(() => data?.data ?? [], [data?.data]);
   const counts = useMemo(() => ({
     All: posts.length,
     Published: posts.filter((p) => p.status === "PUBLISHED").length,

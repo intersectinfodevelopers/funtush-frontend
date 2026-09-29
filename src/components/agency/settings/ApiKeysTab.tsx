@@ -41,7 +41,7 @@ export function ApiKeysTab() {
               <button type="button" onClick={() => setFresh(null)} className="text-xs font-semibold text-success-800 underline">I&apos;ve saved it</button>
             </div>
           )}
-          <form aria-disabled={notAllowed} noValidate onSubmit={(e) => { e.preventDefault(); if (!name.trim()) return setError("Give the key a name."); setError(null); create.mutate(); }} className={`grid gap-3 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:grid-cols-[1fr_200px_auto] sm:items-end ${notAllowed ? "pointer-events-none opacity-50" : ""}`}>
+          <form noValidate onSubmit={(e) => { e.preventDefault(); if (!name.trim()) return setError("Give the key a name."); setError(null); create.mutate(); }} className={`grid gap-3 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:grid-cols-[1fr_200px_auto] sm:items-end ${notAllowed ? "pointer-events-none opacity-50" : ""}`}>
             <Field label="Key name" htmlFor="ak-name"><TextInput id="ak-name" value={name} maxLength={60} onChange={(e) => setName(e.target.value)} placeholder="Booking sync" /></Field>
             <Field label="Access" htmlFor="ak-scope"><select id="ak-scope" className={selectClass} value={scope} onChange={(e) => setScope(e.target.value as ApiKeyScope)}><option value="READ_ONLY">Read only</option><option value="READ_WRITE">Read & write</option></select></Field>
             <button type="submit" disabled={create.isPending || notAllowed} className="rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-800 disabled:opacity-50">{create.isPending ? "Creating…" : "Create key"}</button>

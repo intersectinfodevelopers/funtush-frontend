@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, type ReactNode } from 'react';
+import Image from 'next/image';
 import { useQuery } from '@tanstack/react-query';
 import { siteApi, type SiteSection } from '@/lib/site/api';
 import { useSite } from '@/lib/site/SiteContext';
@@ -33,7 +34,7 @@ const pick = <T extends { id: string }>(rows: T[], s: SiteSection) => { const ch
 function Hero({ s }: { s: SiteSection }) {
   return (
     <section aria-label={s.title ?? 'Hero'} style={{ minHeight: HERO_HEIGHT[s.heroHeight ?? 'LARGE'], backgroundColor: s.useThemeBg ? 'var(--site-primary)' : s.bgColor ?? undefined }} className="relative flex items-center justify-center overflow-hidden text-center">
-      {s.image && /* eslint-disable-next-line @next/next/no-img-element */ <img src={s.image} alt="" className="absolute inset-0 h-full w-full object-cover" />}
+      {s.image && <Image src={s.image} alt="" fill unoptimized sizes="100vw" className="object-cover" />}
       {s.overlayEnabled && <div className="absolute inset-0 bg-black/45" />}
       <div className="relative z-10 mx-auto max-w-3xl px-4 py-12" style={{ color: s.useThemeText ? 'var(--site-on-primary)' : s.textColor ?? undefined }}>
         {s.title && <h1 className="text-4xl font-extrabold md:text-5xl">{s.title}</h1>}

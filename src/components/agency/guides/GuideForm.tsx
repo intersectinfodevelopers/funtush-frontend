@@ -220,7 +220,13 @@ export default function GuideForm({ guide }: { guide?: GuideDetail }) {
     languages: guide?.languages ?? ([] as string[]),
     photo: guide?.photo ?? null,
   });
-  const [certs, setCerts] = useState<Cert[]>((guide?.certifications ?? []).map(({ id: _id, ...c }) => c));
+  const [certs, setCerts] = useState<Cert[]>((guide?.certifications ?? []).map((cert) => ({
+    name: cert.name,
+    issuingBody: cert.issuingBody,
+    number: cert.number,
+    expiry: cert.expiry,
+    document: cert.document,
+  })));
   const [errors, setErrors] = useState<Errors>({});
   const [summary, setSummary] = useState<string | null>(null);
 

@@ -131,7 +131,7 @@ export default function SafetyPage() {
   }
 
   const feed = active.data;
-  const liveTreks = treks.data ?? [];
+  const liveTreks = useMemo(() => treks.data ?? [], [treks.data]);
 
   // Real pins only: an open incident's own GPS fix, or a trek's approximate route
   // location (matched from the package name — see trekRegionCoordinates.ts on the

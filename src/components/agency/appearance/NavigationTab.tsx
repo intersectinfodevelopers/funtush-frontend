@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowDown, ArrowUp, Plus, Trash2 } from "lucide-react";
 import { Field, SaveBar, TextInput, ToggleRow } from "@/components/agency/settings/settings-kit";

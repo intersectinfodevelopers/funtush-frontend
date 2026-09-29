@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
@@ -230,9 +231,9 @@ export default function BlogForm({ post }: { post?: BlogPost }) {
 
             {totalPhotoCount > 0 ? (
               <div className="mt-2 flex items-center gap-3">
-                {kept[0] && <img src={kept[0]} alt="" className="h-20 w-28 rounded-lg object-cover" />}
-                {galleryUrls[0] && <div className="relative"><img src={galleryUrls[0]} alt="" className="h-20 w-28 rounded-lg object-cover" /><span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 text-[9px] text-white">Gallery</span></div>}
-                {stagedFiles[0] && <img src={URL.createObjectURL(stagedFiles[0])} alt="" className="h-20 w-28 rounded-lg object-cover" />}
+                {kept[0] && <Image src={kept[0]} alt="" width={112} height={80} unoptimized className="h-20 w-28 rounded-lg object-cover" />}
+                {galleryUrls[0] && <div className="relative"><Image src={galleryUrls[0]} alt="" width={112} height={80} unoptimized className="h-20 w-28 rounded-lg object-cover" /><span className="absolute bottom-1 left-1 rounded bg-black/60 px-1 text-[9px] text-white">Gallery</span></div>}
+                {stagedFiles[0] && <Image src={URL.createObjectURL(stagedFiles[0])} alt="" width={112} height={80} unoptimized className="h-20 w-28 rounded-lg object-cover" />}
                 <button type="button" onClick={() => { setKept([]); setGalleryUrls([]); setStagedFiles([]); }} className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200 bg-white px-3.5 py-1.5 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"><X className="h-3.5 w-3.5" /> Remove</button>
               </div>
             ) : (
@@ -290,8 +291,8 @@ export default function BlogForm({ post }: { post?: BlogPost }) {
 
       <Modal isOpen={previewOpen} onClose={() => setPreviewOpen(false)} title="Preview" size="lg">
         <div className="max-h-[70vh] space-y-4 overflow-y-auto p-5">
-          {photos[0] && <img src={photos[0].url} alt="" className="h-56 w-full rounded-xl object-cover" />}
-          {!photos[0] && stagedFiles[0] && <img src={URL.createObjectURL(stagedFiles[0])} alt="" className="h-56 w-full rounded-xl object-cover" />}
+          {photos[0] && <Image src={photos[0].url} alt="" width={896} height={224} unoptimized className="h-56 w-full rounded-xl object-cover" />}
+          {!photos[0] && stagedFiles[0] && <Image src={URL.createObjectURL(stagedFiles[0])} alt="" width={896} height={224} unoptimized className="h-56 w-full rounded-xl object-cover" />}
           <div>
             <h3 className="text-xl font-bold text-neutral-900">{f.title.trim() || "Untitled post"}</h3>
             {f.subtitle.trim() && <p className="mt-1 text-neutral-600">{f.subtitle}</p>}
