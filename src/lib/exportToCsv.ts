@@ -1,3 +1,16 @@
+/**
+ * Cell text starting with = + - @ (or a tab/CR) is interpreted as a FORMULA by
+ * Excel/Sheets. Exports contain text chosen by other people (a trekker's name,
+ * a special request), so `=HYPERLINK("http://evil",…)` would run on the agency's
+ * machine. Prefixing a single quote makes the spreadsheet treat it as plain text
+ * (OWASP "CSV injection").
+ */
+export const csvCell = (value: unknown): string => {
+  let text = String(value ?? '');
+  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+};
+
 export const exportToCsv = <T extends object>(data: T[], fileName: string) => {
   if (!data.length) return;
 
@@ -5,7 +18,7 @@ export const exportToCsv = <T extends object>(data: T[], fileName: string) => {
 
   const csvRows = [
     headers.join(','),
-    ...data.map((row) => headers.map((header) => `"${String(row[header] ?? '').replace(/"/g, '""')}"`).join(',')),
+    ...data.map((row) => headers.map((header) => csvCell(row[header])).join(',')),
   ];
 
   const csvContent = csvRows.join('\n');

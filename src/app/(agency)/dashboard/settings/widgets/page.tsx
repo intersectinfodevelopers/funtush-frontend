@@ -1,9 +1,18 @@
-import React from 'react';
+"use client";
 
-export default function Page() {
-  return (
-    <div className="min-h-screen flex items-center justify-center p-8 text-center text-slate-700">
-      Placeholder for app/(agency)/dashboard/settings/widgets/page.tsx
-    </div>
-  );
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+/**
+ * Widgets moved into Appearance (it's part of building the site, alongside
+ * Branding/Templates/Domain) — this settings page now just redirects there.
+ */
+export default function WidgetsSettingsRedirect() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/dashboard/appearance?tab=widgets");
+  }, [router]);
+
+  return null;
 }

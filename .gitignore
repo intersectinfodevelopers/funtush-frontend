@@ -17,6 +17,9 @@
 /.next/
 /out/
 
+# runtime file store for /api/site-data (see src/lib/mock/site-url.ts)
+/.site-data/
+
 # production
 /build
 

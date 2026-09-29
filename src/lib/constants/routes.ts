@@ -70,8 +70,8 @@ export const ROUTES = {
     SETTINGS: '/dashboard/settings',
     SETTINGS_BRANDING: '/dashboard/settings/branding',
     SETTINGS_DOMAIN: '/dashboard/settings/domain',
-    SETTINGS_PAYMENTS: '/dashboard/settings/payments',
-    SETTINGS_NOTIFICATIONS: '/dashboard/settings/notifications',
+    SETTINGS_PAYMENTS: '/dashboard/settings?tab=payments',
+    SETTINGS_NOTIFICATIONS: '/dashboard/settings?tab=notifications',
     SETTINGS_KYC: '/dashboard/settings/kyc',
   },
 

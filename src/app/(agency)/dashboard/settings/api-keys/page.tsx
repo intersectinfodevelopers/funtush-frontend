@@ -1,9 +1,15 @@
-import React from 'react';
+"use client";
 
-export default function Page() {
-  return (
-    <div className="min-h-screen flex items-center justify-center p-8 text-center text-slate-700">
-      Placeholder for app/(agency)/dashboard/settings/api-keys/page.tsx
-    </div>
-  );
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+/** API keys is now a tab on the single Settings page. */
+export default function ApiKeysSettingsRedirect() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/dashboard/settings?tab=api-keys");
+  }, [router]);
+
+  return null;
 }

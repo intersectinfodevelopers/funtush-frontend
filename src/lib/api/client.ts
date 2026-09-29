@@ -1,232 +1,141 @@
-import axios, {
-  AxiosError,
-  AxiosInstance,
-  AxiosRequestConfig,
-  InternalAxiosRequestConfig,
-} from 'axios';
+import axios, { AxiosError, AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
+import { clearTokens, getTokens, isSupportSession, saveTokens } from './session';
 
 /**
- * Axios API Client Configuration
+ * Axios client for the real Funtush API (apps/api).
  *
- * Features:
- * - Automatic request/response interceptors
- * - Error handling with standardized format
- * - Token refresh mechanism
- * - Request timeout handling
- * - Retry logic for failed requests
+ * Auth: the API has two credential shapes and different routes use different
+ * ones — `Authorization: Bearer <access>` (bookings, staff, …) and
+ * `x-refresh-token: <refresh>` (packages, finance, branding, …). Sending both on
+ * every request means every route just works.
+ *
+ * Refresh: POST /auth/refresh rotates BOTH tokens (the old refresh token is
+ * revoked server-side), so the new pair is persisted, and concurrent 401s share
+ * one refresh call. A support session (admin acting as the agency) cannot
+ * refresh by design — it simply ends when its token expires or is revoked.
  */
+export const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000').replace(/\/+$/, '');
 
-// Create axios instance
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
+  baseURL: API_BASE_URL,
   timeout: parseInt(process.env.NEXT_PUBLIC_API_TIMEOUT || '30000', 10),
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  headers: { 'Content-Type': 'application/json' },
 });
 
-/**
- * Request Interceptor
- * - Adds authentication token to headers
- * - Adds necessary headers
- */
-apiClient.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    // Add token if available
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('authToken');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
-    }
-
-    // Add request ID for tracing
-    config.headers['X-Request-ID'] = generateRequestId();
-
-    return config;
-  },
-  (error: AxiosError) => {
-    return Promise.reject(error);
+apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  const tokens = getTokens();
+  if (tokens) {
+    config.headers.Authorization = `Bearer ${tokens.accessToken}`;
+    config.headers['x-refresh-token'] = tokens.refreshToken;
   }
-);
+  return config;
+});
 
-/**
- * Response Interceptor
- * - Handle errors globally
- * - Refresh token if expired (401)
- * - Format error responses
- */
+let refreshing: Promise<boolean> | null = null;
+
+async function refreshSession(): Promise<boolean> {
+  const tokens = getTokens();
+  if (!tokens) return false;
+  try {
+    const res = await axios.post<{ accessToken: string; refreshToken: string }>(
+      `${API_BASE_URL}/auth/refresh`,
+      { refreshToken: tokens.refreshToken },
+    );
+    saveTokens({ accessToken: res.data.accessToken, refreshToken: res.data.refreshToken });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Fired when the session is definitively over, so the UI can react (redirect / show the ended screen). */
+export const SESSION_ENDED_EVENT = 'funtush:session-ended';
+
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error: AxiosError<ApiErrorData>) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
+  async (error: AxiosError<ApiErrorBody>) => {
+    const original = error.config as (InternalAxiosRequestConfig & { _retry?: boolean }) | undefined;
+    const status = error.response?.status;
+    const isAuthCall = original?.url?.startsWith('/auth/');
 
-    // Handle token refresh on 401
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+    if (status === 401 && original && !original._retry && !isAuthCall) {
+      original._retry = true;
 
-      try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (refreshToken) {
-          const response = await axios.post<{ token: string }>(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
-            { refreshToken }
-          );
-
-          const { token } = response.data;
-          localStorage.setItem('authToken', token);
-
-          // Retry original request
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return apiClient(originalRequest);
+      // A support session has no refresh path; any 401 means it ended or was revoked.
+      if (!isSupportSession()) {
+        refreshing ??= refreshSession().finally(() => {
+          refreshing = null;
+        });
+        if (await refreshing) {
+          const t = getTokens();
+          if (t) {
+            original.headers.Authorization = `Bearer ${t.accessToken}`;
+            original.headers['x-refresh-token'] = t.refreshToken;
+            return apiClient(original);
+          }
         }
-      } catch {
-        // Clear auth and redirect to login
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('refreshToken');
-          window.location.href = '/login';
-        }
+        clearTokens();
       }
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event(SESSION_ENDED_EVENT));
     }
 
-    // Handle other errors
-    return Promise.reject(formatErrorResponse(error));
-  }
+    return Promise.reject(formatError(error));
+  },
 );
 
-/**
- * Error Response Format
- */
-interface ApiErrorData {
+/** The API answers errors as { message } or { error } depending on the route. */
+interface ApiErrorBody {
   message?: string;
-  code?: string;
-  details?: Record<string, unknown>;
+  error?: string;
+  /** zod `validate()` middleware: { message: "Validation error", errors: { fieldErrors: { field: [msg] } } } */
+  errors?: { formErrors?: string[]; fieldErrors?: Record<string, string[] | undefined> } | Record<string, string>;
 }
 
-export interface ApiErrorResponse {
-  success: false;
-  error: {
-    message: string;
-    code?: string;
-    statusCode: number;
-    details?: Record<string, unknown>;
-  };
+export interface ApiError {
+  message: string;
+  status: number;
+  /** Per-field messages, when the API says which input is wrong (`errors: { field: message }`). */
+  fields?: Record<string, string>;
 }
 
-interface ApiErrorData {
-  message?: string;
-  code?: string;
-  details?: Record<string, unknown>;
+/** The first concrete validation message, which beats the generic "Validation error". */
+function validationDetail(body: ApiErrorBody | undefined): string | undefined {
+  const errs = body?.errors as { formErrors?: string[]; fieldErrors?: Record<string, string[] | undefined> } | undefined;
+  if (!errs || typeof errs !== 'object') return undefined;
+  return errs.formErrors?.[0] ?? Object.values(errs.fieldErrors ?? {}).find((m) => m && m.length)?.[0];
 }
 
-/**
- * Success Response Format
- */
-export interface ApiSuccessResponse<T = unknown> {
-  success: true;
-  data: T;
-  message?: string;
-}
-
-/**
- * Paginated Response Format
- */
-export interface ApiPaginatedResponse<T = unknown> {
-  success: true;
-  data: T[];
-  pagination: {
-    total: number;
-    page: number;
-    pageSize: number;
-    totalPages: number;
-  };
-}
-
-/**
- * Format error response into standardized format
- */
-function formatErrorResponse(error: AxiosError<ApiErrorData>): ApiErrorResponse {
-  const responseData = error.response?.data;
-
-  if (responseData) {
-    return {
-      success: false,
-      error: {
-        message: responseData.message || error.message,
-        code: responseData.code,
-        statusCode: error.response?.status || 500,
-        details: responseData.details,
-      },
-    };
+function fieldMessages(body: ApiErrorBody | undefined): Record<string, string> | undefined {
+  const errs = body?.errors as Record<string, unknown> | undefined;
+  if (!errs || typeof errs !== 'object') return undefined;
+  const out: Record<string, string> = {};
+  const src = (errs.fieldErrors && typeof errs.fieldErrors === 'object' ? errs.fieldErrors : errs) as Record<string, unknown>;
+  for (const [k, v] of Object.entries(src)) {
+    const msg = typeof v === 'string' ? v : Array.isArray(v) && typeof v[0] === 'string' ? v[0] : undefined;
+    if (msg) out[k] = msg;
   }
+  return Object.keys(out).length ? out : undefined;
+}
 
+function formatError(error: AxiosError<ApiErrorBody>): ApiError {
+  const body = error.response?.data;
   return {
-    success: false,
-    error: {
-      message: error.message || 'An unexpected error occurred',
-      statusCode: error.response?.status || 500,
-    },
+    fields: typeof body === 'object' ? fieldMessages(body) : undefined,
+    message: (typeof body === 'object' && (validationDetail(body) || body?.message || body?.error)) || error.message || 'An unexpected error occurred',
+    status: error.response?.status ?? 0,
   };
 }
 
-/**
- * Generate unique request ID for tracing
- */
-function generateRequestId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
-/**
- * API Helper Methods
- */
+/** Typed helpers that return the response BODY (the API has no shared envelope). */
 export const api = {
-  /**
-   * GET request
-   */
-  get<T = unknown>(url: string, config?: AxiosRequestConfig) {
-    return apiClient.get<unknown, ApiSuccessResponse<T>>(url, config);
-  },
-
-  /**
-   * POST request
-   */
-  post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) {
-    return apiClient.post<unknown, ApiSuccessResponse<T>>(url, data, config);
-  },
-
-  /**
-   * PUT request
-   */
-  put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) {
-    return apiClient.put<unknown, ApiSuccessResponse<T>>(url, data, config);
-  },
-
-  /**
-   * PATCH request
-   */
-  patch<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) {
-    return apiClient.patch<unknown, ApiSuccessResponse<T>>(url, data, config);
-  },
-
-  /**
-   * DELETE request
-   */
-  delete<T = unknown>(url: string, config?: AxiosRequestConfig) {
-    return apiClient.delete<unknown, ApiSuccessResponse<T>>(url, config);
-  },
-
-  /**
-   * File upload with FormData
-   */
-  upload<T = unknown>(url: string, formData: FormData, config?: AxiosRequestConfig) {
-    return apiClient.post<unknown, ApiSuccessResponse<T>>(url, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-      ...config,
-    });
-  },
+  get: <T = unknown>(url: string, config?: AxiosRequestConfig) => apiClient.get<T>(url, config).then((r) => r.data),
+  post: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) => apiClient.post<T>(url, data, config).then((r) => r.data),
+  put: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) => apiClient.put<T>(url, data, config).then((r) => r.data),
+  patch: <T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig) => apiClient.patch<T>(url, data, config).then((r) => r.data),
+  delete: <T = unknown>(url: string, config?: AxiosRequestConfig) => apiClient.delete<T>(url, config).then((r) => r.data),
+  /** multipart/form-data (the browser sets the boundary). */
+  upload: <T = unknown>(url: string, form: FormData, method: 'post' | 'patch' = 'post') =>
+    apiClient.request<T>({ url, method, data: form, headers: { 'Content-Type': 'multipart/form-data' } }).then((r) => r.data),
 };
 
 export default apiClient;

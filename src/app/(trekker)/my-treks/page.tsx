@@ -1,161 +1,41 @@
 'use client';
 
-/**
- * My Treks Page 
- */
+import { useState } from 'react';
+import Link from 'next/link';
+import { Calendar, Users } from 'lucide-react';
 
-import { useState, useEffect, useMemo } from 'react';
-import { Compass } from 'lucide-react';
+import { Pagination } from '@/components/ui/pagination';
+import { useTrekDashboard } from '@/hooks/useTrekker';
+import type { TrekSection } from '@/lib/api/trekker';
 
-import { useAuth } from '@/hooks/useAuth';
-import { cn } from '@/lib/utils/cn';
-import { getUserTreks } from '@/lib/treks';
-import { TrekCard } from '@/components/trekker/treks/trek-card';
-import type { TrekTabCategory, RawBooking, RawPackage, RawAgency, RawGuide } from '@/types/trek';
-
-// Import JSON data
-import bookingsData from '../../../../data/bookings.json';
-import packagesData from '../../../../data/packages.json';
-import agenciesData from '../../../../data/agencies.json';
-import guidesData from '../../../../data/guides.json';
-
-const bookings = bookingsData as RawBooking[];
-const packages = packagesData as unknown as RawPackage[];
-const agencies = agenciesData as RawAgency[];
-const guides = guidesData as RawGuide[];
-
-// ─── Tab Config ────────────────────────────
-
-const TABS: Array<{ key: TrekTabCategory; label: string }> = [
-  { key: 'upcoming', label: 'Upcoming' },
-  { key: 'active', label: 'Active' },
-  { key: 'completed', label: 'Completed' },
-  { key: 'cancelled', label: 'Cancelled' },
-];
-
-const EMPTY_MESSAGES: Record<TrekTabCategory, string> = {
-  upcoming: 'No upcoming treks',
-  active: 'No active treks',
-  completed: 'No completed treks',
-  cancelled: 'No cancelled treks',
-};
-
-// ─── Component ────────────────────────────
+const TABS: { id: TrekSection; label: string }[] = [{ id: 'upcoming', label: 'Upcoming' }, { id: 'active', label: 'On the trail' }, { id: 'completed', label: 'Completed' }];
+const STATUS: Record<string, string> = { INQUIRY: 'Awaiting the agency', ALTERNATIVE_PROPOSED: 'New date proposed', CONFIRMED: 'Confirmed', PAYMENT_PENDING: 'Payment due', PAID: 'Paid', ACTIVE: 'On the trail', COMPLETED: 'Completed' };
+const fmt = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 
 export default function MyTreksPage() {
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<TrekTabCategory>('upcoming');
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  setMounted(true);
-}, []);
-
-  const userTreks = useMemo(() => {
-    if (!user) return [];
-    return getUserTreks(user.id, bookings, packages, agencies, guides);
-  }, [user]);
-
-  const filteredTreks = useMemo(
-    () => userTreks.filter((t) => t.category === activeTab),
-    [userTreks, activeTab]
-  );
-
-  const counts = useMemo(() => {
-    const result: Record<TrekTabCategory, number> = {
-      upcoming: 0,
-      active: 0,
-      completed: 0,
-      cancelled: 0,
-    };
-    userTreks.forEach((t) => result[t.category]++);
-    return result;
-  }, [userTreks]);
+  const [section, setSection] = useState<TrekSection>('upcoming');
+  const [page, setPage] = useState(1);
+  const { data, isLoading, isError } = useTrekDashboard(section, page);
+  const rows = data?.data ?? [];
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
-
-      {/* ── Page Header ── */}
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-neutral-900">My Treks</h1>
-        <p className="mt-2 text-sm text-neutral-500">
-          Every trek you&apos;ve booked, across every agency, in one place.
-        </p>
+    <div className="space-y-5">
+      <div><h1 className="text-2xl font-bold text-neutral-900">My treks</h1><p className="mt-1 text-sm text-neutral-600">Your bookings and what&apos;s next.</p></div>
+      <div role="tablist" aria-label="Trek status" className="inline-flex rounded-xl border border-neutral-200 bg-white p-1">
+        {TABS.map((t) => <button key={t.id} type="button" role="tab" aria-selected={section === t.id} onClick={() => { setSection(t.id); setPage(1); }} className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${section === t.id ? 'bg-primary-900 text-white' : 'text-neutral-600 hover:bg-neutral-100'}`}>{t.label}{data && <span className="ml-1.5 text-xs opacity-70">{data.counts[t.id]}</span>}</button>)}
       </div>
-
-      {/* ── Tabs (Pill Style) ── */}
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.key;
-          const count = counts[tab.key];
-
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={cn(
-                'flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors',
-                isActive
-                  ? 'bg-primary-600 text-white shadow-sm'
-                  : 'bg-white text-neutral-700 hover:bg-neutral-50 border border-neutral-200'
-              )}
-            >
-              {tab.label}
-              <span
-                suppressHydrationWarning
-                className={cn(
-                  'inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs font-semibold',
-                  count === 0 && 'hidden',
-                  isActive
-                    ? 'bg-white/20 text-white'
-                    : 'bg-neutral-100 text-neutral-600'
-                )}
-              >
-                {count}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* ── Trek Cards List ── */}
-      <div className="space-y-4">
-        {!mounted ? (
-          /* Loading skeleton while hydrating */
-          <>
-            {[1, 2].map((i) => (
-              <div key={i} className="h-40 animate-pulse rounded-2xl bg-neutral-100" />
-            ))}
-          </>
-        ) : filteredTreks.length > 0 ? (
-          filteredTreks.map((trek, idx) => (
-            <TrekCard key={trek.bookingId} trek={trek} variantIndex={idx} />
-          ))
-        ) : (
-          /* Empty State */
-          <div className="rounded-2xl border-2 border-dashed border-neutral-200 bg-white p-12 text-center">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-neutral-100">
-              <Compass className="h-7 w-7 text-neutral-400" />
-            </div>
-            <p className="mt-4 text-base font-semibold text-neutral-700">
-              {EMPTY_MESSAGES[activeTab]}
-            </p>
-            <p className="mt-1 text-sm text-neutral-500">
-              Discover packages at{' '}
-              <a
-                href="https://funtush.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary-600 font-medium hover:underline"
-              >
-                funtush.com
-              </a>
-            </p>
-          </div>
-        )}
-      </div>
-
+      {isError && <p role="alert" className="rounded-2xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700">Couldn&apos;t load your treks.</p>}
+      {isLoading ? <div className="h-32 animate-pulse rounded-2xl bg-white" /> : rows.length === 0 && !isError ? (
+        <div className="rounded-2xl border border-dashed border-neutral-300 bg-white p-10 text-center"><p className="text-neutral-600">{section === 'upcoming' ? "You don't have any upcoming treks." : section === 'active' ? "You're not on a trek right now." : 'No completed treks yet.'}</p>{section === 'upcoming' && <Link href="/discovery" className="mt-3 inline-block font-semibold text-primary-700 hover:underline">Find your next trek</Link>}</div>
+      ) : (
+        <ul className="space-y-3">{rows.map((t) => (
+          <li key={t.bookingId}><Link href={`/my-treks/${t.bookingId}`} className="block rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm transition hover:shadow-md">
+            <div className="flex flex-wrap items-start justify-between gap-2"><div><h2 className="text-lg font-bold text-neutral-900">{t.packageTitle}</h2><p className="text-sm text-neutral-500">with {t.agencyName}</p></div><span className="rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700">{STATUS[t.status] ?? t.status}</span></div>
+            <p className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-sm text-neutral-600"><span className="inline-flex items-center gap-1.5"><Calendar className="h-4 w-4" />{fmt(t.startDate)} – {fmt(t.endDate)}</span><span className="inline-flex items-center gap-1.5"><Users className="h-4 w-4" />{t.groupSize} {t.groupSize === 1 ? 'person' : 'people'}</span>{section === 'upcoming' && t.daysUntilStart >= 0 && <span className="font-semibold text-neutral-900">{t.daysUntilStart === 0 ? 'Starts today' : `In ${t.daysUntilStart} day${t.daysUntilStart === 1 ? '' : 's'}`}</span>}</p>
+          </Link></li>
+        ))}</ul>
+      )}
+      <Pagination currentPage={page} totalPages={Math.max(1, data?.meta.pages ?? 1)} onPageChange={setPage} />
     </div>
   );
 }

@@ -1,198 +1,144 @@
 "use client";
 
-// Removed unused Image import to satisfy eslint no-unused-vars
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Plus, Compass, Footprints, CheckCircle2, AlertTriangle, Eye, Edit3, Trash2 } from "lucide-react";
-import { AnalyticsSummaryCard } from "@/components/shared/AnalyticsSummaryCard";
-import { Pagination } from "@/components/ui/pagination";
-import guidesData from "@/../data/guides.json";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import { AlertTriangle, CheckCircle2, Compass, Eye, Footprints, Pencil, Plus, Trash2 } from "lucide-react";
 
-type Guide = (typeof guidesData)[number];
+import GuideAvatar from "@/components/agency/guides/GuideAvatar";
+import { AnalyticsSummaryCard } from "@/components/shared/AnalyticsSummaryCard";
+import { Modal } from "@/components/ui/modal";
+import { Pagination } from "@/components/ui/pagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useGuideList } from "@/hooks/useAgencyGuides";
+import { languageList } from "@/lib/languages";
+import { deactivateGuide, type Guide } from "@/lib/api/agency/guides";
+import type { GuideStatus } from "@/lib/api/agency/dashboard";
+import type { ApiError } from "@/lib/api/client";
+
+const PAGE_SIZE = 20;
+const field = "rounded-full border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100";
+const STATUS_STYLE = { available: "bg-success-50 text-success-700", on_trek: "bg-sky-50 text-sky-700", unavailable: "bg-danger-50 text-danger-600" } as const;
+const STATUS_LABEL = { available: "Available", on_trek: "On Trek", unavailable: "Unavailable" } as const;
+const LANGS = [["en", "English"], ["ne", "Nepali"], ["hi", "Hindi"], ["de", "German"], ["fr", "French"], ["es", "Spanish"], ["zh", "Chinese"], ["ja", "Japanese"]] as const;
+const pct = (n: number, of: number) => (of > 0 ? `${Math.round((n / of) * 1000) / 10}%` : "0%");
 
 export default function GuidesPage() {
-  const router = useRouter();
+  const qc = useQueryClient();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [languageFilter, setLanguageFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [status, setStatus] = useState<GuideStatus | "all">("all");
+  const [language, setLanguage] = useState("all");
+  const [page, setPage] = useState(1);
+  const [removing, setRemoving] = useState<Guide | null>(null);
+  const debounced = useDebouncedValue(search.trim());
 
-  const rows = useMemo<Guide[]>(() => {
-    return guidesData.map((g) => ({ ...g }));
-  }, []);
+  const { data, isLoading, isError, isFetching } = useGuideList({ status, language, search: debounced || undefined, page, limit: PAGE_SIZE });
+  const stats = data?.stats;
+  const rows = data?.guides ?? [];
+  const totalPages = Math.max(1, Math.ceil((data?.total ?? 0) / PAGE_SIZE));
+  const reset = <T,>(set: (v: T) => void) => (v: T) => { set(v); setPage(1); };
 
-  const stats = useMemo(() => {
-    const total = rows.length;
-    const onTrek = rows.filter((r) => r.status === "on_trek").length;
-    const available = rows.filter((r) => r.status === "available").length;
-    const expiring = rows.filter((r) => r.certifications.some((c: { expiry: string }) => {
-      const exp = new Date(c.expiry);
-      const diff = (exp.getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-      return diff > 0 && diff <= 30;
-    })).length;
-    return { total, onTrek, available, expiring };
-  }, [rows]);
+  // "% from last month" is real: how many guides the agency has now vs when this month began.
+  const growth = !stats ? undefined : stats.totalBeforeMonth === 0 ? (stats.total > 0 ? `${stats.total} new` : undefined) : `${stats.total >= stats.totalBeforeMonth ? "+" : ""}${(((stats.total - stats.totalBeforeMonth) / stats.totalBeforeMonth) * 100).toFixed(1)}%`;
 
-  const filtered = useMemo(() => {
-    return rows
-        .filter((r) => {
-        const q = search.trim().toLowerCase();
-        const matchesSearch =
-          !q || r.name.toLowerCase().includes(q) || (r.phone || "").toLowerCase().includes(q);
-        const matchesStatus = statusFilter === "all" ? true : r.status === statusFilter;
-        const matchesLang =
-          languageFilter === "all" ? true : (r.languages || []).includes(languageFilter);
-        return matchesSearch && matchesStatus && matchesLang;
-      })
-      .sort((a, b) => a.name.localeCompare(b.name));
-  }, [rows, search, statusFilter, languageFilter]);
-
-  const perPage = 8;
-  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
-  const safePage = Math.min(currentPage, totalPages);
-  const paginated = filtered.slice((safePage - 1) * perPage, safePage * perPage);
+  const remove = useMutation({
+    mutationFn: () => deactivateGuide(removing!.id),
+    onSuccess: () => {
+      toast.success(`“${removing?.name}” was removed from your guides`);
+      setRemoving(null);
+      void qc.invalidateQueries({ queryKey: ["agency", "guides"] });
+      void qc.invalidateQueries({ queryKey: ["agency", "summary"] });
+    },
+    onError: (e) => { const name = removing?.name; setRemoving(null); toast.error(`Couldn't remove “${name}”: ${(e as unknown as ApiError).message || "please try again."}`); },
+  });
 
   return (
-    <div className="space-y-4 w-full min-h-screen">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-500">
-            <button type="button" onClick={() => router.push('/dashboard')} className="transition hover:text-neutral-900">Dashboard</button>
-            <span className="text-neutral-300">/</span>
-            <span className="font-semibold text-neutral-900">All Guides</span>
-          </div>
-          <h1 className="text-2xl font-semibold text-neutral-900">Guides</h1>
-          <p className="text-sm leading-6 text-neutral-600">Manage trek guide profiles, certifications, and availability.</p>
+          <div className="flex items-center gap-2 text-sm text-neutral-500"><Link href="/dashboard" className="hover:text-neutral-900">Dashboard</Link><span className="text-neutral-300">/</span><span className="font-semibold text-neutral-900">All Guides</span></div>
+          <h1 className="text-2xl font-bold text-neutral-900">Guides</h1>
+          <p className="text-sm text-neutral-600">Manage trek guide profiles, certifications, and availability.</p>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Link href="/dashboard/guides/new" className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700">
-            <Plus size={20} /> Add Guide
-          </Link>
-        </div>
+        <Link href="/dashboard/guides/new" className="inline-flex items-center gap-2 self-start rounded-xl bg-primary-900 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-800"><Plus className="h-4 w-4" /> Add Guide</Link>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-4">
-        <AnalyticsSummaryCard label="Total Guides" value={stats.total} tone="primary" icon={Compass} />
-        <AnalyticsSummaryCard label="On Trek" value={stats.onTrek} tone="primary" icon={Footprints} />
-        <AnalyticsSummaryCard label="Available" value={stats.available} tone="success" icon={CheckCircle2} />
-        <AnalyticsSummaryCard label="Certs Expiring" value={stats.expiring} tone="danger" icon={AlertTriangle} />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <AnalyticsSummaryCard label="Total Guides" value={stats?.total ?? "—"} tone="primary" icon={Compass} change={growth} />
+        <AnalyticsSummaryCard label="On Trek" value={stats?.onTrek ?? "—"} tone="primary" icon={Footprints} change={stats ? pct(stats.onTrek, stats.total) : undefined} note="of all guides" />
+        <AnalyticsSummaryCard label="Available" value={stats?.available ?? "—"} tone="success" icon={CheckCircle2} change={stats ? pct(stats.available, stats.total) : undefined} note="of all guides" />
+        <AnalyticsSummaryCard label="Certs Expiring" value={stats?.certsExpiring ?? "—"} tone="danger" icon={AlertTriangle} change={stats ? pct(stats.certsExpiring, stats.total) : undefined} note="of guides, within 30 days" />
       </div>
 
       <div className="grid gap-3 sm:grid-cols-[minmax(240px,1fr)_180px_180px]">
-        <label className="relative block">
-          <input
-            className="w-full rounded-2xl border border-neutral-200 bg-white py-2.5 pl-4 pr-3 text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-            placeholder="Search guides"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-          />
-        </label>
-
-        <select className="rounded-2xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}>
-          <option value="all">All status</option>
-          <option value="available">Available</option>
-          <option value="on_trek">On Trek</option>
-          <option value="unavailable">Unavailable</option>
-        </select>
-
-        <select className="rounded-2xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900" value={languageFilter} onChange={(e) => { setLanguageFilter(e.target.value); setCurrentPage(1); }}>
-          <option value="all">All languages</option>
-          {Array.from(new Set(rows.flatMap((r) => r.languages || []))).map((lang) => (
-            <option key={lang} value={lang}>{lang}</option>
-          ))}
-        </select>
+        <input type="search" aria-label="Search guides" placeholder="Search guides" value={search} onChange={(e) => reset(setSearch)(e.target.value)} className={`${field} w-full`} />
+        <select aria-label="Filter by status" value={status} onChange={(e) => reset(setStatus)(e.target.value as GuideStatus | "all")} className={field}><option value="all">All status</option><option value="available">Available</option><option value="on_trek">On Trek</option><option value="unavailable">Unavailable</option></select>
+        <select aria-label="Filter by language" value={language} onChange={(e) => reset(setLanguage)(e.target.value)} className={field}><option value="all">All languages</option>{LANGS.map(([c, n]) => <option key={c} value={c}>{n}</option>)}</select>
       </div>
 
-      <section className="overflow-x-auto border-t border-neutral-200 bg-white">
-        <table className="min-w-full border-collapse text-left text-sm text-neutral-700">
-          <thead className="bg-neutral-50 text-[10px] uppercase tracking-[0.24em] text-neutral-500">
-            <tr>
-              <th className="px-4 py-3">S.NO</th>
-              <th className="px-4 py-3">Guide</th>
-              <th className="px-4 py-3">Languages</th>
-              <th className="px-4 py-3">Certifications</th>
-              <th className="px-4 py-3">Rating</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginated.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-sm text-neutral-500">No guides match your filters.</td>
-              </tr>
-            ) : (
-              paginated.map((guide, idx) => (
-                <tr key={guide.id} className="border-b border-neutral-200 hover:bg-neutral-50">
-                  <td className="px-4 py-3 text-neutral-700">{(safePage - 1) * perPage + idx + 1}</td>
-                  <td className="px-4 py-3 text-neutral-900">
+      {isError && <p role="alert" className="rounded-2xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700">Couldn&apos;t load guides. Please try again.</p>}
+
+      <div className={`overflow-hidden border border-neutral-200 bg-white ${isFetching && !isLoading ? "opacity-70" : ""}`}>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-neutral-50 text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">
+              <tr><th className="w-14 px-4 py-3.5">S.No</th><th className="px-4 py-3.5">Guide</th><th className="px-4 py-3.5">Languages</th><th className="px-4 py-3.5">Certifications</th><th className="px-4 py-3.5">Rating</th><th className="px-4 py-3.5">Status</th><th className="px-4 py-3.5">Actions</th></tr>
+            </thead>
+            <tbody>
+              {isLoading && Array.from({ length: 4 }).map((_, i) => <tr key={i} className="border-t border-neutral-200"><td colSpan={7} className="px-4 py-5"><div className="h-4 animate-pulse rounded bg-neutral-100" /></td></tr>)}
+              {!isLoading && rows.length === 0 && <tr><td colSpan={7} className="px-4 py-10 text-center text-sm text-neutral-500">{search || status !== "all" || language !== "all" ? "No guides match your filters." : "No guides yet — add your first guide."}</td></tr>}
+              {rows.map((g, index) => (
+                <tr key={g.id} className="border-t border-neutral-200 hover:bg-neutral-50/60">
+                  <td className="px-4 py-4 text-neutral-600">{(page - 1) * PAGE_SIZE + index + 1}</td>
+                  <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-11 w-11 rounded-full bg-violet-600 text-white flex items-center justify-center text-sm font-semibold">
-                        {guide.name.split(" ").map((p: string) => p[0]).slice(0,2).join("")}
-                      </div>
-                      <div>
-                        <div className="font-semibold">{guide.name}</div>
-                        <div className="text-xs text-neutral-500">{guide.phone}</div>
+                      <GuideAvatar name={g.name} photo={g.photo} />
+                      <div className="min-w-0">
+                        <Link href={`/dashboard/guides/${g.id}`} className="block font-bold text-neutral-900 hover:underline">{g.name}</Link>
+                        <p className="text-xs text-neutral-500">{g.phone}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-neutral-700">{(guide.languages || []).join(', ')}</td>
-                  <td className="px-4 py-3">
-                    {guide.certifications && guide.certifications.length > 0 ? (
-                      <div className="inline-flex items-center gap-2 rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-700">
-                        <div>{guide.certifications[0].name}</div>
-                        <div className="text-xs text-neutral-400">{guide.certifications[0].number}</div>
+                  <td className="px-4 py-4 text-neutral-700">{languageList(g.languages) || "—"}</td>
+                  <td className="px-4 py-4">
+                    {g.certifications.length === 0 ? <span className="text-neutral-400">—</span> : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {g.certifications.slice(0, 2).map((c) => (
+                          <span key={c.id ?? c.number} className="inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1 text-xs"><span className="font-semibold text-neutral-800">{c.name}</span><span className="text-neutral-400">{c.number}</span></span>
+                        ))}
+                        {g.certifications.length > 2 && <span className="inline-flex items-center rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-semibold text-neutral-500">+{g.certifications.length - 2}</span>}
                       </div>
-                    ) : (
-                      <div className="text-xs text-neutral-400">—</div>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-neutral-700">{guide.rating ?? '—'}</td>
-                  <td className="px-4 py-3">
-                    <span className={`inline-flex items-center gap-2 rounded-full px-2 py-0.5 text-sm font-semibold ${guide.status === 'available' ? 'text-emerald-700 bg-emerald-50' : guide.status === 'on_trek' ? 'text-sky-700 bg-sky-50' : 'text-rose-700 bg-rose-50'}`}>
-                      <span>{guide.status === 'available' ? 'Available' : guide.status === 'on_trek' ? 'On Trek' : 'Unavailable'}</span>
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        aria-label={`Preview ${guide.name}`}
-                        onClick={() => { /* view */ }}
-                        className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-md bg-primary-50 text-primary-700 transition hover:bg-primary-100"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`Edit ${guide.name}`}
-                        onClick={() => router.push(`/dashboard/guides/${guide.id}/edit`)}
-                        className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-md bg-warning-50 text-warning-700 transition hover:bg-warning-100"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`Delete ${guide.name}`}
-                        onClick={() => { /* delete */ }}
-                        className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-md bg-danger-50 text-danger-700 transition hover:bg-danger-100"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                  <td className="px-4 py-4 text-neutral-700">{g.rating != null ? g.rating.toFixed(1) : "—"}</td>
+                  <td className="px-4 py-4"><span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${STATUS_STYLE[g.status]}`}>{STATUS_LABEL[g.status]}</span></td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-1.5">
+                      <Link href={`/dashboard/guides/${g.id}`} aria-label={`View ${g.name}`} title="View" className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary-50 text-primary-700 transition hover:bg-primary-100"><Eye className="h-4 w-4" /></Link>
+                      <Link href={`/dashboard/guides/${g.id}/edit`} aria-label={`Edit ${g.name}`} title="Edit" className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-warning-50 text-warning-700 transition hover:bg-warning-100"><Pencil className="h-4 w-4" /></Link>
+                      <button type="button" aria-label={`Delete ${g.name}`} title="Delete" onClick={() => setRemoving(g)} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-danger-50 text-danger-700 transition hover:bg-danger-100"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </section>
-
-      <div className="flex items-center justify-end">
-        <Pagination currentPage={safePage} totalPages={totalPages} onPageChange={setCurrentPage} />
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+      <Pagination currentPage={Math.min(page, totalPages)} totalPages={totalPages} onPageChange={setPage} />
+
+      <Modal isOpen={removing !== null} onClose={() => setRemoving(null)} title="Delete this guide?" size="sm">
+        {removing && (
+          <div className="space-y-4 p-4">
+            <p className="text-sm leading-6 text-neutral-600">“{removing.name}” is removed from your guides and can no longer be assigned to bookings. Past bookings keep their guide&apos;s name.</p>
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={() => setRemoving(null)} className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50">Cancel</button>
+              <button type="button" disabled={remove.isPending} onClick={() => remove.mutate()} className="rounded-xl bg-danger-600 px-4 py-2 text-sm font-semibold text-white hover:bg-danger-700 disabled:opacity-50">{remove.isPending ? "Deleting…" : "Delete"}</button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

@@ -1,347 +1,172 @@
 "use client";
 
-import { ChangeEvent, DragEvent, FormEvent, useState } from "react";
+import { useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ImagePlus, X } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import { ImagePlus, Megaphone } from "lucide-react";
 
-type AdvertisementFormProps = {
-  isEdit?: boolean;
-  advertisementId?: string;
-  initialData?: {
-    title: string;
-    image: string;
-    position: string;
-    status: "active" | "paused";
-  };
-};
+import { uploadFile, validateUpload } from "@/lib/api/upload";
+import { useAdPositions } from "@/hooks/useAgencyAds";
+import { createAd, updateAd, type AdStatus, type SiteAd } from "@/lib/api/agency/ads";
+import type { ApiError } from "@/lib/api/client";
 
-const positions = [
-  { label: "Homepage Top", value: "homepage-top" },
-  { label: "Homepage Bottom", value: "homepage-bottom" },
-  { label: "Sidebar 1", value: "sidebar-1" },
-  { label: "Sidebar 2", value: "sidebar-2" },
-];
+const field = "mt-1.5 w-full rounded-xl border border-neutral-200 bg-white px-3.5 py-2.5 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-primary-400 focus:ring-2 focus:ring-primary-100";
+const label = "block text-sm font-semibold text-neutral-800";
+const Req = () => <span className="ml-0.5 text-danger-600" aria-hidden="true">*</span>;
 
-const MAX_IMAGE_DIMENSION = 1600;
-const IMAGE_QUALITY = 0.75;
-
-const optimizeImage = async (file: File) => {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(
-    1,
-    MAX_IMAGE_DIMENSION / Math.max(bitmap.width, bitmap.height),
-  );
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-  canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-
-  return canvas.toDataURL("image/jpeg", IMAGE_QUALITY);
-};
-
-export default function AdvertisementForm({
-  isEdit = false,
-  advertisementId,
-  initialData,
-}: AdvertisementFormProps) {
+export default function AdvertisementForm({ ad }: { ad?: SiteAd }) {
   const router = useRouter();
+  const qc = useQueryClient();
+  const editing = Boolean(ad);
+  const positions = useAdPositions();
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  const [title, setTitle] = useState(initialData?.title ?? "");
-  const [image, setImage] = useState(initialData?.image ?? "");
-  const [position, setPosition] = useState(initialData?.position ?? "");
-  const [status, setStatus] = useState<"active" | "paused">(
-    initialData?.status ?? "active",
-  );
+  const [title, setTitle] = useState(ad?.title ?? "");
+  const [image, setImage] = useState<string | null>(ad?.image ?? null);
+  const [link, setLink] = useState(ad?.linkUrl ?? "");
+  const [position, setPosition] = useState(ad?.position ?? "");
+  const [active, setActive] = useState((ad?.status ?? "active") === "active");
+  const [busy, setBusy] = useState(false);
+  const [over, setOver] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [summary, setSummary] = useState<string | null>(null);
 
-  const [error, setError] = useState("");
+  const save = useMutation({
+    mutationFn: () => {
+      const body = { title: title.trim(), image: image!, linkUrl: link.trim() || null, position, status: (active ? "active" : "paused") as AdStatus };
+      return ad ? updateAd(ad.id, body) : createAd(body);
+    },
+    onSuccess: (a) => {
+      toast.success(editing ? `“${a.title}” was saved` : `“${a.title}” was created`);
+      void qc.invalidateQueries({ queryKey: ["agency", "ads"] });
+      router.push("/dashboard/advertisements");
+    },
+    onError: (e) => {
+      const err = e as unknown as ApiError;
+      setSummary(err.message || "Couldn't save the advertisement.");
+      toast.error(err.message || "Couldn't save the advertisement.", { duration: 6000 });
+      requestAnimationFrame(() => document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
+    },
+  });
 
-  const handleImageChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-
+  async function pick(file: File | undefined) {
     if (!file) return;
+    const problem = validateUpload(file);
+    if (problem) return toast.error(problem);
+    setBusy(true);
+    try { setImage(await uploadFile(file)); } catch (e) { toast.error((e as ApiError).message || "Upload failed."); } finally { setBusy(false); }
+  }
 
-    if (!file.type.startsWith("image/")) {
-      setError("Please select an image file.");
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const found: Record<string, string> = {};
+    if (!title.trim()) found.title = "Advertisement title is required.";
+    if (!image) found.image = "Upload an image for the ad.";
+    if (link.trim() && !/^https?:\/\//i.test(link.trim()) && !/^\/(?![/\\])/.test(link.trim())) found.link = "The link must start with https:// (or / for a page on your site).";
+    if (!position) found.position = "Choose where the ad appears.";
+    setErrors(found);
+    if (Object.keys(found).length) {
+      setSummary(`Please fix ${Object.keys(found).length === 1 ? "the highlighted field" : "the highlighted fields"} and try again.`);
+      requestAnimationFrame(() => document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
       return;
     }
+    setSummary(null);
+    save.mutate();
+  }
 
-    optimizeImage(file)
-      .then((optimizedImage) => {
-        setImage(optimizedImage);
-        setError("");
-      })
-      .catch(() => {
-        setError("Unable to process this image. Please select another file.");
-      });
-
-    // Only one photo is allowed.
-    event.target.value = "";
-  };
-  const handleDrop = (event: DragEvent<HTMLLabelElement>) => {
-    event.preventDefault();
-
-    const file = event.dataTransfer.files?.[0];
-
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setError("Please select an image file.");
-      return;
-    }
-
-    optimizeImage(file)
-      .then((optimizedImage) => {
-        setImage(optimizedImage);
-        setError("");
-      })
-      .catch(() => {
-        setError("Unable to process this image. Please select another file.");
-      });
-  };
-
-  const handleDragOver = (event: DragEvent<HTMLLabelElement>) => {
-    event.preventDefault();
-  };
-
-  const removeImage = () => {
-    setImage("");
-  };
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (!title.trim()) {
-      setError("Please enter a title.");
-      return;
-    }
-
-    if (!image) {
-      setError("Please upload a photo.");
-      return;
-    }
-
-    if (!position) {
-      setError("Please select a position.");
-      return;
-    }
-
-    const storedAds = localStorage.getItem("advertisements");
-
-    let ads = [];
-
-    try {
-      ads = storedAds ? JSON.parse(storedAds) : [];
-    } catch {
-      setError(
-        "Saved advertisements are corrupted. Please refresh and try again.",
-      );
-      return;
-    }
-
-    let nextAds;
-
-    if (isEdit && advertisementId) {
-      const updatedAds = ads.map(
-        (ad: {
-          id: string;
-          title: string;
-          image: string;
-          position: string;
-          status: "active" | "paused";
-        }) => {
-          if (ad.id !== advertisementId) {
-            return ad;
-          }
-
-          return {
-            ...ad,
-            title: title.trim(),
-            image,
-            position,
-            status,
-          };
-        },
-      );
-
-      nextAds = updatedAds;
-    } else {
-      const newAd = {
-        id: `ad-${Date.now()}`,
-        title: title.trim(),
-        image,
-        position,
-        status,
-        clicks: 0,
-        impressions: 0,
-        startDate: new Date().toISOString().split("T")[0],
-        endDate: "",
-        order: ads.length + 1,
-      };
-
-      nextAds = [...ads, newAd];
-    }
-
-    try {
-      localStorage.setItem("advertisements", JSON.stringify(nextAds));
-    } catch {
-      setError(
-        "This image is too large to save. Please choose a smaller image.",
-      );
-      return;
-    }
-
-    router.push("/dashboard/advertisements");
-  };
+  const E = (k: string) => (errors[k] ? <p role="alert" className="mt-1 text-xs text-danger-600">{errors[k]}</p> : null);
+  const bad = (k: string) => (errors[k] ? " border-danger-500" : "");
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="rounded-2xl border border-neutral-200 bg-white p-6">
-        <div className="space-y-6">
-          {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-              {error}
-            </div>
-          )}
-
-          {/* Title */}
+    <div className="mx-auto w-full max-w-6xl space-y-4 py-2 sm:py-4">
+      <div className="border-b border-neutral-200 pb-5">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-neutral-500">
+          <Link href="/dashboard" className="hover:text-neutral-900">Dashboard</Link><span className="text-neutral-300">/</span>
+          <Link href="/dashboard/advertisements" className="hover:text-neutral-900">Advertisements</Link><span className="text-neutral-300">/</span>
+          <span className="font-semibold text-neutral-900">{editing ? "Edit" : "New advertisement"}</span>
+        </nav>
+        <div className="mt-2 flex items-start gap-3">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-700"><Megaphone className="h-5 w-5" /></span>
           <div>
-            <label
-              htmlFor="title"
-              className="mb-2 block text-sm font-semibold text-neutral-900"
-            >
-              Title
-            </label>
-            <input
-              id="title"
-              type="text"
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              placeholder="Enter advertisement title"
-              className="w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm font-medium text-black placeholder:text-neutral-400 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-100"
-            />
-          </div>
-
-          {/* Photo */}
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-neutral-900">
-              Photo
-            </label>
-
-            {!image ? (
-              <label
-                htmlFor="advertisement-image"
-                onDragOver={(event) => {
-                  event.preventDefault();
-                }}
-                onDrop={handleDrop}
-                className="flex min-h-48 w-full cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-neutral-200 bg-white transition hover:border-primary-300"
-              >
-                <ImagePlus size={24} className="text-neutral-400" />
-
-                <p className="text-xs text-neutral-500">
-                  Drag &amp; drop an image here
-                </p>
-
-                <span className="mt-1 inline-flex cursor-pointer items-center justify-center rounded-full bg-primary-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-primary-800">
-                  Choose file
-                </span>
-
-                <input
-                  id="advertisement-image"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageChange}
-                  className="hidden"
-                />
-              </label>
-            ) : (
-              <div className="relative overflow-hidden rounded-xl border border-neutral-200">
-                <img
-                  src={image}
-                  alt="Advertisement preview"
-                  className="max-h-80 w-full object-cover"
-                />
-
-                <button
-                  type="button"
-                  onClick={removeImage}
-                  title="Remove image"
-                  aria-label="Remove image"
-                  className="absolute right-3 top-3 rounded-full bg-black/60 p-1.5 text-white shadow-md transition hover:bg-black/80"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Position */}
-          <div>
-            <label
-              htmlFor="position"
-              className="mb-2 block text-sm font-semibold text-neutral-900"
-            >
-              Position
-            </label>
-
-            <select
-              id="position"
-              value={position}
-              onChange={(event) => setPosition(event.target.value)}
-              className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-            >
-              <option value="">Select position</option>
-
-              {positions.map((item) => (
-                <option key={item.value} value={item.value}>
-                  {item.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Status */}
-          <div>
-            <label
-              htmlFor="status"
-              className="mb-2 block text-sm font-semibold text-neutral-900"
-            >
-              Status
-            </label>
-
-            <select
-              id="status"
-              value={status}
-              onChange={(event) =>
-                setStatus(event.target.value as "active" | "paused")
-              }
-              className="w-full rounded-xl border border-neutral-200 bg-white px-4 py-3 text-sm text-neutral-900 placeholder:text-neutral-400 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-            >
-              <option value="active">Active</option>
-              <option value="paused">Paused</option>
-            </select>
+            <h1 className="text-xl font-bold text-neutral-900">{editing ? "Edit Advertisement" : "Add Advertisement"}</h1>
+            <p className="mt-0.5 text-sm text-neutral-500">{editing ? "Update this advertisement's details." : "Create a new advertisement and configure its details."}</p>
           </div>
         </div>
       </div>
 
-      {/* Buttons */}
-      <div className="flex justify-end gap-3">
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard/advertisements")}
-          className="rounded-xl border border-neutral-300 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-700 transition hover:bg-neutral-50 hover:text-neutral-900"
-        >
-          Cancel
-        </button>
+      <form onSubmit={submit} noValidate className="border border-neutral-200 bg-white p-6 shadow-sm sm:p-8">
+        <div className="grid gap-8 lg:grid-cols-[1fr_320px]">
+          <div className="space-y-5">
+            <div>
+              <label htmlFor="at" className={label}>Title<Req /></label>
+              <input id="at" aria-invalid={Boolean(errors.title)} value={title} onChange={(e) => setTitle(e.target.value)} maxLength={120} placeholder="Enter advertisement title" className={`${field}${bad("title")}`} />
+              {E("title")}
+            </div>
 
-        <button
-          type="submit"
-          className="rounded-xl bg-primary-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-800"
-        >
-          {isEdit ? "Save Changes" : "Add Advertisement"}
-        </button>
-      </div>
-    </form>
+            <div>
+              <p className={label}>Photo<Req /></p>
+              {image ? (
+                <div className="mt-1.5 flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-neutral-200 p-6">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={image} alt="Advertisement" className="max-h-48 w-full rounded-xl object-cover" />
+                  <div className="flex gap-3">
+                    <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} className="rounded-full border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-neutral-900 hover:bg-neutral-50">Change image</button>
+                    <button type="button" onClick={() => setImage(null)} className="rounded-full border border-danger-200 bg-white px-4 py-2 text-xs font-semibold text-danger-600 hover:bg-danger-50">Remove</button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+                  onDragLeave={() => setOver(false)}
+                  onDrop={(e) => { e.preventDefault(); setOver(false); void pick(e.dataTransfer.files?.[0]); }}
+                  className={`mt-1.5 flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed p-8 text-center ${over ? "border-primary-400 bg-primary-50" : errors.image ? "border-danger-400" : "border-neutral-200"}`}
+                >
+                  <ImagePlus className="h-7 w-7 text-neutral-400" />
+                  <p className="text-sm text-neutral-500">{busy ? "Uploading…" : "Drag & drop an image here"}</p>
+                  <button type="button" disabled={busy} onClick={() => fileRef.current?.click()} className="rounded-full bg-primary-900 px-5 py-2 text-sm font-semibold text-white hover:bg-primary-800 disabled:opacity-50">Choose file</button>
+                  <p className="text-xs text-neutral-400">JPG, PNG, WebP or GIF, up to 10 MB</p>
+                </div>
+              )}
+              <input ref={fileRef} type="file" accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" aria-label="Choose advertisement image" className="sr-only" onChange={(e) => { void pick(e.target.files?.[0]); e.target.value = ""; }} />
+              {E("image")}
+            </div>
+
+            <div>
+              <label htmlFor="al" className={label}>Link (optional)</label>
+              <input id="al" aria-invalid={Boolean(errors.link)} value={link} onChange={(e) => setLink(e.target.value)} placeholder="https://… or /packages/everest" className={`${field}${bad("link")}`} />
+              {E("link")}
+            </div>
+          </div>
+
+          <div className="space-y-5 lg:border-l lg:border-neutral-100 lg:pl-8">
+            <h2 className="text-base font-bold text-neutral-900">Publish Settings</h2>
+            <div>
+              <label htmlFor="ap" className={label}>Position<Req /></label>
+              <select id="ap" aria-invalid={Boolean(errors.position)} value={position} onChange={(e) => setPosition(e.target.value)} className={`${field}${bad("position")}`}>
+                <option value="">Select position</option>
+                {(positions.data ?? []).map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+              </select>
+              {E("position")}
+            </div>
+
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3">
+              <span className="text-sm font-semibold text-neutral-800">Active</span>
+              <button type="button" role="switch" aria-checked={active} aria-label="Active" onClick={() => setActive((v) => !v)} className={`flex h-6 w-12 items-center rounded-full p-0.5 transition ${active ? "bg-primary-900" : "bg-neutral-300"}`}>
+                <span className={`h-5 w-5 rounded-full bg-white shadow transition ${active ? "translate-x-6" : ""}`} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {summary && <p role="alert" className="mt-6 rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700">{summary}</p>}
+
+        <div className="mt-6 flex justify-end gap-3 border-t border-neutral-100 pt-5">
+          <Link href="/dashboard/advertisements" className="rounded-full border border-neutral-200 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-900 hover:bg-neutral-50">Cancel</Link>
+          <button type="submit" disabled={save.isPending || busy} className="rounded-full bg-primary-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-800 disabled:opacity-50">{save.isPending ? "Saving…" : editing ? "Save changes" : "Add Advertisement"}</button>
+        </div>
+      </form>
+    </div>
   );
 }

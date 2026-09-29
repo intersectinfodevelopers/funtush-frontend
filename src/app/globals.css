@@ -1,6 +1,11 @@
 @import "tailwindcss";
 
 :root {
+  /* Pin native form controls (select/option popups, scrollbars, etc.) to the
+     light palette regardless of OS/browser preference — this app has no dark
+     UI for them to render correctly against. */
+  color-scheme: light;
+
   --background: #f5f7fb;
   --foreground: #171717;
 
@@ -152,23 +157,38 @@
   --color-brand-tint: #EAF4FB;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/*
+ * Deliberately no `@media (prefers-color-scheme: dark)` override here.
+ *
+ * This dashboard has no dark-mode design — every component is built with
+ * explicit light-mode Tailwind classes (bg-white, text-neutral-900, etc.).
+ * `--foreground` only matters as the *inherited default* for elements that
+ * don't set their own color (native <select>/<option> text, for one). Flipping
+ * it to near-white whenever the OS/browser prefers dark mode — independently
+ * of this app's own theme toggle in ThemeProvider — made that inherited text
+ * invisible: white text in a browser-native white dropdown panel. If real dark
+ * mode is ever built, drive it off `.dark` / `[data-theme="dark"]` (which
+ * ThemeProvider already sets) so it's opt-in, not silently forced by the OS.
+ */
 
+/*
+ * No `overflow: hidden` here — the dashboard/editor app-shell layouts each
+ * already declare their own `h-screen overflow-hidden` wrapper div (see
+ * `(agency)/layout.tsx`, `(editor)/layout.tsx`) so their own internal
+ * scroll region works without it. Putting it here too used to apply
+ * `overflow: hidden` to literally every page in the app, including the
+ * public site (/site and everything under it) and any other normal page
+ * that relies on the page itself scrolling — silently making them
+ * unscrollable no matter how much content they had.
+ */
 html {
   height: 100%;
-  overflow: hidden;
   background: var(--background);
 }
 
 body {
   margin: 0;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
   background: var(--background);
   color: var(--foreground);
   font-family: Poppins, Arial, Helvetica, sans-serif;
@@ -194,4 +214,20 @@ body {
 
 .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(107, 114, 128, 0.65);
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: inline-block;
+  animation-name: marquee;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 }

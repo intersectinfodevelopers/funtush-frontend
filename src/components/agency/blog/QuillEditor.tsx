@@ -19,11 +19,10 @@ export function QuillEditor({ content, onChange }: QuillEditorProps) {
         toolbar: [
             [{ header: [1, 2, 3, 4, 5, 6, false] }],
             ["bold", "italic", "underline", "strike", "code"],
-            [{ color: [] }, { background: [] }],
             [{ align: [] }],
             [{ list: "ordered" }, { list: "bullet" }, { indent: "-1" }, { indent: "+1" }],
             ["blockquote", "code-block"],
-            ["link", "image", "formula"],
+            ["link"], // no inline images/colours/formulas: the API strips them (photos are uploaded separately)
             ["clean"],
         ],
     }), []);

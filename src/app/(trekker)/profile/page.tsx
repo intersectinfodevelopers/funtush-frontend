@@ -1,399 +1,113 @@
 'use client';
 
-/**
- * Profile Page 
- */
-
-import { useState, useEffect, FormEvent } from 'react';
-import Link from 'next/link';
-import {
-  Lock,
-  LogOut,
-  Save,
-  ArrowRight,
-} from 'lucide-react';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
+import { passwordProblem } from '@/components/auth/PasswordRules';
 import { useAuth } from '@/hooks/useAuth';
-import {
-  updateSession,
-  saveEmergencyContact,
-  getEmergencyContact,
-} from '@/lib/auth';
-import type { EmergencyContact } from '@/types/user';
+import { useMyProfile } from '@/hooks/useTrekker';
+import type { ApiError } from '@/lib/api/client';
+import { changePassword } from '@/lib/api/agency/settings';
+import { api } from '@/lib/api/client';
+import { saveMyProfile, type TrekkerProfile } from '@/lib/api/trekker';
 
-// ─── Helpers ───────────────────────────────
+const input = 'mt-1 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-50 disabled:bg-neutral-50';
+const PHONE_RE = /^[+()\d][\d\s()+.-]{6,24}$/;
+const KEYS = ['fullName', 'phone', 'country', 'nationality', 'emergencyContactName', 'emergencyContactPhone'] as const;
+type Key = (typeof KEYS)[number];
+const LABEL: Record<Key, string> = { fullName: 'Full name', phone: 'Phone', country: 'Country', nationality: 'Nationality', emergencyContactName: 'Emergency contact name', emergencyContactPhone: 'Emergency contact phone' };
 
-function formatMemberSince(dateStr: string): string {
-  const date = new Date(dateStr);
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
-}
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].charAt(0).toUpperCase();
-  return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-}
-
-function getCountryFlag(country: string): string {
-  // Map country names to flag emojis (simple)
-  const flags: Record<string, string> = {
-    Nepal: '🇳🇵',
-    France: '🇫🇷',
-    USA: '🇺🇸',
-    UK: '🇬🇧',
-    India: '🇮🇳',
-    Germany: '🇩🇪',
-    Japan: '🇯🇵',
-    China: '🇨🇳',
-  };
-  return flags[country] ?? '🌍';
-}
-
-// ─── Component ───────────────────────────────
-
-export default function ProfilePage() {
-  const { user, logout } = useAuth();
-
-  // ── Personal Info State ──
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [country, setCountry] = useState('');
-  const [profileSaving, setProfileSaving] = useState(false);
-
-  // ── Emergency Contact State ──
-  const [emName, setEmName] = useState('');
-  const [emPhone, setEmPhone] = useState('');
-  const [emRelationship, setEmRelationship] = useState('');
-  const [emSaving, setEmSaving] = useState(false);
-
-  // Load user data on mount
-  // Hydrate local state asynchronously from `user` and local storage to avoid
-  // synchronous setState calls inside effect.
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (user) {
-        setFullName(user.name);
-        setEmail(user.email);
-        setPhone(user.phone || '');
-        setCountry(user.country || '');
-      }
-
-      const existing = getEmergencyContact();
-      if (existing) {
-        setEmName(existing.name);
-        setEmPhone(existing.phone);
-        setEmRelationship(existing.relationship);
-      }
-    }, 0);
-    return () => clearTimeout(t);
-  }, [user]);
-
-  // ── Save Personal Info ──
-  function handleProfileSubmit(e: FormEvent) {
+function ProfileForm({ profile }: { profile: TrekkerProfile }) {
+  const qc = useQueryClient();
+  const [v, setV] = useState<Record<Key, string>>(() => Object.fromEntries(KEYS.map((k) => [k, profile[k] ?? ''])) as Record<Key, string>);
+  const [error, setError] = useState<string | null>(null);
+  const save = useMutation({
+    mutationFn: () => saveMyProfile(Object.fromEntries(KEYS.map((k) => [k, v[k].trim() === '' ? null : v[k].trim()]))),
+    onSuccess: () => { setError(null); toast.success('Profile saved'); void qc.invalidateQueries({ queryKey: ['trekker', 'profile'] }); },
+    onError: (e) => setError((e as unknown as ApiError).message || "Couldn't save your profile."),
+  });
+  function submit(e: React.FormEvent) {
     e.preventDefault();
-
-    if (!fullName.trim()) {
-      toast.error('Full name is required');
-      return;
-    }
-
-    setProfileSaving(true);
-    updateSession({
-      name: fullName.trim(),
-      phone: phone.trim(),
-      country: country.trim(),
-    });
-
-    setTimeout(() => {
-      setProfileSaving(false);
-      toast.success('Profile updated successfully');
-    }, 400);
+    setError(null);
+    if (v.fullName.trim() && v.fullName.trim().length < 2) return setError('Enter your full name.');
+    for (const k of ['phone', 'emergencyContactPhone'] as const) if (v[k].trim() && !PHONE_RE.test(v[k].trim())) return setError(`${LABEL[k]} doesn't look like a phone number.`);
+    save.mutate();
   }
-
-  // ── Save Emergency Contact ──
-  function handleEmergencySubmit(e: FormEvent) {
-    e.preventDefault();
-
-    if (!emName.trim() || !emPhone.trim() || !emRelationship.trim()) {
-      toast.error('All emergency contact fields are required');
-      return;
-    }
-
-    const contact: EmergencyContact = {
-      name: emName.trim(),
-      phone: emPhone.trim(),
-      relationship: emRelationship.trim(),
-    };
-
-    setEmSaving(true);
-    saveEmergencyContact(contact);
-
-    setTimeout(() => {
-      setEmSaving(false);
-      toast.success('Emergency contact saved');
-    }, 400);
-  }
-
-  if (!user) {
-    return (
-      <div className="mx-auto max-w-3xl">
-        <div className="text-center text-sm text-neutral-500">Loading...</div>
-      </div>
-    );
-  }
-
-  const initials = getInitials(user.name);
-  const flag = getCountryFlag(user.country);
-  const memberSince = formatMemberSince(user.member_since);
-
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-
-      {/* ═══════════════════════════════════════════ */}
-      {/* HEADER — Purple Gradient Banner + Avatar   */}
-      {/* ═══════════════════════════════════════════ */}
-      <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
-
-        {/* Gradient Banner */}
-        <div className="h-32 bg-gradient-to-r from-indigo-500 to-purple-500" />
-
-        {/* Avatar + Info */}
-        <div className="px-6 pb-6">
-          <div className="-mt-10 flex h-20 w-20 items-center justify-center rounded-full border-4 border-white bg-gradient-to-br from-pink-400 to-purple-500 text-2xl font-bold text-white shadow-md">
-            {initials}
-          </div>
-
-          <div className="mt-4">
-            <h1 className="text-2xl font-bold text-neutral-900">
-              {user.name}
-            </h1>
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-neutral-500">
-              <span className="flex items-center gap-1">
-                <span>{flag}</span>
-                <span>{user.country || 'Unknown'}</span>
-              </span>
-              <span>·</span>
-              <span>Member since {memberSince}</span>
-              <span>·</span>
-              <span>5 treks completed</span>
-            </div>
-          </div>
-        </div>
+    <form onSubmit={submit} noValidate className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+      <div><h2 className="font-bold text-neutral-900">Your details</h2><p className="text-sm text-neutral-500">Signed in as {profile.email}</p></div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {KEYS.map((k) => <label key={k} className="block text-sm"><span className="font-semibold text-neutral-700">{LABEL[k]}</span><input id={`tp-${k}`} className={input} value={v[k]} maxLength={100} onChange={(e) => setV((c) => ({ ...c, [k]: e.target.value }))} /></label>)}
       </div>
-
-      {/* ═══════════════════════════════════════════ */}
-      {/* PERSONAL INFO                              */}
-      {/* ═══════════════════════════════════════════ */}
-      <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-neutral-900">
-          Personal Information
-        </h2>
-
-        <form onSubmit={handleProfileSubmit} className="mt-4 space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Full Name">
-              <input
-                type="text"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                className="form-input"
-              />
-            </FormField>
-
-            <FormField label="Email">
-              <input
-                type="email"
-                value={email}
-                disabled
-                className="form-input bg-neutral-50 text-neutral-500 cursor-not-allowed"
-              />
-            </FormField>
-
-            <FormField label="Phone">
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^\d\s+\-()]/g, '');
-                  setPhone(value);
-                }}
-                className="form-input"
-              />
-            </FormField>
-
-            <FormField label="Country">
-              <input
-                type="text"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                className="form-input"
-              />
-            </FormField>
-          </div>
-
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={profileSaving}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-700 disabled:opacity-60"
-            >
-              <Save className="h-4 w-4" />
-              {profileSaving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* ═══════════════════════════════════════════ */}
-      {/* EMERGENCY CONTACT                          */}
-      {/* ═══════════════════════════════════════════ */}
-      <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-neutral-900">
-          Emergency Contact
-        </h2>
-        <p className="mt-1 text-sm text-neutral-500">
-          Shared with your assigned guide during active treks
-        </p>
-
-        <form onSubmit={handleEmergencySubmit} className="mt-4 space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Contact Name">
-              <input
-                type="text"
-                value={emName}
-                onChange={(e) => setEmName(e.target.value)}
-                placeholder="Marc Laurent"
-                className="form-input"
-              />
-            </FormField>
-
-            <FormField label="Relationship">
-              <input
-                type="text"
-                value={emRelationship}
-                onChange={(e) => setEmRelationship(e.target.value)}
-                placeholder="Spouse"
-                className="form-input"
-              />
-            </FormField>
-          </div>
-
-          <FormField label="Phone Number">
-            <input
-              type="tel"
-              value={emPhone}
-              onChange={(e) => {
-                const value = e.target.value.replace(/[^\d\s+\-()]/g, '');
-                setEmPhone(value);
-              }}
-              placeholder="+33 6 98 76 54 32"
-              className="form-input"
-            />
-          </FormField>
-
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={emSaving}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary-700 disabled:opacity-60"
-            >
-              <Save className="h-4 w-4" />
-              {emSaving ? 'Saving...' : 'Save Emergency Contact'}
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* ═══════════════════════════════════════════ */}
-      {/* ACCOUNT SECTION                            */}
-      {/* ═══════════════════════════════════════════ */}
-      <div className="rounded-2xl border border-neutral-200 bg-white shadow-sm">
-        <h2 className="border-b border-neutral-100 px-6 py-4 text-lg font-bold text-neutral-900">
-          Account
-        </h2>
-
-        <div className="divide-y divide-neutral-100">
-
-          {/* Change Password */}
-          <Link
-            href="/forgot-password"
-            className="flex items-center gap-3 px-6 py-4 transition-colors hover:bg-neutral-50"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral-100">
-              <Lock className="h-5 w-5 text-neutral-600" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-neutral-900">
-                Change Password
-              </p>
-              <p className="text-xs text-neutral-500">
-                Update your login password
-              </p>
-            </div>
-            <ArrowRight className="h-4 w-4 text-neutral-400" />
-          </Link>
-
-          {/* Log Out */}
-          <button
-            type="button"
-            onClick={logout}
-            className="flex w-full items-center gap-3 px-6 py-4 text-left transition-colors hover:bg-danger-50"
-          >
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-danger-100">
-              <LogOut className="h-5 w-5 text-danger-600" />
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-danger-600">
-                Log Out
-              </p>
-              <p className="text-xs text-neutral-500">
-                Sign out of your Funtush account
-              </p>
-            </div>
-            <ArrowRight className="h-4 w-4 text-neutral-400" />
-          </button>
-
-        </div>
-      </div>
-
-      {/* Inline form-input styling */}
-      <style jsx>{`
-        .form-input {
-          width: 100%;
-          border-radius: 0.5rem;
-          border: 1px solid rgb(212, 212, 216);
-          padding: 0.5rem 0.75rem;
-          font-size: 0.875rem;
-          color: rgb(23, 23, 23);
-          outline: none;
-          transition: border-color 0.15s, box-shadow 0.15s;
-        }
-        .form-input:focus {
-          border-color: rgb(26, 95, 168);
-          box-shadow: 0 0 0 3px rgba(26, 95, 168, 0.1);
-        }
-      `}</style>
-    </div>
+      <p className="text-xs text-neutral-500">Your emergency contact is shared with your guide and agency during a trek.</p>
+      {error && <p role="alert" className="text-sm text-danger-600">{error}</p>}
+      <button type="submit" disabled={save.isPending} className="rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-800 disabled:opacity-50">{save.isPending ? 'Saving…' : 'Save changes'}</button>
+    </form>
   );
 }
 
-// ─── Form Field Wrapper ────────────────────
-
-function FormField({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function VerifyEmail({ profile }: { profile: TrekkerProfile }) {
+  const qc = useQueryClient();
+  const [sent, setSent] = useState(false);
+  const [otp, setOtp] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const send = useMutation({ mutationFn: () => api.post('/auth/trekker/resend-otp', { email: profile.email }), onSuccess: () => { setSent(true); setError(null); toast.success('Code sent — check your email'); }, onError: (e) => setError((e as unknown as ApiError).message || "Couldn't send the code.") });
+  const verify = useMutation({ mutationFn: () => api.post('/auth/verify-otp', { userId: profile.id, otp: otp.trim() }), onSuccess: () => { toast.success('Email verified'); void qc.invalidateQueries({ queryKey: ['trekker', 'profile'] }); }, onError: () => setError('That code is incorrect or has expired.') });
+  if (profile.isEmailVerified) return <p className="rounded-2xl border border-success-200 bg-success-50 px-4 py-3 text-sm text-success-800">Your email address is verified.</p>;
   return (
-    <div className="space-y-1.5">
-      <label className="block text-xs font-semibold text-neutral-700">
-        {label}
-      </label>
-      {children}
+    <section aria-label="Verify email" className="space-y-3 rounded-2xl border border-warning-200 bg-warning-50 p-5">
+      <h2 className="font-bold text-neutral-900">Verify your email</h2>
+      <p className="text-sm text-neutral-600">We&apos;ll send a 6-digit code to {profile.email}.</p>
+      <div className="flex flex-wrap items-end gap-3">
+        <button type="button" disabled={send.isPending} onClick={() => send.mutate()} className="rounded-xl border border-neutral-300 bg-white px-4 py-2 text-sm font-semibold hover:bg-neutral-50 disabled:opacity-50">{sent ? 'Send code again' : 'Send code'}</button>
+        {sent && (<><label className="block text-sm"><span className="font-semibold text-neutral-700">Code</span><input id="tp-otp" inputMode="numeric" maxLength={6} className={input} value={otp} onChange={(e) => setOtp(e.target.value)} /></label>
+          <button type="button" disabled={verify.isPending} onClick={() => { setError(null); if (!/^\d{6}$/.test(otp.trim())) return setError('Enter the 6-digit code.'); verify.mutate(); }} className="rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-800 disabled:opacity-50">Verify</button></>)}
+      </div>
+      {error && <p role="alert" className="text-sm text-danger-600">{error}</p>}
+    </section>
+  );
+}
+
+function PasswordForm() {
+  const router = useRouter();
+  const { logout } = useAuth();
+  const [cur, setCur] = useState('');
+  const [next, setNext] = useState('');
+  const [conf, setConf] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const change = useMutation({ mutationFn: () => changePassword(cur, next), onSuccess: () => { logout(); router.replace('/login'); }, onError: (e) => setError((e as unknown as ApiError).message || "Couldn't change your password.") });
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!cur) return setError('Enter your current password.');
+    const p = passwordProblem(next);
+    if (p) return setError(p);
+    if (next !== conf) return setError("The new passwords don't match.");
+    change.mutate();
+  }
+  return (
+    <form onSubmit={submit} noValidate className="space-y-4 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+      <div><h2 className="font-bold text-neutral-900">Change password</h2><p className="text-sm text-neutral-500">You&apos;ll be signed out everywhere and asked to sign in again.</p></div>
+      <div className="grid max-w-md gap-3">
+        <label className="block text-sm"><span className="font-semibold text-neutral-700">Current password</span><input id="tp-cur" type="password" autoComplete="current-password" className={input} value={cur} onChange={(e) => setCur(e.target.value)} /></label>
+        <label className="block text-sm"><span className="font-semibold text-neutral-700">New password</span><input id="tp-new" type="password" autoComplete="new-password" className={input} value={next} onChange={(e) => setNext(e.target.value)} /></label>
+        <label className="block text-sm"><span className="font-semibold text-neutral-700">Confirm new password</span><input id="tp-conf" type="password" autoComplete="new-password" className={input} value={conf} onChange={(e) => setConf(e.target.value)} /></label>
+      </div>
+      {error && <p role="alert" className="text-sm text-danger-600">{error}</p>}
+      <button type="submit" disabled={change.isPending} className="rounded-xl border border-neutral-300 px-4 py-2 text-sm font-semibold hover:bg-neutral-50 disabled:opacity-50">{change.isPending ? 'Updating…' : 'Update password'}</button>
+    </form>
+  );
+}
+
+export default function TrekkerProfilePage() {
+  const { data, isLoading, isError } = useMyProfile();
+  return (
+    <div className="mx-auto max-w-3xl space-y-5">
+      <h1 className="text-2xl font-bold text-neutral-900">Profile</h1>
+      {isLoading ? <div className="h-48 animate-pulse rounded-2xl bg-white" /> : isError || !data ? <p role="alert" className="text-sm text-danger-600">Couldn&apos;t load your profile.</p> : <><VerifyEmail profile={data} /><ProfileForm profile={data} /></>}
+      <PasswordForm />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { SessionUser, UserRole } from "@/types";
 import {ROUTES} from '@/lib/constants/routes'
+import { getSupportSession } from '@/lib/api/session';
 
 
 export const SESSION_KEY = 'funtush_session';
@@ -14,13 +15,49 @@ export const ROLE_REDIRECT: Record<UserRole,string> ={
 };
 
 
+/** Fired (same tab) whenever the stored session changes — the `storage` event only fires in OTHER tabs. */
+export const AUTH_CHANGED_EVENT = 'funtush:auth-changed';
+const notifyAuthChanged = () => {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(AUTH_CHANGED_EVENT));
+};
+
+/** A cheap, stable fingerprint of what's stored, for useSyncExternalStore. */
+export function getSessionSnapshot(): string {
+  if (typeof window === 'undefined') return '';
+  try {
+    return `${window.sessionStorage.getItem('funtush_support_session') ?? ''}|${window.localStorage.getItem(SESSION_KEY) ?? ''}`;
+  } catch {
+    return '';
+  }
+}
+
 export function saveSession(user: SessionUser): void {
     if (typeof window === 'undefined')return;
     localStorage.setItem(SESSION_KEY,JSON.stringify(user));
+    notifyAuthChanged();
 }
 
 export function getSession(): SessionUser | null {
   if (typeof window === 'undefined') return null;
+
+  // A support session (admin acting as this agency) is tab-scoped and wins over
+  // any normal login stored in localStorage.
+  const support = getSupportSession();
+  if (support) {
+    return {
+      id: `support:${support.agencyId}`,
+      role: 'agency_admin',
+      agency_id: support.agencyId,
+      agency_name: support.agencyName,
+      name: support.agencyName,
+      email: support.impersonatedEmail,
+      phone: '',
+      member_since: '',
+      country: '',
+      token: support.accessToken,
+      support: true,
+    };
+  }
 
   try {
     const raw = localStorage.getItem(SESSION_KEY);
@@ -35,14 +72,19 @@ export function getSession(): SessionUser | null {
 export function clearSession(): void {
     if (typeof window === 'undefined')  return ;
     localStorage.removeItem(SESSION_KEY);
+    notifyAuthChanged();
 }
 
 
 export function saveSessionCookie(user: SessionUser): void {
     if (typeof window === 'undefined') return;
 
-    const encoded = encodeURIComponent(JSON.stringify(user));
-        document.cookie = `${SESSION_COOKIE}=${encoded}; path=/; max-age=86400; SameSite=Lax`;
+    // Only the role is needed by the route guard (src/proxy.ts) — the real
+    // credentials are the API tokens, not this cookie. A support session gets a
+    // session cookie (no max-age) so it goes away with the browser tab/window.
+    const encoded = encodeURIComponent(JSON.stringify({ role: user.role, support: user.support ?? false }));
+    const lifetime = user.support ? '' : '; max-age=86400';
+    document.cookie = `${SESSION_COOKIE}=${encoded}; path=/${lifetime}; SameSite=Lax`;
 }
 
 export function clearSessionCookie(): void {

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 
 export type AnalyticsTone = "primary" | "success" | "warning" | "accent" | "danger";
 
@@ -18,29 +18,38 @@ export function AnalyticsSummaryCard({
   value,
   tone,
   icon: Icon,
-  change = "12.5%",
+  change,
+  note = "from last month",
+  square = false,
 }: {
   label: string;
   value: number | string;
   tone: AnalyticsTone;
-  icon?: React.ComponentType<any> | null;
+  icon?: React.ComponentType<{ className?: string }> | null;
+  /** Only shown when the caller has a real comparison — never a default. */
   change?: string;
+  /** What the change is measured against (default: last month). */
+  note?: string;
+  /** No rounded corners. */
+  square?: boolean;
 }) {
   const styles = toneStyles[tone] ?? toneStyles.primary;
 
   return (
-    <div className={`rounded-2xl border p-4 shadow-sm ${styles.card}`}>
+    <div className={`${square ? "" : "rounded-2xl "}border p-4 shadow-sm ${styles.card}`}>
       <div className="flex items-start justify-between gap-3">
-        <div className={`flex h-9 w-9 items-center justify-center rounded-xl ${styles.icon}`}>
+        <div className={`flex h-9 w-9 items-center justify-center ${square ? "" : "rounded-xl"} ${styles.icon}`}>
           {Icon ? <Icon className="h-4 w-4" /> : null}
         </div>
-        <ArrowUpRight className="h-4 w-4 text-success-600" />
+        {change ? (change.startsWith("-") ? <ArrowDownRight className="h-4 w-4 text-danger-600" /> : <ArrowUpRight className="h-4 w-4 text-success-600" />) : null}
       </div>
       <p className="mt-3 text-sm font-semibold text-neutral-700">{label}</p>
       <p className="mt-1 text-2xl font-semibold text-neutral-900">{value}</p>
-      <p className="mt-2 flex items-center gap-1 text-xs text-neutral-600">
-        <span className="font-semibold text-success-700">{change}</span> from last month
-      </p>
+      {change ? (
+        <p className="mt-2 flex items-center gap-1 text-xs text-neutral-600">
+          <span className={`font-semibold ${change.startsWith("-") ? "text-danger-600" : "text-success-700"}`}>{change}</span> {note}
+        </p>
+      ) : null}
     </div>
   );
 }

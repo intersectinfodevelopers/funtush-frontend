@@ -1,515 +1,131 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import {
-  Add,
-  DeleteOutlined,
-  EditOutlined,
-  Search,
-  VisibilityOutlined,
-} from "@mui/icons-material";
-import { BarChart3, CheckCircle2, Eye, Megaphone } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Pagination } from "@/components/ui/pagination";
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import { Eye, Megaphone, MousePointerClick, Pencil, Plus, Trash2 } from "lucide-react";
+
 import { AnalyticsSummaryCard } from "@/components/shared/AnalyticsSummaryCard";
-import adsData from "../../../../../data/advertisements.json";
+import { Modal } from "@/components/ui/modal";
+import { Pagination } from "@/components/ui/pagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useAdList, useAdPositions } from "@/hooks/useAgencyAds";
+import { deleteAd, type SiteAd } from "@/lib/api/agency/ads";
+import type { ApiError } from "@/lib/api/client";
 
-type Ad = (typeof adsData)[number];
-
-const statusTabs = [
-  { label: "All", value: "all" },
-  { label: "Active", value: "active" },
-  { label: "Paused", value: "paused" },
-];
-
-const statusBadgeVariant = (status: Ad["status"]) => {
-  switch (status) {
-    case "active":
-      return "active";
-    case "paused":
-      return "suspended";
-    default:
-      return "draft";
-  }
-};
+const PAGE_SIZE = 20;
+const field = "rounded-full border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100";
+const TABS = ["All", "Active", "Paused"] as const;
+type Tab = (typeof TABS)[number];
 
 export default function AdvertisementsPage() {
-  const router = useRouter();
-
-  const [ads, setAds] = useState<Ad[]>([]);
+  const qc = useQueryClient();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
+  const [tab, setTab] = useState<Tab>("All");
+  const [page, setPage] = useState(1);
+  const [removing, setRemoving] = useState<SiteAd | null>(null);
+  const debounced = useDebouncedValue(search.trim());
+  const positions = useAdPositions();
+  const { data, isLoading, isError, isFetching } = useAdList({ status: tab === "All" ? undefined : tab.toLowerCase(), search: debounced || undefined, page, limit: PAGE_SIZE });
+  const rows = data?.ads ?? [];
+  const totalPages = Math.max(1, Math.ceil((data?.total ?? 0) / PAGE_SIZE));
+  const stats = data?.stats;
+  // Real numbers only: "% from last month" compares against ads that existed before this month began.
+  const growth = !stats ? undefined : stats.totalBeforeMonth === 0 ? (stats.total > 0 ? `${stats.total} new` : undefined) : `${stats.total >= stats.totalBeforeMonth ? "+" : ""}${(((stats.total - stats.totalBeforeMonth) / stats.totalBeforeMonth) * 100).toFixed(1)}%`;
+  const share = (n?: number) => (n === undefined || !stats?.total ? undefined : `${Math.round((n / stats.total) * 1000) / 10}%`);
+  const counts = useMemo(() => ({ All: stats?.total ?? 0, Active: stats?.active ?? 0, Paused: stats?.paused ?? 0 }), [stats]);
+  const label = (id: string) => positions.data?.find((p) => p.id === id)?.label ?? id;
 
-  const [selectedAd, setSelectedAd] = useState<Ad | null>(null);
-
-  const [deleteDialog, setDeleteDialog] = useState<Ad | null>(null);
-  useEffect(() => {
-    const storedAds = localStorage.getItem("advertisements");
-
-    if (storedAds) {
-      try {
-        const parsedAds = JSON.parse(storedAds);
-        setAds(parsedAds);
-      } catch {
-        const initialAds = adsData.map((ad) => ({ ...ad }));
-        setAds(initialAds);
-        localStorage.setItem("advertisements", JSON.stringify(initialAds));
-      }
-    } else {
-      const initialAds = adsData.map((ad) => ({ ...ad }));
-      setAds(initialAds);
-      localStorage.setItem("advertisements", JSON.stringify(initialAds));
-    }
-  }, []);
-
-  const filteredAds = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    return ads
-      .filter((ad) => {
-        const matchesSearch =
-          !query ||
-          ad.title.toLowerCase().includes(query) ||
-          ad.position.toLowerCase().includes(query);
-
-        const matchesStatus =
-          statusFilter === "all" || ad.status === statusFilter;
-
-        return matchesSearch && matchesStatus;
-      })
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
-  }, [ads, search, statusFilter]);
-
-  const totalAds = ads.length;
-
-  const activeAds = ads.filter((ad) => ad.status === "active").length;
-
-  const pausedAds = ads.filter((ad) => ad.status === "paused").length;
-
-  const totalClicks = ads.reduce((total, ad) => total + ad.clicks, 0);
-
-  const totalImpressions = ads.reduce((total, ad) => total + ad.impressions, 0);
-
-  const statusCounts = useMemo(
-    () => ({
-      all: totalAds,
-      active: activeAds,
-      paused: pausedAds,
-    }),
-    [totalAds, activeAds, pausedAds],
-  );
-
-  const adsPerPage = 8;
-
-  const totalPages = Math.max(1, Math.ceil(filteredAds.length / adsPerPage));
-
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-
-  const paginatedAds = filteredAds.slice(
-    (safeCurrentPage - 1) * adsPerPage,
-    safeCurrentPage * adsPerPage,
-  );
-
-  const handleDelete = () => {
-    if (!deleteDialog) return;
-
-    const nextAds = ads.filter((ad) => ad.id !== deleteDialog.id);
-
-    setAds(nextAds);
-    localStorage.setItem("advertisements", JSON.stringify(nextAds));
-    setDeleteDialog(null);
-
-    if (paginatedAds.length === 1 && safeCurrentPage > 1) {
-      setCurrentPage(safeCurrentPage - 1);
-    }
-  };
+  const refresh = () => qc.invalidateQueries({ queryKey: ["agency", "ads"] });
+  const remove = useMutation({
+    mutationFn: (a: SiteAd) => deleteAd(a.id),
+    onSuccess: (_r, a) => { toast.success(`“${a.title}” was deleted`); setRemoving(null); void refresh(); },
+    onError: (e, a) => { setRemoving(null); toast.error((e as unknown as ApiError).message || `Couldn't delete “${a.title}”.`); },
+  });
 
   return (
     <div className="space-y-4">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-500">
-            <button
-              type="button"
-              onClick={() => router.push("/dashboard")}
-              className="transition hover:text-neutral-900"
-            >
-              Dashboard
-            </button>
-
-            <span className="text-neutral-300">/</span>
-
-            <span className="font-semibold text-neutral-900">
-              Advertisements
-            </span>
-          </div>
-
-          <h1 className="text-2xl font-semibold text-neutral-900">
-            Manage Advertisements
-          </h1>
-
-          <p className="text-sm leading-6 text-neutral-600">
-            Manage site advertisements and placements.
-          </p>
+          <div className="flex items-center gap-2 text-sm text-neutral-500"><Link href="/dashboard" className="hover:text-neutral-900">Dashboard</Link><span className="text-neutral-300">/</span><span className="font-semibold text-neutral-900">Advertisements</span></div>
+          <h1 className="text-2xl font-bold text-neutral-900">Manage Advertisements</h1>
+          <p className="text-sm text-neutral-600">Manage site advertisements and placements.</p>
         </div>
-
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard/advertisements/new")}
-          className="inline-flex items-center gap-2 rounded-2xl bg-primary-900 px-3 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-800"
-        >
-          <Add className="h-4 w-4" />
-          Add Advertisement
-        </button>
+        <Link href="/dashboard/advertisements/new" className="inline-flex items-center gap-2 self-start rounded-full bg-primary-900 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-800"><Plus className="h-4 w-4" /> Add Advertisement</Link>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <AnalyticsSummaryCard
-          label="Total Advertisements"
-          value={totalAds}
-          tone="primary"
-          icon={Megaphone}
-        />
-
-        <AnalyticsSummaryCard
-          label="Active"
-          value={activeAds}
-          tone="success"
-          icon={CheckCircle2}
-        />
-
-        <AnalyticsSummaryCard
-          label="Total Clicks"
-          value={totalClicks.toLocaleString()}
-          tone="warning"
-          icon={BarChart3}
-        />
-
-        <AnalyticsSummaryCard
-          label="Total Impressions"
-          value={totalImpressions.toLocaleString()}
-          tone="accent"
-          icon={Eye}
-        />
+        <AnalyticsSummaryCard label="Total Advertisements" value={stats ? stats.total : "—"} tone="primary" icon={Megaphone} change={growth} />
+        <AnalyticsSummaryCard label="Active" value={stats ? stats.active : "—"} tone="success" icon={Eye} change={share(stats?.active)} note="of all ads" />
+        <AnalyticsSummaryCard label="Total Clicks" value={stats ? stats.totalClicks.toLocaleString() : "—"} tone="warning" icon={MousePointerClick} />
+        <AnalyticsSummaryCard label="Total Impressions" value={stats ? stats.totalImpressions.toLocaleString() : "—"} tone="accent" icon={Eye} />
       </div>
 
-      {/* Search */}
-      <div className="grid gap-3 sm:grid-cols-[minmax(240px,1fr)_180px]">
-        <label className="relative block">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-
-          <input
-            type="text"
-            className="w-full rounded-2xl border border-neutral-200 bg-white py-2.5 pl-10 pr-3 text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-            placeholder="Search advertisements"
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value);
-              setCurrentPage(1);
-            }}
-          />
-        </label>
-
-        <select
-          value={statusFilter}
-          onChange={(event) => {
-            setStatusFilter(event.target.value);
-            setCurrentPage(1);
-          }}
-          className="rounded-2xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-        >
-          <option value="all">All status</option>
-          <option value="active">Active</option>
-          <option value="paused">Paused</option>
+      <div className="grid gap-3 sm:grid-cols-[minmax(240px,1fr)_200px]">
+        <input type="search" aria-label="Search advertisements" placeholder="Search advertisements" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className={`${field} w-full`} />
+        <select aria-label="Filter by status" value={tab} onChange={(e) => { setTab(e.target.value as Tab); setPage(1); }} className={field}>
+          {TABS.map((t) => <option key={t} value={t}>{t === "All" ? "All status" : t}</option>)}
         </select>
       </div>
 
-      {/* Status Tabs */}
-      <div className="overflow-x-auto border-b border-neutral-200">
-        <div className="flex min-w-max items-center gap-5 sm:gap-8">
-          {statusTabs.map((tab) => (
-            <button
-              key={tab.value}
-              type="button"
-              onClick={() => {
-                setStatusFilter(tab.value);
-                setCurrentPage(1);
-              }}
-              className={`inline-flex items-center gap-2 border-b-2 px-1 py-3 text-sm font-semibold transition ${
-                statusFilter === tab.value
-                  ? "border-primary-900 text-primary-900"
-                  : "border-transparent text-neutral-600 hover:border-neutral-300 hover:text-neutral-900"
-              }`}
-            >
-              {tab.label}
-
-              <span className="inline-flex rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-semibold text-neutral-500">
-                {statusCounts[tab.value as keyof typeof statusCounts] ?? 0}
-              </span>
-            </button>
-          ))}
-        </div>
+      <div className="flex items-center gap-6 border-b border-neutral-200">
+        {TABS.map((t) => (
+          <button key={t} type="button" onClick={() => { setTab(t); setPage(1); }} className={`flex items-center gap-1.5 border-b-2 pb-2.5 text-sm font-semibold transition ${tab === t ? "border-primary-900 text-primary-900" : "border-transparent text-neutral-500 hover:text-neutral-800"}`}>
+            {t}<span className={`rounded-full px-1.5 py-0.5 text-xs ${tab === t ? "bg-primary-50 text-primary-900" : "bg-neutral-100 text-neutral-500"}`}>{stats ? counts[t] : "—"}</span>
+          </button>
+        ))}
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto border-t border-neutral-200 bg-white/90">
-        <table className="min-w-full border-collapse text-left text-sm">
-          <thead className="bg-neutral-50 text-[10px] uppercase tracking-[0.24em] text-neutral-500">
-            <tr>
-              <th className="px-4 py-3">S.NO</th>
-              <th className="px-4 py-3">Advertisement</th>
-              <th className="px-4 py-3">Position</th>
-              <th className="px-4 py-3">Clicks</th>
-              <th className="px-4 py-3">Impressions</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Actions</th>
-            </tr>
-          </thead>
+      {isError && <p role="alert" className="rounded-2xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700">Couldn&apos;t load advertisements.</p>}
 
-          <tbody>
-            {filteredAds.length === 0 ? (
-              <tr>
-                <td
-                  colSpan={7}
-                  className="px-4 py-8 text-center text-sm text-neutral-500"
-                >
-                  No advertisements found.
-                </td>
-              </tr>
-            ) : (
-              paginatedAds.map((ad, index) => (
-                <tr
-                  key={ad.id}
-                  className="border-b border-neutral-200 hover:bg-neutral-50"
-                >
-                  {/* S.NO */}
-                  <td className="px-4 py-3 font-semibold text-neutral-900">
-                    {(safeCurrentPage - 1) * adsPerPage + index + 1}
-                  </td>
-
-                  {/* Advertisement */}
-                  <td className="px-4 py-3 text-neutral-900">
+      <div className={`overflow-hidden rounded-2xl border border-neutral-200 bg-white ${isFetching && !isLoading ? "opacity-70" : ""}`}>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-neutral-50 text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">
+              <tr><th className="w-14 px-4 py-3.5">S.No</th><th className="px-4 py-3.5">Advertisement</th><th className="px-4 py-3.5">Position</th><th className="px-4 py-3.5">Clicks</th><th className="px-4 py-3.5">Impressions</th><th className="px-4 py-3.5">Status</th><th className="px-4 py-3.5 text-right">Actions</th></tr>
+            </thead>
+            <tbody>
+              {isLoading && Array.from({ length: 3 }).map((_, i) => <tr key={i} className="border-t border-neutral-200"><td colSpan={7} className="px-4 py-5"><div className="h-4 animate-pulse rounded bg-neutral-100" /></td></tr>)}
+              {!isLoading && rows.length === 0 && <tr><td colSpan={7} className="px-4 py-10 text-center text-neutral-500">{search || tab !== "All" ? "No advertisements match this filter." : "No advertisements yet — add your first one."}</td></tr>}
+              {rows.map((a, index) => (
+                <tr key={a.id} className="border-t border-neutral-200 hover:bg-neutral-50/60">
+                  <td className="px-4 py-4 text-neutral-600">{(page - 1) * PAGE_SIZE + index + 1}</td>
+                  <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
-                      <div
-                        className="h-12 w-20 shrink-0 rounded-lg bg-neutral-100 bg-cover bg-center"
-                        style={{
-                          backgroundImage: `url(${ad.image})`,
-                        }}
-                      />
-
-                      <div>
-                        <div className="font-semibold">{ad.title}</div>
-
-                        <div className="text-xs text-neutral-500">
-                          {ad.startDate} → {ad.endDate}
-                        </div>
-                      </div>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={a.image} alt="" className="h-12 w-16 shrink-0 rounded-md object-cover" />
+                      <Link href={`/dashboard/advertisements/${a.id}`} className="font-bold text-neutral-900 hover:underline">{a.title}</Link>
                     </div>
                   </td>
-
-                  {/* Position */}
-                  <td className="px-4 py-3">
-                    <span className="rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700">
-                      {ad.position}
-                    </span>
-                  </td>
-
-                  {/* Clicks */}
-                  <td className="px-4 py-3">
-                    <div>
-                      <p className="text-xs text-neutral-500">Clicks</p>
-
-                      <p className="mt-1 font-semibold text-neutral-900">
-                        {ad.clicks.toLocaleString()}
-                      </p>
-                    </div>
-                  </td>
-
-                  {/* Impressions */}
-                  <td className="px-4 py-3">
-                    <div>
-                      <p className="text-xs text-neutral-500">Impressions</p>
-
-                      <p className="mt-1 font-semibold text-neutral-900">
-                        {ad.impressions.toLocaleString()}
-                      </p>
-                    </div>
-                  </td>
-
-                  {/* Status */}
-                  <td className="px-4 py-3">
-                    <Badge variant={statusBadgeVariant(ad.status)}>
-                      {ad.status}
-                    </Badge>
-                  </td>
-
-                  {/* Actions */}
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      {/* View */}
-                      <button
-                        type="button"
-                        aria-label={`View ${ad.title}`}
-                        onClick={() => setSelectedAd(ad)}
-                        className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-md bg-primary-50 text-primary-700 transition hover:bg-primary-100"
-                      >
-                        <VisibilityOutlined sx={{ fontSize: 18 }} />
-                      </button>
-
-                      {/* Edit */}
-                      <button
-                        type="button"
-                        aria-label={`Edit ${ad.title}`}
-                        onClick={() =>
-                          router.push(`/dashboard/advertisements/${ad.id}/edit`)
-                        }
-                        className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-md bg-warning-50 text-warning-700 transition hover:bg-warning-100"
-                      >
-                        <EditOutlined sx={{ fontSize: 18 }} />
-                      </button>
-
-                      {/* Delete */}
-                      <button
-                        type="button"
-                        aria-label={`Delete ${ad.title}`}
-                        onClick={() => setDeleteDialog(ad)}
-                        className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-md bg-danger-50 text-danger-700 transition hover:bg-danger-100"
-                      >
-                        <DeleteOutlined sx={{ fontSize: 18 }} />
-                      </button>
+                  <td className="px-4 py-4"><span className="inline-block rounded-full bg-primary-50 px-2.5 py-1 text-xs font-semibold text-primary-800">{label(a.position)}</span></td>
+                  <td className="px-4 py-4 text-neutral-700">{a.clicks.toLocaleString()}</td>
+                  <td className="px-4 py-4 text-neutral-700">{a.impressions.toLocaleString()}</td>
+                  <td className="px-4 py-4"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${a.status === "active" ? "bg-success-50 text-success-700" : "bg-neutral-100 text-neutral-600"}`}><span className={`h-1.5 w-1.5 rounded-full ${a.status === "active" ? "bg-success-600" : "bg-neutral-400"}`} />{a.status === "active" ? "Active" : "Paused"}</span></td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Link href={`/dashboard/advertisements/${a.id}`} aria-label={`View ${a.title}`} title="View" className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary-50 text-primary-700 transition hover:bg-primary-100"><Eye className="h-4 w-4" /></Link>
+                      <Link href={`/dashboard/advertisements/${a.id}/edit`} aria-label={`Edit ${a.title}`} title="Edit" className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-warning-50 text-warning-700 transition hover:bg-warning-100"><Pencil className="h-4 w-4" /></Link>
+                      <button type="button" aria-label={`Delete ${a.title}`} title="Delete" onClick={() => setRemoving(a)} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-danger-50 text-danger-700 transition hover:bg-danger-100"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+      <Pagination currentPage={Math.min(page, totalPages)} totalPages={totalPages} onPageChange={setPage} />
 
-      {/* Pagination */}
-      <Pagination
-        currentPage={safeCurrentPage}
-        totalPages={totalPages}
-        onPageChange={setCurrentPage}
-      />
-
-      {/* View Advertisement Dialog */}
-      {selectedAd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-semibold text-neutral-900">
-              Advertisement Details
-            </h2>
-
-            <div className="mt-4 space-y-3 text-sm">
-              <div>
-                <p className="text-xs text-neutral-500">Title</p>
-                <p className="font-semibold text-neutral-900">
-                  {selectedAd.title}
-                </p>
-              </div>
-
-              <div>
-                <p className="text-xs text-neutral-500">Position</p>
-                <p className="font-semibold text-neutral-900">
-                  {selectedAd.position}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-neutral-500">Clicks</p>
-                  <p className="font-semibold text-neutral-900">
-                    {selectedAd.clicks.toLocaleString()}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-neutral-500">Impressions</p>
-                  <p className="font-semibold text-neutral-900">
-                    {selectedAd.impressions.toLocaleString()}
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs text-neutral-500">Start Date</p>
-                  <p className="font-semibold text-neutral-900">
-                    {selectedAd.startDate}
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-xs text-neutral-500">End Date</p>
-                  <p className="font-semibold text-neutral-900">
-                    {selectedAd.endDate}
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-xs text-neutral-500">Status</p>
-
-                <Badge variant={statusBadgeVariant(selectedAd.status)}>
-                  {selectedAd.status}
-                </Badge>
-              </div>
-            </div>
-
-            <div className="mt-5 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setSelectedAd(null)}
-                className="rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
-              >
-                Close
-              </button>
-            </div>
+      <Modal isOpen={removing !== null} onClose={() => setRemoving(null)} title="Delete this advertisement?" size="sm">
+        <div className="space-y-4 p-4">
+          <p className="text-sm text-neutral-600">“{removing?.title}” is removed from your site and can&apos;t be restored.</p>
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setRemoving(null)} className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50">Cancel</button>
+            <button type="button" disabled={remove.isPending} onClick={() => removing && remove.mutate(removing)} className="rounded-xl bg-danger-600 px-4 py-2 text-sm font-semibold text-white hover:bg-danger-700 disabled:opacity-50">{remove.isPending ? "Deleting…" : "Delete"}</button>
           </div>
         </div>
-      )}
-
-      {/* Delete Dialog */}
-      {deleteDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-semibold text-neutral-900">
-              Delete advertisement?
-            </h2>
-
-            <p className="mt-2 text-sm leading-6 text-neutral-600">
-              This will remove{" "}
-              <span className="font-semibold text-neutral-900">
-                {deleteDialog.title}
-              </span>{" "}
-              from the advertisement list. This action cannot be undone.
-            </p>
-
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setDeleteDialog(null)}
-                className="rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
-              >
-                Cancel
-              </button>
-
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="rounded-2xl bg-danger-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-danger-700"
-              >
-                Delete Advertisement
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

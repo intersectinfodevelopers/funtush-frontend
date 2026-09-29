@@ -1,32 +1,26 @@
 'use client';
 
-import { useState } from 'react';
 import { PieChart, Pie, Tooltip, Label, Cell } from 'recharts';
-import { getAgencyData } from '@/lib/agency/getAgencyData';
+import { useDashboardSummary } from '@/hooks/useAgencyDashboard';
+import { bucketOf, type ApiBookingStatus } from '@/lib/api/agency/bookings';
 
-type Props = { agencyId: string };
-type Booking = { created_at: string; status: string };
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const COLORS = ['#0088FF', '#FF2D55', '#FFCC00', '#00C8B3'];
 
-const filterByMonth = (month: number, data: Booking[]) =>
-  data.filter((b) => new Date(b.created_at).getMonth() === month);
+export default function BookingStatus() {
+  const { data } = useDashboardSummary();
+  const byStatus = data?.stats.bookingsByStatus ?? {};
 
-export default function BookingStatus({ agencyId }: Props) {
-  const currentMonth = new Date().getMonth();
-  const [selectedMonth, setSelectedMonth] = useState(MONTHS[currentMonth]);
-  const month = MONTHS.indexOf(selectedMonth);
-  const monthOptions = MONTHS.slice(0, currentMonth + 1);
-
-  const { bookings } = getAgencyData(agencyId);
-  const monthly = filterByMonth(month, bookings);
+  // The API has 9 booking statuses; the chart groups them into four buckets.
+  const count = (bucket: ReturnType<typeof bucketOf>) =>
+    Object.entries(byStatus)
+      .filter(([status]) => bucketOf(status as ApiBookingStatus) === bucket)
+      .reduce((sum, [, n]) => sum + n, 0);
 
   const statusData = [
-    { name: 'Confirmed', count: monthly.filter((b) => b.status === 'confirmed').length },
-    { name: 'Pending', count: monthly.filter((b) => !['confirmed', 'cancelled', 'completed'].includes(b.status)).length },
-    { name: 'Cancelled', count: monthly.filter((b) => b.status === 'cancelled').length },
-    { name: 'Completed', count: monthly.filter((b) => b.status === 'completed').length },
+    { name: 'Confirmed', count: count('confirmed') },
+    { name: 'Pending', count: count('pending') },
+    { name: 'Cancelled', count: count('cancelled') },
+    { name: 'Completed', count: count('completed') },
   ];
   const total = statusData.reduce((sum, s) => sum + s.count, 0);
 
@@ -34,15 +28,7 @@ export default function BookingStatus({ agencyId }: Props) {
     <section className="flex flex-col gap-3 rounded-lg bg-white p-3 shadow-sm">
       <div className="flex items-center justify-between">
         <h2 className="text-xs font-semibold sm:text-sm">Booking Status</h2>
-        <select
-          value={selectedMonth}
-          onChange={(e) => setSelectedMonth(e.target.value)}
-          className="rounded border border-neutral-200 p-1 text-[10px] outline-none focus:ring-1 focus:ring-blue-500 sm:text-xs"
-        >
-          {monthOptions.map((m) => (
-            <option key={m} value={m}>{m}</option>
-          ))}
-        </select>
+        <span className="text-[10px] text-neutral-500 sm:text-xs">All time</span>
       </div>
 
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">

@@ -1,135 +1,122 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import { DeleteOutlined, EditOutlined, VisibilityOutlined } from "@mui/icons-material";
-import { CalendarCheck2, Globe2, Users } from "lucide-react";
+import { useState } from "react";
+import Link from "next/link";
+import { CalendarCheck2, Eye, Pencil, Repeat, Trash2, UserPlus, Users } from "lucide-react";
+
+import { EditCustomerModal, RemoveCustomerModal } from "@/components/agency/customers/CustomerModals";
 import { Pagination } from "@/components/ui/pagination";
 import { AnalyticsSummaryCard } from "@/components/shared/AnalyticsSummaryCard";
-import usersData from "../../../../../data/users.json";
-import bookingsData from "../../../../../data/bookings.json";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useMoney } from "@/hooks/useAgencyDashboard";
+import { useCustomerAnalytics, useCustomerList } from "@/hooks/useAgencyCustomers";
+import type { CustomerListParams, CustomerRow } from "@/lib/api/agency/customers";
 
-type Customer = {
-  id: string;
-  name: string;
-  email: string;
-  country: string;
-  phone: string;
-  member_since: string;
-};
-
-const customers = (usersData as Array<Customer & { role: string }>).filter(
-  (user) => user.role === "trekker",
-);
+const PAGE_SIZE = 20;
+const field = "rounded-2xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100";
+const SORTS: Array<{ label: string; sortBy: NonNullable<CustomerListParams["sortBy"]>; sortOrder: "asc" | "desc" }> = [
+  { label: "Most recent booking", sortBy: "lastBookingDate", sortOrder: "desc" },
+  { label: "Highest spending", sortBy: "totalSpending", sortOrder: "desc" },
+  { label: "Most bookings", sortBy: "totalBookings", sortOrder: "desc" },
+  { label: "Oldest booking first", sortBy: "lastBookingDate", sortOrder: "asc" },
+];
 
 export default function CustomersPage() {
-  const router = useRouter();
-  const [customerRows, setCustomerRows] = useState(customers);
+  const money = useMoney();
   const [search, setSearch] = useState("");
-  const [country, setCountry] = useState("all");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [dialog, setDialog] = useState<{ type: "edit" | "delete"; customer: Customer } | null>(null);
+  const [type, setType] = useState<"" | "new" | "repeat">("");
+  const [sort, setSort] = useState(0);
+  const [page, setPage] = useState(1);
+  const debounced = useDebouncedValue(search.trim());
+  const [editing, setEditing] = useState<CustomerRow | null>(null);
+  const [removing, setRemoving] = useState<CustomerRow | null>(null);
 
-  const countries = useMemo(() => Array.from(new Set(customers.map((customer) => customer.country))), []);
-  const bookingCounts = useMemo(() => {
-    return customers.reduce<Record<string, number>>((counts, customer) => {
-      counts[customer.id] = (bookingsData as Array<{ trekker_id: string }>).filter(
-        (booking) => booking.trekker_id === customer.id,
-      ).length;
-      return counts;
-    }, {});
-  }, []);
-  const filteredCustomers = useMemo(
-    () => customerRows.filter((customer) => {
-      const query = search.toLowerCase();
-      return (
-        (customer.name.toLowerCase().includes(query) || customer.email.toLowerCase().includes(query)) &&
-        (country === "all" || customer.country === country)
-      );
-    }),
-    [country, customerRows, search],
-  );
-  const perPage = 8;
-  const totalPages = Math.max(1, Math.ceil(filteredCustomers.length / perPage));
-  const pageCustomers = filteredCustomers.slice((currentPage - 1) * perPage, currentPage * perPage);
-
-  const handleDialogAction = () => {
-    if (!dialog) return;
-    if (dialog.type === "edit") router.push(`/dashboard/customers/${dialog.customer.id}`);
-    if (dialog.type === "delete") setCustomerRows((rows) => rows.filter((customer) => customer.id !== dialog.customer.id));
-    setDialog(null);
+  const params: CustomerListParams = {
+    search: debounced || undefined,
+    customerType: type || undefined,
+    sortBy: SORTS[sort].sortBy,
+    sortOrder: SORTS[sort].sortOrder,
+    page,
+    limit: PAGE_SIZE,
   };
+  const { data, isLoading, isError, isFetching } = useCustomerList(params);
+  const analytics = useCustomerAnalytics();
+  const rows = data?.data ?? [];
+  const totalPages = Math.max(1, data?.meta.totalPages ?? 1);
+  const reset = <T,>(set: (v: T) => void) => (v: T) => {
+    set(v);
+    setPage(1);
+  };
+  const a = analytics.data;
 
   return (
     <div className="space-y-4">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500">
-            <button type="button" onClick={() => router.push("/dashboard")} className="hover:text-neutral-900">Dashboard</button>
-            <span className="text-neutral-300">/</span>
-            <span className="font-semibold text-neutral-900">All Customers</span>
-          </div>
-          <h1 className="mt-2 text-2xl font-semibold text-neutral-900">Customers</h1>
-          <p className="mt-1 text-sm text-neutral-600">Manage trekker profiles and booking history.</p>
+      <header>
+        <div className="flex items-center gap-2 text-sm text-neutral-500">
+          <Link href="/dashboard" className="hover:text-neutral-900">Dashboard</Link>
+          <span className="text-neutral-300">/</span>
+          <span className="font-semibold text-neutral-900">All Customers</span>
         </div>
+        <h1 className="mt-2 text-2xl font-bold text-neutral-900">Customers</h1>
+        <p className="mt-1 text-sm text-neutral-600">Travellers who have booked with you, and guests who completed a trek. Edit or remove anyone from your list.</p>
       </header>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <AnalyticsSummaryCard label="Total Customers" value={customerRows.length} tone="primary" icon={Users} />
-        <AnalyticsSummaryCard label="Countries" value={countries.length} tone="success" icon={Globe2} />
-        <AnalyticsSummaryCard label="With Bookings" value={Object.values(bookingCounts).filter(Boolean).length} tone="warning" icon={CalendarCheck2} />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <AnalyticsSummaryCard label="Total Customers" value={a?.totalCustomers ?? "—"} tone="primary" icon={Users} />
+        <AnalyticsSummaryCard label="New (1 booking)" value={a?.newCustomers ?? "—"} tone="success" icon={UserPlus} />
+        <AnalyticsSummaryCard label="Returning" value={a?.returningCustomers ?? "—"} tone="warning" icon={CalendarCheck2} />
+        <AnalyticsSummaryCard label="Repeat rate" value={a ? `${Math.round(a.repeatRate * 100) / 100}%` : "—"} tone="accent" icon={Repeat} />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-[minmax(240px,1fr)_180px]">
-        <input
-          value={search}
-          onChange={(event) => { setSearch(event.target.value); setCurrentPage(1); }}
-          placeholder="Search customers"
-          className="rounded-2xl border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-        />
-        <select
-          value={country}
-          onChange={(event) => { setCountry(event.target.value); setCurrentPage(1); }}
-          className="rounded-2xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-        >
-          <option value="all">All countries</option>
-          {countries.map((item) => <option key={item} value={item}>{item}</option>)}
+      <div className="grid gap-3 sm:grid-cols-[minmax(240px,1fr)_180px_200px]">
+        <input type="search" aria-label="Search customers" placeholder="Search by name, email or phone…" value={search} onChange={(e) => reset(setSearch)(e.target.value)} className={`${field} w-full`} />
+        <select aria-label="Customer type" value={type} onChange={(e) => reset(setType)(e.target.value as "" | "new" | "repeat")} className={field}>
+          <option value="">All customers</option>
+          <option value="new">New</option>
+          <option value="repeat">Repeat</option>
+        </select>
+        <select aria-label="Sort customers" value={sort} onChange={(e) => reset(setSort)(Number(e.target.value))} className={field}>
+          {SORTS.map((s, i) => <option key={s.label} value={i}>{s.label}</option>)}
         </select>
       </div>
 
-      <div className="overflow-x-auto border-t border-neutral-200 bg-white">
+      {isError && <p role="alert" className="rounded-2xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700">Couldn&apos;t load customers. Please try again.</p>}
+
+      <div className={`overflow-x-auto border-t border-neutral-200 bg-white ${isFetching && !isLoading ? "opacity-70" : ""}`}>
         <table className="min-w-full text-left text-sm">
           <thead className="bg-neutral-50 text-[10px] uppercase tracking-[0.24em] text-neutral-500">
-            <tr><th className="px-4 py-3">S.NO</th><th className="px-4 py-3">Customer</th><th className="px-4 py-3">Country</th><th className="px-4 py-3">Phone</th><th className="px-4 py-3">Bookings</th><th className="px-4 py-3">Member since</th><th className="px-4 py-3">Actions</th></tr>
+            <tr><th className="w-14 px-4 py-3">S.No</th><th className="px-4 py-3">Customer</th><th className="px-4 py-3">Country</th><th className="px-4 py-3">Phone</th><th className="px-4 py-3">Bookings</th><th className="px-4 py-3">Total spent</th><th className="px-4 py-3">Last booking</th><th className="px-4 py-3">Actions</th></tr>
           </thead>
           <tbody>
-            {pageCustomers.map((customer, index) => (
-              <tr key={customer.id} className="border-b border-neutral-200 hover:bg-neutral-50">
-                <td className="px-4 py-3 font-semibold text-neutral-900">{(currentPage - 1) * perPage + index + 1}</td>
-                <td className="px-4 py-3"><div className="font-semibold text-neutral-900">{customer.name}</div><div className="text-xs text-neutral-500">{customer.email}</div></td>
-                <td className="px-4 py-3 text-neutral-700">{customer.country}</td>
-                <td className="px-4 py-3 text-neutral-700">{customer.phone}</td>
-                <td className="px-4 py-3 font-semibold text-neutral-900">{bookingCounts[customer.id] ?? 0}</td>
-                <td className="px-4 py-3 text-neutral-700">{customer.member_since}</td>
-                <td className="px-4 py-3"><div className="flex items-center gap-2">
-                  <ActionButton label="View" tone="primary" onClick={() => router.push(`/dashboard/customers/${customer.id}`)}><VisibilityOutlined sx={{ fontSize: 18 }} /></ActionButton>
-                  <ActionButton label="Edit" tone="warning" onClick={() => setDialog({ type: "edit", customer })}><EditOutlined sx={{ fontSize: 18 }} /></ActionButton>
-                  <ActionButton label="Delete" tone="danger" onClick={() => setDialog({ type: "delete", customer })}><DeleteOutlined sx={{ fontSize: 18 }} /></ActionButton>
-                </div></td>
+            {isLoading && Array.from({ length: 5 }).map((_, i) => <tr key={i} className="border-b border-neutral-200"><td colSpan={8} className="px-4 py-4"><div className="h-4 animate-pulse rounded bg-neutral-100" /></td></tr>)}
+            {!isLoading && rows.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-sm text-neutral-500">{search || type ? "No customers match this filter." : "No customers yet — travellers appear here once they book, and guests once they complete a trek."}</td></tr>}
+            {rows.map((c, index) => (
+              <tr key={c.trekkerId} className="border-b border-neutral-200 hover:bg-neutral-50"><td className="px-4 py-3 text-neutral-500">{(page - 1) * PAGE_SIZE + index + 1}</td>
+                <td className="px-4 py-3">
+                  <Link href={`/dashboard/customers/${encodeURIComponent(c.trekkerId)}`} className="font-semibold text-neutral-900 hover:underline">{c.fullName ?? "Unnamed"}</Link>
+                  <div className="text-xs text-neutral-500">{c.email}{c.isGuest && <span className="ml-2 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-600">guest</span>}</div>
+                </td>
+                <td className="px-4 py-3 text-neutral-700">{c.country ?? "—"}</td>
+                <td className="px-4 py-3 text-neutral-700">{c.phone ?? "—"}</td>
+                <td className="px-4 py-3 font-semibold text-neutral-900">{c.totalBookings}{c.repeatVisitor && <span className="ml-2 rounded-full bg-success-50 px-2 py-0.5 text-[10px] font-semibold text-success-700">repeat</span>}{c.isNewCustomer && <span className="ml-2 rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-semibold text-primary-700">new</span>}</td>
+                <td className="px-4 py-3 text-neutral-900">{money(c.totalSpending)}</td>
+                <td className="px-4 py-3 text-neutral-700">{new Date(c.lastBookingDate).toLocaleDateString("en-GB")}</td>
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-1.5">
+                    <Link href={`/dashboard/customers/${encodeURIComponent(c.trekkerId)}`} aria-label={`View ${c.fullName ?? "customer"}`} title="View" className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary-50 text-primary-700 transition hover:bg-primary-100"><Eye className="h-4 w-4" /></Link>
+                    <button type="button" aria-label={`Edit ${c.fullName ?? "customer"}`} title="Edit" onClick={() => setEditing(c)} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-warning-50 text-warning-700 transition hover:bg-warning-100"><Pencil className="h-4 w-4" /></button>
+                    <button type="button" aria-label={`Delete ${c.fullName ?? "customer"}`} title="Delete" onClick={() => setRemoving(c)} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-danger-50 text-danger-700 transition hover:bg-danger-100"><Trash2 className="h-4 w-4" /></button>
+                  </div>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {pageCustomers.length === 0 && <p className="px-4 py-8 text-center text-sm text-neutral-500">No customers found.</p>}
       </div>
-      <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
+      <EditCustomerModal customer={editing} onClose={() => setEditing(null)} />
+      <RemoveCustomerModal customer={removing} onClose={() => setRemoving(null)} />
 
-      {dialog && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"><div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"><h2 className="text-lg font-semibold text-neutral-900">{dialog.type === "delete" ? "Delete customer?" : "Edit customer?"}</h2><p className="mt-2 text-sm leading-6 text-neutral-600">{dialog.type === "delete" ? `Remove ${dialog.customer.name} from the customer list?` : `Open ${dialog.customer.name}'s profile?`}</p><div className="mt-5 flex justify-end gap-2"><button type="button" onClick={() => setDialog(null)} className="rounded-2xl border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-900">Cancel</button><button type="button" onClick={handleDialogAction} className={`rounded-2xl px-4 py-2 text-sm font-semibold text-white ${dialog.type === "delete" ? "bg-danger-600" : "bg-primary-900"}`}>{dialog.type === "delete" ? "Delete customer" : "Continue"}</button></div></div></div>}
+      <Pagination currentPage={Math.min(page, totalPages)} totalPages={totalPages} onPageChange={setPage} />
     </div>
   );
-}
-
-function ActionButton({ label, tone, onClick, children }: { label: string; tone: "primary" | "warning" | "danger"; onClick: () => void; children: React.ReactNode }) {
-  const styles = { primary: "bg-primary-50 text-primary-700 hover:bg-primary-100", warning: "bg-warning-50 text-warning-700 hover:bg-warning-100", danger: "bg-danger-50 text-danger-700 hover:bg-danger-100" };
-  return <button type="button" aria-label={label} title={label} onClick={onClick} className={`inline-flex h-7 w-7 items-center justify-center rounded-md transition ${styles[tone]}`}>{children}</button>;
 }

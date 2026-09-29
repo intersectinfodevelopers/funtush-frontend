@@ -1,9 +1,18 @@
-import React from 'react';
+"use client";
 
-export default function Page() {
-  return (
-    <div className="min-h-screen flex items-center justify-center p-8 text-center text-slate-700">
-      Placeholder for app/(agency)/dashboard/settings/site/page.tsx
-    </div>
-  );
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+
+/**
+ * Site status (coming-soon, top bar, popup) moved to the "Appearance" section
+ * — coming-soon lives on the Branding tab, top bar / popup on Components.
+ */
+export default function SiteStatusSettingsRedirect() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace("/dashboard/appearance");
+  }, [router]);
+
+  return null;
 }
