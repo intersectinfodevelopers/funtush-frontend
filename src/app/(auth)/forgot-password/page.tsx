@@ -12,6 +12,7 @@ import toast from 'react-hot-toast';
 
 import { AuthLeftPanel } from '@/components/auth/AuthLeftPanel';
 import { ROUTES } from '@/lib/constants/routes';
+import { api, type ApiError } from '@/lib/api/client';
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -36,11 +37,15 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    // Mock: pretend we sent an email, then redirect
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Always the same answer whether or not the account exists (the API hides that on purpose).
+      await api.post('/auth/forgot-password', { email: email.trim() });
       router.push(`${ROUTES.AUTH.FORGOT_PASSWORD_CHECK}?email=${encodeURIComponent(email.trim())}`);
-    }, 500);
+    } catch (err) {
+      toast.error((err as ApiError).message || "We couldn't send the email. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

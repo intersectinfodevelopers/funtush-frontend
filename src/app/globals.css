@@ -171,16 +171,24 @@
  * ThemeProvider already sets) so it's opt-in, not silently forced by the OS.
  */
 
+/*
+ * No `overflow: hidden` here — the dashboard/editor app-shell layouts each
+ * already declare their own `h-screen overflow-hidden` wrapper div (see
+ * `(agency)/layout.tsx`, `(editor)/layout.tsx`) so their own internal
+ * scroll region works without it. Putting it here too used to apply
+ * `overflow: hidden` to literally every page in the app, including the
+ * public site (/site and everything under it) and any other normal page
+ * that relies on the page itself scrolling — silently making them
+ * unscrollable no matter how much content they had.
+ */
 html {
   height: 100%;
-  overflow: hidden;
   background: var(--background);
 }
 
 body {
   margin: 0;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
   background: var(--background);
   color: var(--foreground);
   font-family: Poppins, Arial, Helvetica, sans-serif;
@@ -206,4 +214,20 @@ body {
 
 .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(107, 114, 128, 0.65);
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: inline-block;
+  animation-name: marquee;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
 }

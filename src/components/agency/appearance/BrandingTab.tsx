@@ -1,345 +1,126 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Upload } from "lucide-react";
-import {
-  Field,
-  SaveBar,
-  SettingsSection,
-  TextInput,
-  ToggleRow,
-  useSettingsForm,
-} from "@/components/agency/settings/settings-kit";
+import { useQueryClient } from "@tanstack/react-query";
+import { Field, SaveBar, TextInput } from "@/components/agency/settings/settings-kit";
+import { useApiForm } from "@/hooks/useApiForm";
+import { siteKeys, useBranding, useBrandingOptions } from "@/hooks/useAgencySite";
+import { saveBranding, type Branding, type BrandingOptions, type BrandingPatch } from "@/lib/api/agency/site";
 
-const fontOptions = [
-  { value: "Inter", label: "Inter" },
-  { value: "Poppins", label: "Poppins" },
-  { value: "Roboto", label: "Roboto" },
-  { value: "Open Sans", label: "Open Sans" },
-  { value: "Lato", label: "Lato" },
-];
+const selectClass = "w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-50";
+const HEX = /^#[0-9a-fA-F]{6}$/;
 
-const SWATCHES = [
-  { id: "violet", name: "Violet", hex: "#6C72FF" },
-  { id: "blue", name: "Blue", hex: "#1a5fa8" },
-  { id: "teal", name: "Teal", hex: "#1d8ec8" },
-  { id: "green", name: "Green", hex: "#16a34a" },
-  { id: "amber", name: "Amber", hex: "#d97706" },
-  { id: "rose", name: "Rose", hex: "#dc2626" },
-];
-
-const RATIOS = [
-  { value: "1:1", label: "1:1 · Square" },
-  { value: "4:3", label: "4:3 · Classic" },
-  { value: "16:9", label: "16:9 · Widescreen" },
-  { value: "3:4", label: "3:4 · Portrait" },
-];
-
-const CURRENCIES = ["$", "Rs", "€", "£", "₹"];
-
-type Branding = {
-  primaryColor: string;
-  paletteId: string;
-  font: string;
-  brandName: string;
-  logo: string;
-  favicon: string;
-  imageRatio: string;
-  currencySymbol: string;
-  receiptFooter: string;
-  showFuntushBadge: boolean;
-};
-
-const DEFAULTS: Branding = {
-  primaryColor: "#6C72FF",
-  paletteId: "violet",
-  font: "Inter",
-  brandName: "",
-  logo: "",
-  favicon: "",
-  imageRatio: "1:1",
-  currencySymbol: "$",
-  receiptFooter: "Thank you for trekking with us!",
-  showFuntushBadge: true,
-};
-
-function googleFontHref(family: string): string {
-  return `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family).replace(/%20/g, "+")}:wght@400;500;600;700&display=swap`;
+/** Decodes the picked image and checks it against the exact size the API enforces. */
+function checkImage(file: File, spec: { width: number; height: number; maxBytes: number }, label: string): Promise<string | null> {
+  if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) return Promise.resolve(`${label} must be a PNG, JPG or WebP image.`);
+  if (file.size > spec.maxBytes) return Promise.resolve(`${label} must be under ${Math.round(spec.maxBytes / 1024)} KB.`);
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new window.Image();
+    img.onload = () => { URL.revokeObjectURL(url); resolve(img.width === spec.width && img.height === spec.height ? null : `${label} must be exactly ${spec.width} × ${spec.height} px (yours is ${img.width} × ${img.height}).`); };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(`That file isn't a readable image.`); };
+    img.src = url;
+  });
 }
-const GOOGLE_FONT_LINK_ID = "appearance-preview-font";
 
-function useGoogleFont(family: string) {
+function ImagePicker({ id, label, current, spec, file, onPick }: { id: string; label: string; current: string | null; spec: { width: number; height: number; maxBytes: number }; file: File | undefined; onPick: (f: File | undefined) => void }) {
+  const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
   useEffect(() => {
-    if (family === "Inter") return;
-    let link = document.getElementById(GOOGLE_FONT_LINK_ID) as HTMLLinkElement | null;
-    if (!link) {
-      link = document.createElement("link");
-      link.id = GOOGLE_FONT_LINK_ID;
-      link.rel = "stylesheet";
-      document.head.appendChild(link);
-    }
-    link.href = googleFontHref(family);
-  }, [family]);
+    if (!file) return;
+    const u = URL.createObjectURL(file);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPreview(u);
+    return () => URL.revokeObjectURL(u);
+  }, [file]);
+  const shown = file ? preview : current;
+  return (
+    <Field label={label} htmlFor={id} hint={`Exactly ${spec.width} × ${spec.height} px, PNG/JPG/WebP, under ${Math.round(spec.maxBytes / 1024)} KB.`} error={error ?? undefined}>
+      <div className="flex items-center gap-4">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        {shown ? <img src={shown} alt={`${label} preview`} className="h-14 max-w-[180px] rounded border border-neutral-200 bg-neutral-50 object-contain" /> : <div className="grid h-14 w-24 place-items-center rounded border border-dashed border-neutral-300 text-xs text-neutral-400">None</div>}
+        <input id={id} type="file" accept="image/png,image/jpeg,image/webp" className="text-sm"
+          onChange={async (e) => {
+            const f = e.target.files?.[0];
+            e.target.value = "";
+            if (!f) return;
+            const problem = await checkImage(f, spec, label);
+            setError(problem);
+            if (!problem) onPick(f);
+          }} />
+      </div>
+    </Field>
+  );
 }
-
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
-
-/** Just the construction fields — the rest of "siteStatusSettings" (top bar,
- * popup) is owned by the Components tab, but they share one storage key. */
-type ConstructionSlice = {
-  comingSoon: boolean;
-  comingSoonHeadline: string;
-  comingSoonMessage: string;
-};
-const CONSTRUCTION_DEFAULTS: ConstructionSlice = {
-  comingSoon: false,
-  comingSoonHeadline: "We're launching soon",
-  comingSoonMessage: "Our new site is on the way. Reach us by email in the meantime.",
-};
 
 export function BrandingTab() {
-  // Reuses the "brandingSettings" key the old /settings/branding page wrote,
-  // extended with the fields below — an agency that already set a logo/color
-  // keeps it here.
-  const { value, patch, dirty, save, reset } = useSettingsForm<Branding>("brandingSettings", DEFAULTS);
-  // Shares "siteStatusSettings" with the Components tab (top bar / popup) —
-  // useSettingsForm only patches the keys it's given, so the two tabs don't
-  // clobber each other's fields.
-  const construction = useSettingsForm<ConstructionSlice>("siteStatusSettings", CONSTRUCTION_DEFAULTS);
-  const [uploadError, setUploadError] = useState<string | null>(null);
-
-  useGoogleFont(value.font);
-
-  function readImage(file: File, onDone: (dataUrl: string) => void) {
-    setUploadError(null);
-    if (!file.type.startsWith("image/")) {
-      setUploadError("Please choose an image file.");
-      return;
-    }
-    if (file.size > MAX_IMAGE_BYTES) {
-      setUploadError("Image is too large — please use one under 2 MB.");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onerror = () => setUploadError("Could not read that file. Please try again.");
-    reader.onload = (event) => {
-      const result = event.target?.result;
-      if (typeof result === "string") onDone(result);
+  const qc = useQueryClient();
+  const branding = useBranding();
+  const options = useBrandingOptions();
+  const [files, setFiles] = useState<{ logo?: File; favicon?: File }>({});
+  const form = useApiForm<Branding>(branding.data, async (changed) => {
+    const opts = options.data as BrandingOptions;
+    if (changed.brandName !== undefined && (changed.brandName.trim().length < 2 || changed.brandName.length > 60)) return Promise.reject({ message: "Brand name must be 2–60 characters." });
+    if (changed.primaryColor !== undefined && !HEX.test(changed.primaryColor)) return Promise.reject({ message: "Colour must be a hex value like #0F766E." });
+    if (changed.logoWidth !== undefined && (changed.logoWidth < opts.logoWidth.min || changed.logoWidth > opts.logoWidth.max)) return Promise.reject({ message: `Logo width must be ${opts.logoWidth.min}–${opts.logoWidth.max} px.` });
+    const patch: BrandingPatch = {
+      brandName: changed.brandName, primaryColor: changed.primaryColor, paletteId: changed.paletteId ?? undefined, fontFamily: changed.fontFamily,
+      cardImageRatio: changed.cardImageRatio, currencyCode: changed.currencyCode, currencySymbol: changed.currencySymbol, currencyDisplay: changed.currencyDisplay,
+      logoWidth: changed.logoWidth, receiptFooter: changed.receiptFooter,
     };
-    reader.readAsDataURL(file);
-  }
+    const out = await saveBranding(patch, files);
+    setFiles({});
+    return out;
+  }, () => { void qc.invalidateQueries({ queryKey: [...siteKeys.all, "branding"] }); void qc.invalidateQueries({ queryKey: ["agency", "dashboard"] }); });
+
+  if (branding.isLoading || options.isLoading) return <div className="h-64 animate-pulse rounded-2xl border border-neutral-200 bg-white" />;
+  if (branding.isError || options.isError || !form.value || !options.data) return <p role="alert" className="text-sm text-danger-600">Couldn&apos;t load your branding.</p>;
+  const v = form.value;
+  const o = options.data;
+  const dirty = form.dirty || Boolean(files.logo || files.favicon);
+  const currency = (code: string) => { const c = o.currencies.find((x) => x.code === code); if (c) form.patch({ currencyCode: c.code, currencySymbol: c.symbol }); };
 
   return (
-    <div className="space-y-6">
-      {uploadError && (
-        <div className="rounded-xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-800">
-          {uploadError}
+    <div className="space-y-5">
+      <section className="space-y-5 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <div><h2 className="text-lg font-bold text-neutral-900">Identity</h2><p className="text-sm text-neutral-500">Your name, logo and colours across the site and receipts.</p></div>
+        <Field label="Brand name" htmlFor="br-name"><TextInput id="br-name" value={v.brandName} maxLength={60} onChange={(e) => form.patch({ brandName: e.target.value })} /></Field>
+        <ImagePicker id="br-logo" label="Logo" current={v.logoUrl} spec={o.imageSpecs.logo} file={files.logo} onPick={(f) => setFiles((c) => ({ ...c, logo: f }))} />
+        <ImagePicker id="br-favicon" label="Favicon" current={v.faviconUrl} spec={o.imageSpecs.favicon} file={files.favicon} onPick={(f) => setFiles((c) => ({ ...c, favicon: f }))} />
+        <Field label={`Logo width: ${v.logoWidth}px`} htmlFor="br-logow">
+          <input id="br-logow" type="range" min={o.logoWidth.min} max={o.logoWidth.max} value={v.logoWidth} onChange={(e) => form.patch({ logoWidth: Number(e.target.value) })} className="w-full" />
+        </Field>
+      </section>
+
+      <section className="space-y-5 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <div><h2 className="text-lg font-bold text-neutral-900">Colour & type</h2></div>
+        <div>
+          <p className="mb-1.5 text-sm font-semibold text-neutral-700">Primary colour</p>
+          <div role="radiogroup" aria-label="Primary colour" className="flex flex-wrap gap-2">
+            {o.palette.map((s) => (
+              <button key={s.id} type="button" role="radio" aria-checked={v.paletteId === s.id} aria-label={s.label} title={s.label} onClick={() => form.patch({ paletteId: s.id, primaryColor: s.hex })}
+                className={`h-9 w-9 rounded-full border-2 ${v.paletteId === s.id ? "border-neutral-900 ring-2 ring-offset-2 ring-neutral-300" : "border-white shadow"}`} style={{ backgroundColor: s.hex }} />
+            ))}
+          </div>
+          {o.colorPickerMode === "free" ? (
+            <div className="mt-3 max-w-xs"><Field label="Custom colour" htmlFor="br-hex"><TextInput id="br-hex" value={v.primaryColor} onChange={(e) => form.patch({ primaryColor: e.target.value, paletteId: null })} placeholder="#0F766E" /></Field></div>
+          ) : <p className="mt-2 text-xs text-neutral-400">Current: {v.primaryColor}. Custom colours are available on higher plans.</p>}
         </div>
-      )}
-
-      <div className="grid gap-6 lg:grid-cols-2">
-        <div className="space-y-6">
-          <SettingsSection title="Primary Color">
-            <div className="flex flex-wrap gap-3">
-              {SWATCHES.map((s) => (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => patch({ primaryColor: s.hex, paletteId: s.id })}
-                  className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-2 transition ${
-                    value.paletteId === s.id ? "border-primary-500 bg-primary-50" : "border-transparent hover:bg-neutral-50"
-                  }`}
-                >
-                  <span
-                    className="h-8 w-8 rounded-full border border-neutral-200 shadow-sm"
-                    style={{ backgroundColor: s.hex }}
-                  />
-                  <span className="text-xs font-medium text-neutral-600">{s.name}</span>
-                </button>
-              ))}
-            </div>
-            <div className="mt-4 flex items-center gap-3">
-              <input
-                type="color"
-                value={value.primaryColor}
-                onChange={(e) => patch({ primaryColor: e.target.value, paletteId: "custom" })}
-                className="h-10 w-12 cursor-pointer rounded-lg border border-neutral-200"
-              />
-              <TextInput
-                value={value.primaryColor}
-                onChange={(e) => patch({ primaryColor: e.target.value, paletteId: "custom" })}
-                className="flex-1 font-mono"
-              />
-            </div>
-          </SettingsSection>
-
-          <SettingsSection title="Font Family">
-            <select
-              value={value.font}
-              onChange={(e) => patch({ font: e.target.value })}
-              style={{ fontFamily: value.font }}
-              className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-50"
-            >
-              {fontOptions.map((f) => (
-                <option key={f.value} value={f.value} style={{ fontFamily: f.value }}>
-                  {f.label}
-                </option>
-              ))}
-            </select>
-          </SettingsSection>
-
-          <SettingsSection title="Brand Name">
-            <TextInput
-              value={value.brandName}
-              onChange={(e) => patch({ brandName: e.target.value })}
-              placeholder="e.g., Everest Trails Adventures"
-            />
-          </SettingsSection>
-
-          <SettingsSection title="Brand Logo" description="Best fit: 725 × 145">
-            <div className="flex items-center gap-4">
-              {value.logo && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={value.logo} alt="Logo" className="h-14 w-auto rounded border border-neutral-200 object-contain" />
-              )}
-              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-neutral-300 px-4 py-2 text-sm transition hover:bg-neutral-50">
-                <Upload size={16} />
-                Upload Logo
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) readImage(file, (logo) => patch({ logo }));
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-            </div>
-          </SettingsSection>
-
-          <SettingsSection title="Brand Favicon" description="Best fit: 96 × 96">
-            <div className="flex items-center gap-4">
-              {value.favicon && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={value.favicon} alt="Favicon" className="h-10 w-10 rounded border border-neutral-200 object-contain" />
-              )}
-              <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-neutral-300 px-4 py-2 text-sm transition hover:bg-neutral-50">
-                <Upload size={16} />
-                Upload Favicon
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) readImage(file, (favicon) => patch({ favicon }));
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-            </div>
-          </SettingsSection>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field label="Font" htmlFor="br-font"><select id="br-font" className={selectClass} value={v.fontFamily} onChange={(e) => form.patch({ fontFamily: e.target.value })}>{o.fonts.map((f) => <option key={f.id} value={f.id}>{f.label}</option>)}</select></Field>
+          <Field label="Card image ratio" htmlFor="br-ratio"><select id="br-ratio" className={selectClass} value={v.cardImageRatio} onChange={(e) => form.patch({ cardImageRatio: e.target.value })}>{o.cardImageRatios.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}</select></Field>
         </div>
+      </section>
 
-        <div className="space-y-6">
-          <SettingsSection title="Image Ratio" description="Applied to package and gallery photos site-wide.">
-            <div className="grid grid-cols-2 gap-2">
-              {RATIOS.map((r) => (
-                <button
-                  key={r.value}
-                  type="button"
-                  onClick={() => patch({ imageRatio: r.value })}
-                  className={`rounded-xl border px-3 py-2 text-left text-sm transition ${
-                    value.imageRatio === r.value
-                      ? "border-primary-400 bg-primary-50 font-semibold text-primary-900"
-                      : "border-neutral-200 text-neutral-600 hover:bg-neutral-50"
-                  }`}
-                >
-                  {r.label}
-                </button>
-              ))}
-            </div>
-            <p className="mt-2 text-xs text-neutral-400">Selected {value.imageRatio}</p>
-          </SettingsSection>
-
-          <SettingsSection title="Currency Indicator">
-            <div className="flex flex-wrap gap-2">
-              {CURRENCIES.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => patch({ currencySymbol: c })}
-                  className={`rounded-lg border px-3 py-1.5 text-sm font-mono transition ${
-                    value.currencySymbol === c
-                      ? "border-primary-400 bg-primary-50 text-primary-900"
-                      : "border-neutral-200 text-neutral-600 hover:bg-neutral-50"
-                  }`}
-                >
-                  {c}
-                </button>
-              ))}
-              <TextInput
-                value={value.currencySymbol}
-                onChange={(e) => patch({ currencySymbol: e.target.value })}
-                className="w-24 font-mono"
-                maxLength={4}
-              />
-            </div>
-            <p className="mt-2 text-xs text-neutral-400">Current value: {value.currencySymbol}</p>
-          </SettingsSection>
-
-          <SettingsSection title="Booking Receipt Footer" description="Printed at the bottom of every invoice and receipt.">
-            <TextInput
-              value={value.receiptFooter}
-              onChange={(e) => patch({ receiptFooter: e.target.value })}
-              placeholder="Thank you for trekking with us!"
-            />
-          </SettingsSection>
-
-          <SettingsSection title="Funtush badge">
-            <ToggleRow
-              label='Show "Powered by Funtush"'
-              description="A small credit in your site footer. Removing it requires a paid plan."
-              checked={value.showFuntushBadge}
-              onChange={(v) => patch({ showFuntushBadge: v })}
-            />
-          </SettingsSection>
-
-          <SettingsSection
-            title="Site Under Construction"
-            description="Visitors see a holding page instead of your content. Your dashboard keeps working."
-          >
-            <div className="space-y-4">
-              <ToggleRow
-                label="Show a coming-soon page"
-                checked={construction.value.comingSoon}
-                onChange={(v) => construction.patch({ comingSoon: v })}
-              />
-              <Field label="Headline">
-                <TextInput
-                  value={construction.value.comingSoonHeadline}
-                  onChange={(e) => construction.patch({ comingSoonHeadline: e.target.value })}
-                  disabled={!construction.value.comingSoon}
-                />
-              </Field>
-            </div>
-          </SettingsSection>
+      <section className="space-y-5 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm">
+        <div><h2 className="text-lg font-bold text-neutral-900">Currency & receipts</h2></div>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field label="Currency" htmlFor="br-cur"><select id="br-cur" className={selectClass} value={v.currencyCode} onChange={(e) => currency(e.target.value)}>{o.currencies.map((c) => <option key={c.code} value={c.code}>{c.label} ({c.code})</option>)}</select></Field>
+          <Field label="Show prices as" htmlFor="br-disp"><select id="br-disp" className={selectClass} value={v.currencyDisplay} onChange={(e) => form.patch({ currencyDisplay: e.target.value as Branding["currencyDisplay"] })}><option value="SYMBOL">Symbol ({v.currencySymbol} 1,200)</option><option value="CODE">Code ({v.currencyCode} 1,200)</option><option value="SYMBOL_CODE">Both</option></select></Field>
         </div>
-      </div>
-
-      <SaveBar
-        dirty={dirty || construction.dirty}
-        onSave={() => {
-          save();
-          construction.save();
-        }}
-        onReset={() => {
-          reset();
-          construction.reset();
-        }}
-      />
+        <Field label="Receipt footer" htmlFor="br-foot" hint={`${v.receiptFooter.length}/${o.receiptFooter.maxLength} characters`}><TextInput id="br-foot" value={v.receiptFooter} maxLength={o.receiptFooter.maxLength} onChange={(e) => form.patch({ receiptFooter: e.target.value })} /></Field>
+      </section>
+      <SaveBar dirty={dirty} onSave={form.submit} onReset={() => { form.reset(); setFiles({}); }} saving={form.saving} error={form.error} />
     </div>
   );
 }

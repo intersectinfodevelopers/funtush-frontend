@@ -1,50 +1,73 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Link from "next/link";
-import { Check, Globe2, Pencil, Save, UserRound } from "lucide-react";
-import usersData from "../../../../../data/users.json";
-import bookingsData from "../../../../../data/bookings.json";
-import guidesData from "../../../../../data/guides.json";
-import packagesData from "../../../../../data/packages.json";
+import { Building2, KeyRound, Mail, Pencil, ShieldCheck, Sparkles, UserRound } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useDashboardSummary } from "@/hooks/useAgencyDashboard";
+import { useBrandingOptions } from "@/hooks/useAgencySite";
 
-type User = { id: string; role: string; agency_id: string | null; name: string; email: string; phone: string; country: string };
-type Profile = { firstName: string; middleName: string; lastName: string; phone: string; email: string; dateOfBirth: string; sex: string; designation: string; website: string; city: string; country: string; zipCode: string };
+const ROLE_LABEL: Record<string, string> = { agency_admin: "Agency admin", moderator: "Team member", trekker: "Trekker" };
 
-const admin = (usersData as User[]).find((user) => user.role === "agency_admin" && user.agency_id === "ag-001")!;
-const initialProfile: Profile = { firstName: admin.name.split(" ")[0], middleName: "", lastName: admin.name.split(" ").slice(1).join(" "), phone: admin.phone, email: admin.email, dateOfBirth: "", sex: "", designation: "Agency Administrator", website: "", city: "Kathmandu", country: admin.country, zipCode: "" };
-
-export default function ProfilePage() {
-  const [profile, setProfile] = useState<Profile>(() => {
-    if (typeof window === "undefined") return initialProfile;
-    try {
-      const stored = localStorage.getItem("agency_profile");
-      return stored ? (JSON.parse(stored) as Profile) : initialProfile;
-    } catch {
-      return initialProfile;
-    }
-  });
-  const [tab, setTab] = useState("Personal Details");
-  const [editing, setEditing] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  // profile is initialized lazily from localStorage above to avoid setState-in-effect
-
-  const stats = useMemo(() => ({ bookings: bookingsData.filter((booking) => booking.agency_id === "ag-001").length, guides: guidesData.length, packages: packagesData.filter((pkg) => pkg.agency_id === "ag-001").length }), []);
-  const completedItems = [Boolean(profile.email && profile.phone), Boolean(profile.website), Boolean(profile.dateOfBirth), Boolean(profile.zipCode)];
-  const completion = Math.round((completedItems.filter(Boolean).length / completedItems.length) * 100);
-  const update = (key: keyof Profile, value: string) => setProfile((current) => ({ ...current, [key]: value }));
-  const saveProfile = () => { localStorage.setItem("agency_profile", JSON.stringify(profile)); setEditing(false); setSaved(true); window.setTimeout(() => setSaved(false), 2200); };
-
-  return <div className="space-y-4">
-    <div className="flex items-center justify-between gap-3"><div><div className="flex items-center gap-2 text-sm text-neutral-500"><Link href="/dashboard">Dashboard</Link><span>/</span><span className="font-semibold text-neutral-900">Profile</span></div><h1 className="mt-2 text-2xl font-bold text-neutral-900">Profile</h1></div><button type="button" onClick={() => setEditing((value) => !value)} className="inline-flex items-center gap-2 rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-900 shadow-sm hover:bg-neutral-50"><Pencil className="h-4 w-4" /> {editing ? "Cancel edit" : "Edit Profile"}</button></div>
-    <div className="grid gap-4 lg:grid-cols-[325px_1fr]">
-      <aside className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm"><div className="h-32 bg-primary-900" /><div className="px-5 pb-5"><div className="-mt-8 flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-primary-600 text-xl font-semibold text-white shadow-sm">{profile.firstName[0]}{profile.lastName[0]}</div><h2 className="mt-3 text-lg font-semibold text-neutral-900">{profile.firstName} {profile.lastName}</h2><p className="text-sm text-neutral-500">{profile.designation || "Agency Administrator"}</p><div className="mt-4 grid grid-cols-3 divide-x rounded-xl border border-neutral-200"><ProfileStat value={stats.bookings} label="Bookings" /><ProfileStat value={stats.guides} label="Guides" /><ProfileStat value={stats.packages} label="Packages" /></div><div className="mt-5 border-t border-neutral-200 pt-4"><p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-neutral-500">Portfolio</p><p className="mt-3 flex items-center gap-2 text-sm text-neutral-700"><span className="rounded-lg bg-primary-50 p-1.5 text-primary-700"><Globe2 className="h-4 w-4" /></span>{profile.website || "Add your website"}</p><p className="mt-2 flex items-center gap-2 text-sm text-neutral-700"><span className="rounded-lg bg-success-50 p-1.5 text-success-700"><UserRound className="h-4 w-4" /></span>{profile.phone}</p></div></div></aside>
-      <main className="space-y-4"><section className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm"><div className="flex flex-wrap gap-2 border-b border-neutral-200 px-5 pt-4">{["Personal Details", "Change Password", "Experience", "Privacy Policy"].map((item) => <button key={item} type="button" onClick={() => setTab(item)} className={`rounded-t-lg px-3 py-2 text-sm font-medium ${tab === item ? "bg-primary-900 text-white" : "text-neutral-600 hover:bg-neutral-50"}`}>{item}</button>)}</div>{tab === "Personal Details" ? <div className="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3"><Field label="First Name" value={profile.firstName} disabled={!editing} onChange={(value) => update("firstName", value)} /><Field label="Middle Name" value={profile.middleName} disabled={!editing} onChange={(value) => update("middleName", value)} /><Field label="Last Name" value={profile.lastName} disabled={!editing} onChange={(value) => update("lastName", value)} /><Field label="Phone Number" value={profile.phone} disabled={!editing} onChange={(value) => update("phone", value)} wide /><Field label="Email Address" value={profile.email} disabled={!editing} onChange={(value) => update("email", value)} wide /><Field label="Date of Birth" type="date" value={profile.dateOfBirth} disabled={!editing} onChange={(value) => update("dateOfBirth", value)} /><SelectField label="Sex" value={profile.sex} disabled={!editing} onChange={(value) => update("sex", value)} options={["Male", "Female", "Other"]} /><Field label="Designation" value={profile.designation} disabled={!editing} onChange={(value) => update("designation", value)} /><Field label="Website" value={profile.website} disabled={!editing} onChange={(value) => update("website", value)} /><Field label="City" value={profile.city} disabled={!editing} onChange={(value) => update("city", value)} /><Field label="Country" value={profile.country} disabled={!editing} onChange={(value) => update("country", value)} /><Field label="Zip Code" value={profile.zipCode} disabled={!editing} onChange={(value) => update("zipCode", value)} />{editing && <div className="sm:col-span-2 lg:col-span-3"><button type="button" onClick={saveProfile} className="inline-flex items-center gap-2 rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-800"><Save className="h-4 w-4" /> Save Profile</button></div>}</div> : <div className="p-8 text-sm text-neutral-600">{tab} settings will be available here.</div>}</section>
-      <section className="rounded-2xl border border-neutral-200 bg-white shadow-sm"><div className="flex items-center gap-3 border-b border-neutral-200 px-5 py-4"><h2 className="font-semibold text-neutral-900">Complete Your Profile</h2><button type="button" onClick={() => setEditing(true)} className="inline-flex items-center gap-1 rounded-lg border border-neutral-200 px-2 py-1 text-xs font-semibold text-neutral-700"><Pencil className="h-3 w-3" /> Edit</button></div><div className="p-5"><div className="h-2 overflow-hidden rounded-full bg-neutral-100"><div className="h-full rounded-full bg-primary-700 transition-all" style={{ width: `${completion}%` }} /></div><p className="mt-3 text-sm text-neutral-500">{completion}% complete <span className="text-neutral-400">— add missing profile details</span></p><div className="mt-4 grid gap-2 sm:grid-cols-2">{[["Contact Info", completedItems[0]], ["Business Website", completedItems[1]], ["Date of Birth", completedItems[2]], ["Zip Code", completedItems[3]]].map(([label, complete]) => <div key={String(label)} className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${complete ? "border-success-200 bg-success-50 text-success-800" : "border-dashed border-neutral-200 text-neutral-500"}`}><Check className={`h-4 w-4 ${complete ? "text-success-600" : "text-neutral-300"}`} />{label}</div>)}</div></div></section></main>
-    </div>{saved && <div className="fixed bottom-5 right-5 rounded-xl bg-success-600 px-4 py-3 text-sm font-semibold text-white shadow-lg">Profile saved successfully.</div>}</div>;
+function Stat({ value, label }: { value: number | string; label: string }) {
+  return <div className="p-3 text-center"><p className="text-lg font-semibold text-neutral-900">{value}</p><p className="text-[11px] text-neutral-500">{label}</p></div>;
 }
 
-function ProfileStat({ value, label }: { value: number; label: string }) { return <div className="p-2 text-center"><p className="text-lg font-semibold text-neutral-900">{value}</p><p className="text-[11px] text-neutral-500">{label}</p></div>; }
-function Field({ label, value, onChange, disabled, type = "text", wide = false }: { label: string; value: string; onChange: (value: string) => void; disabled: boolean; type?: string; wide?: boolean }) { return <label className={wide ? "sm:col-span-2" : ""}><span className="mb-1.5 block text-xs font-semibold text-neutral-700">{label}</span><input type={type} value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none disabled:bg-neutral-50 disabled:text-neutral-700 focus:border-primary-400 focus:ring-2 focus:ring-primary-100" /></label>; }
-function SelectField({ label, value, options, onChange, disabled }: { label: string; value: string; options: string[]; onChange: (value: string) => void; disabled: boolean }) { return <label><span className="mb-1.5 block text-xs font-semibold text-neutral-700">{label}</span><select value={value} disabled={disabled} onChange={(event) => onChange(event.target.value)} className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none disabled:bg-neutral-50 focus:border-primary-400"><option value="">Select</option>{options.map((option) => <option key={option}>{option}</option>)}</select></label>; }
+export default function ProfilePage() {
+  const { user } = useAuth();
+  const summary = useDashboardSummary();
+  const options = useBrandingOptions();
+  const stats = summary.data?.stats;
+  const agency = user?.agency_name ?? "Your agency";
+  const initials = agency.split(/\s+/).map((w) => w[0]).slice(0, 2).join("").toUpperCase() || "A";
+
+  return (
+    <div className="space-y-4">
+      <div><div className="flex items-center gap-2 text-sm text-neutral-500"><Link href="/dashboard" className="hover:text-neutral-900">Dashboard</Link><span>/</span><span className="font-semibold text-neutral-900">Profile</span></div><h1 className="mt-2 text-2xl font-bold text-neutral-900">Profile</h1></div>
+
+      <div className="grid gap-4 lg:grid-cols-[325px_1fr]">
+        <aside className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm">
+          <div className="h-24 bg-primary-900" />
+          <Link
+            href="/dashboard/settings?tab=agency-info"
+            aria-label="Edit profile"
+            title="Edit profile"
+            className="absolute right-4 top-4 flex h-9 w-9 items-center justify-center rounded-lg bg-white/15 text-white backdrop-blur-sm transition hover:bg-white/25"
+          >
+            <Pencil className="h-4 w-4" />
+          </Link>
+          <div className="px-5 pb-5">
+            <div className="-mt-8 flex h-16 w-16 items-center justify-center rounded-full border-4 border-white bg-primary-600 text-xl font-semibold text-white shadow-sm">{initials}</div>
+            <h2 className="mt-3 text-lg font-semibold text-neutral-900">{agency}</h2>
+            <p className="text-sm text-neutral-500">{user ? ROLE_LABEL[user.role] ?? user.role : "—"}</p>
+            <div className="mt-4 grid grid-cols-3 divide-x rounded-xl border border-neutral-200" aria-label="Agency totals">
+              <Stat value={stats?.totalBookings ?? "—"} label="Bookings" />
+              <Stat value={stats?.guides ?? "—"} label="Guides" />
+              <Stat value={stats?.packages ?? "—"} label="Packages" />
+            </div>
+          </div>
+        </aside>
+
+        <main className="space-y-4">
+          <section className="space-y-3 rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm" aria-label="Account">
+            <h2 className="font-semibold text-neutral-900">Your account</h2>
+            <dl className="grid gap-4 sm:grid-cols-2">
+              <div className="flex items-start gap-3"><span className="rounded-lg bg-primary-50 p-2 text-primary-700"><Mail className="h-4 w-4" /></span><div><dt className="text-xs font-semibold text-neutral-500">Login email</dt><dd className="text-sm text-neutral-900">{user?.email ?? "—"}</dd></div></div>
+              <div className="flex items-start gap-3"><span className="rounded-lg bg-success-50 p-2 text-success-700"><UserRound className="h-4 w-4" /></span><div><dt className="text-xs font-semibold text-neutral-500">Role</dt><dd className="text-sm text-neutral-900">{user ? ROLE_LABEL[user.role] ?? user.role : "—"}</dd></div></div>
+              <div className="flex items-start gap-3"><span className="rounded-lg bg-warning-50 p-2 text-warning-700"><Building2 className="h-4 w-4" /></span><div><dt className="text-xs font-semibold text-neutral-500">Agency</dt><dd className="text-sm text-neutral-900">{agency}</dd></div></div>
+              <div className="flex items-start gap-3"><span className="rounded-lg bg-neutral-100 p-2 text-neutral-700"><Sparkles className="h-4 w-4" /></span><div><dt className="text-xs font-semibold text-neutral-500">Plan</dt><dd className="flex items-center gap-2 text-sm text-neutral-900"><span className="capitalize">{options.data ? options.data.tier.toLowerCase() : "—"}</span><Link href="/dashboard/settings?tab=subscription" className="text-xs font-semibold text-primary-700 hover:underline">Change plan</Link></dd></div></div>
+            </dl>
+          </section>
+
+          <section className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-sm" aria-label="Manage">
+            <h2 className="mb-3 font-semibold text-neutral-900">Manage</h2>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Link href="/dashboard/settings?tab=agency-info" className="flex items-center gap-2 rounded-xl border border-neutral-200 p-3 text-sm font-semibold hover:bg-neutral-50"><Building2 className="h-4 w-4 text-primary-700" /> Agency details &amp; verification</Link>
+              <Link href="/dashboard/settings?tab=security" className="flex items-center gap-2 rounded-xl border border-neutral-200 p-3 text-sm font-semibold hover:bg-neutral-50"><ShieldCheck className="h-4 w-4 text-primary-700" /> Change password</Link>
+              <Link href="/dashboard/settings?tab=api-keys" className="flex items-center gap-2 rounded-xl border border-neutral-200 p-3 text-sm font-semibold hover:bg-neutral-50"><KeyRound className="h-4 w-4 text-primary-700" /> API keys</Link>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+  );
+}

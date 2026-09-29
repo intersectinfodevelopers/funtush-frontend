@@ -1,2 +1,2 @@
-export { apiClient, api } from './api/client';
-export type { ApiErrorResponse, ApiSuccessResponse, ApiPaginatedResponse } from './api/client';
+export { apiClient, api, API_BASE_URL, SESSION_ENDED_EVENT } from './api/client';
+export type { ApiError } from './api/client';

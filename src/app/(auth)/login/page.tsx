@@ -1,23 +1,32 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, Mail, Lock, MapPin, AlertTriangle, ShoppingBag, Check, Mountain } from 'lucide-react';
 import { AuthLeftPanel } from '@/components/auth/AuthLeftPanel';
-import { saveSessionEverywhere, ROLE_REDIRECT } from '@/lib/auth';
+import { ROLE_REDIRECT } from '@/lib/auth';
+import { loginAgency, loginTrekker } from '@/lib/api/auth';
+import type { ApiError } from '@/lib/api/client';
 import { ROUTES } from '@/lib/constants/routes';
 import toast from 'react-hot-toast';
 import type { SessionUser } from '@/types/user';
-import usersData from '../../../../data/users.json';
 
 export default function LoginPage() {
   const router = useRouter();
+
+  // Sent here by useSessionEndRedirect when a session could not be renewed.
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get('expired')) toast('Your session has ended. Please log in again.');
+    if (q.get('ended') === 'support') toast('The support session has ended.');
+  }, []);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [audience, setAudience] = useState<'agency' | 'trekker'>('agency');
   const [isLoading, setIsLoading] = useState(false);
 
   function validateEmail(value: string) {
@@ -38,40 +47,18 @@ export default function LoginPage() {
         return;
       }
 
-      // Authenticate against local dataset in data/users.json
-      const userRaw = (usersData as any[]).find(
-        (u) => u.email.toLowerCase() === email.trim().toLowerCase(),
-      );
-
-      if (!userRaw || userRaw.password !== password) {
-        toast.error('Invalid email or password');
-        setIsLoading(false);
-        return;
-      }
-
-      const sessionUser: SessionUser = {
-        id: userRaw.id,
-        role: userRaw.role,
-        agency_id: userRaw.agency_id ?? null,
-        name: userRaw.name,
-        email: userRaw.email,
-        phone: userRaw.phone,
-        member_since: userRaw.member_since,
-        country: userRaw.country,
-        token: `local-${Date.now()}`,
-      };
-
-      try {
-        localStorage.setItem('authToken', sessionUser.token);
-      } catch {}
-
-      saveSessionEverywhere(sessionUser);
+      // Real API login — exactly ONE attempt per submit, against the chosen
+      // audience. (Trying both on failure would double every wrong-password
+      // strike against the per-email lockout.)
+      const sessionUser: SessionUser =
+        audience === 'agency' ? await loginAgency(email.trim(), password) : await loginTrekker(email.trim(), password);
 
       const dest = ROLE_REDIRECT[sessionUser.role] ?? '/';
       router.push(dest);
-    } catch (err: any) {
-      console.error('Login failed', err || {});
-      toast.error(err?.message || 'Login failed. Check credentials.');
+    } catch (err) {
+      const e = err as ApiError;
+      // 401 = wrong credentials, 429 = locked out, anything else is the API's own message.
+      toast.error(e.status === 401 ? 'Invalid email or password' : e.message || 'Login failed. Try again.');
     } finally {
       setIsLoading(false);
     }
@@ -91,7 +78,26 @@ export default function LoginPage() {
           <div className="w-full max-w-sm">
 
             <h2 className="text-2xl font-bold text-neutral-900">Welcome back</h2>
-            <p className="mt-1 text-sm text-neutral-500">Log in to your Funtush trekker account</p>
+            <p className="mt-1 text-sm text-neutral-500">
+              Log in to your Funtush {audience === 'agency' ? 'agency' : 'trekker'} account
+            </p>
+
+            <div role="tablist" aria-label="Account type" className="mt-4 grid grid-cols-2 gap-1 rounded-lg bg-neutral-100 p-1">
+              {(['agency', 'trekker'] as const).map((a) => (
+                <button
+                  key={a}
+                  type="button"
+                  role="tab"
+                  aria-selected={audience === a}
+                  onClick={() => setAudience(a)}
+                  className={`rounded-md py-2 text-sm font-semibold capitalize transition-colors ${
+                    audience === a ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'
+                  }`}
+                >
+                  {a === 'agency' ? 'Agency' : 'Trekker'}
+                </button>
+              ))}
+            </div>
 
             <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
 

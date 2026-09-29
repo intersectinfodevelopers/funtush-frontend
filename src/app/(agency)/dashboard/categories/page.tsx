@@ -1,412 +1,123 @@
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
-import {
-  CalendarDays,
-  CheckCircle2,
-  Eye,
-  FolderOpen,
-  Pencil,
-  Plus,
-  Search,
-  Tag,
-  Trash2,
-  XCircle,
-} from 'lucide-react';
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import { CalendarDays, CheckCircle2, Eye, Pencil, Plus, Tag, Trash2, XCircle } from "lucide-react";
 
-import { AnalyticsSummaryCard } from '@/components/shared/AnalyticsSummaryCard';
-import { Pagination } from '@/components/ui/pagination';
-import categoriesData from '../../../../../data/categories.json';
+import { AnalyticsSummaryCard } from "@/components/shared/AnalyticsSummaryCard";
+import { Modal } from "@/components/ui/modal";
+import { useCategoryList } from "@/hooks/useAgencyBlog";
+import { deleteCategory, type BlogCategory } from "@/lib/api/agency/blog";
+import type { ApiError } from "@/lib/api/client";
 
-interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  color: string;
-  postCount: number;
-  isActive: boolean;
-  order: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-const STORAGE_KEY = 'agency-categories';
-
-const normalizeCategories = (value: unknown): Category[] => {
-  if (Array.isArray(value)) {
-    return value as Category[];
-  }
-
-  if (value && typeof value === 'object' && Array.isArray((value as { categories?: Category[] }).categories)) {
-    return (value as { categories: Category[] }).categories;
-  }
-
-  return [];
-};
-
-const formatDate = (value: string) =>
-  new Date(value).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  });
+const field = "rounded-full border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100";
+const SORTS = {
+  newest: { label: "Newest", fn: (a: BlogCategory, b: BlogCategory) => b.createdAt.localeCompare(a.createdAt) },
+  oldest: { label: "Oldest", fn: (a: BlogCategory, b: BlogCategory) => a.createdAt.localeCompare(b.createdAt) },
+  name: { label: "Name (A–Z)", fn: (a: BlogCategory, b: BlogCategory) => a.name.localeCompare(b.name) },
+  order: { label: "Display order", fn: (a: BlogCategory, b: BlogCategory) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name) },
+  posts: { label: "Most posts", fn: (a: BlogCategory, b: BlogCategory) => b.postCount - a.postCount },
+} as const;
+type SortKey = keyof typeof SORTS;
+const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 export default function CategoriesPage() {
-  const router = useRouter();
-  const [categories, setCategories] = useState<Category[]>(() => normalizeCategories(categoriesData));
-  const [searchTerm, setSearchTerm] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [sortBy, setSortBy] = useState<'newest' | 'name' | 'order'>('newest');
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
-  const [deleteDialog, setDeleteDialog] = useState<{ category: Category } | null>(null);
+  const qc = useQueryClient();
+  const { data, isLoading, isError } = useCategoryList();
+  const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<SortKey>("newest");
+  const [removing, setRemoving] = useState<BlogCategory | null>(null);
+  const stats = data?.stats;
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
+  const rows = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return (data?.data ?? []).filter((c) => !q || c.name.toLowerCase().includes(q) || c.slug.includes(q) || (c.description ?? "").toLowerCase().includes(q)).sort(SORTS[sort].fn);
+  }, [data, search, sort]);
 
-    const frame = window.requestAnimationFrame(() => {
-      try {
-        const stored = window.localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          const savedCategories = normalizeCategories(parsed);
-          if (savedCategories.length > 0) {
-            setCategories(savedCategories);
-          }
-        } else {
-          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeCategories(categoriesData)));
-        }
-      } catch {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeCategories(categoriesData)));
-      }
-    });
+  // "% from last month": categories now vs when this month began — real counts only.
+  const growth = !stats ? undefined : stats.totalBeforeMonth === 0 ? (stats.total > 0 ? `${stats.total} new` : undefined) : `${stats.total >= stats.totalBeforeMonth ? "+" : ""}${(((stats.total - stats.totalBeforeMonth) / stats.totalBeforeMonth) * 100).toFixed(1)}%`;
+  const share = (n?: number) => (n === undefined || !stats?.total ? undefined : `${Math.round((n / stats.total) * 1000) / 10}%`);
 
-    return () => window.cancelAnimationFrame(frame);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(categories));
-  }, [categories]);
-
-  const filteredCategories = useMemo(() => {
-    const query = searchTerm.trim().toLowerCase();
-
-    const matches = categories.filter(
-      (category) =>
-        category.name.toLowerCase().includes(query) ||
-        category.slug.toLowerCase().includes(query) ||
-        category.description.toLowerCase().includes(query),
-    );
-
-    const sorted = [...matches];
-    if (sortBy === 'name') {
-      sorted.sort((a, b) => a.name.localeCompare(b.name));
-    } else if (sortBy === 'order') {
-      sorted.sort((a, b) => a.order - b.order);
-    } else {
-      sorted.sort(
-        (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-      );
-    }
-
-    return sorted;
-  }, [categories, searchTerm, sortBy]);
-
-  const totalPages = Math.max(1, Math.ceil(filteredCategories.length / 6));
-  const safeCurrentPage = Math.min(currentPage, totalPages);
-  const pageItems = filteredCategories.slice((safeCurrentPage - 1) * 6, safeCurrentPage * 6);
-
-  const stats = useMemo(
-    () => ({
-      total: categories.length,
-      active: categories.filter((category) => category.isActive).length,
-      inactive: categories.filter((category) => !category.isActive).length,
-    }),
-    [categories],
-  );
-
-  const handleDeleteCategory = (id: string) => {
-    const category = categories.find((item) => item.id === id);
-
-    if (category) {
-      setDeleteDialog({ category });
-    }
-  };
-
-  const confirmDeleteCategory = () => {
-    if (!deleteDialog) return;
-
-    setCategories((current) => current.filter((item) => item.id !== deleteDialog.category.id));
-    setDeleteDialog(null);
-  };
-
-  const handleToggleStatus = (id: string) => {
-    setCategories((current) =>
-      current.map((category) =>
-        category.id === id
-          ? {
-              ...category,
-              isActive: !category.isActive,
-              updatedAt: new Date().toISOString(),
-            }
-          : category,
-      ),
-    );
-  };
+  const remove = useMutation({
+    mutationFn: (c: BlogCategory) => deleteCategory(c.id),
+    onSuccess: (_r, c) => { toast.success(`“${c.name}” was deleted`); setRemoving(null); void qc.invalidateQueries({ queryKey: ["agency", "categories"] }); },
+    onError: (e, c) => { setRemoving(null); toast.error((e as unknown as ApiError).message || `Couldn't delete “${c.name}”.`, { duration: 7000 }); },
+  });
 
   return (
     <div className="space-y-4">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-sm text-neutral-500">
-            <button type="button" onClick={() => router.push('/dashboard')} className="hover:text-neutral-900">
-              Dashboard
-            </button>
-            <span className="text-neutral-300">/</span>
-            <span className="font-semibold text-neutral-900">Categories</span>
-          </div>
-          <h1 className="mt-2 text-2xl font-bold text-neutral-900">Categories</h1>
-          <p className="mt-1 text-sm text-neutral-600">
-            Manage blog sections and topic groups used across the site.
-          </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 text-sm text-neutral-500"><Link href="/dashboard" className="hover:text-neutral-900">Dashboard</Link><span className="text-neutral-300">/</span><span className="font-semibold text-neutral-900">Categories</span></div>
+          <h1 className="text-2xl font-bold text-neutral-900">Categories</h1>
+          <p className="text-sm text-neutral-600">Manage blog sections and topic groups used across the site.</p>
         </div>
-
-        <button
-          type="button"
-          onClick={() => router.push('/dashboard/categories/new')}
-          className="inline-flex items-center gap-2 rounded-2xl bg-primary-900 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-800"
-        >
-          <Plus size={18} />
-          Add category
-        </button>
-      </header>
-
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        <AnalyticsSummaryCard label="Total Categories" value={stats.total} tone="primary" icon={Tag} />
-        <AnalyticsSummaryCard label="Active" value={stats.active} tone="success" icon={CheckCircle2} />
-        <AnalyticsSummaryCard label="Inactive" value={stats.inactive} tone="warning" icon={XCircle} />
+        <Link href="/dashboard/categories/new" className="inline-flex items-center gap-2 self-start rounded-full bg-primary-900 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-800"><Plus className="h-4 w-4" /> Add category</Link>
       </div>
 
-      <div className="grid gap-3 md:grid-cols-[minmax(240px,1fr)_180px]">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" size={16} />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(event) => {
-              setSearchTerm(event.target.value);
-              setCurrentPage(1);
-            }}
-            placeholder="Search categories"
-            className="w-full rounded-2xl border border-neutral-200 bg-white py-2.5 pl-9 pr-3 text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-          />
-        </div>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <AnalyticsSummaryCard label="Total Categories" value={stats?.total ?? "—"} tone="primary" icon={Tag} change={growth} />
+        <AnalyticsSummaryCard label="Active" value={stats?.active ?? "—"} tone="success" icon={CheckCircle2} change={share(stats?.active)} note="of all categories" />
+        <AnalyticsSummaryCard label="Inactive" value={stats?.inactive ?? "—"} tone="warning" icon={XCircle} change={share(stats?.inactive)} note="of all categories" />
+      </div>
 
-        <select
-          value={sortBy}
-          onChange={(event) => {
-            setSortBy(event.target.value as 'newest' | 'name' | 'order');
-            setCurrentPage(1);
-          }}
-          className="rounded-2xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-        >
-          <option value="newest">Newest</option>
-          <option value="name">Name A–Z</option>
-          <option value="order">Display order</option>
+      <div className="grid gap-3 sm:grid-cols-[minmax(240px,1fr)_200px]">
+        <input type="search" aria-label="Search categories" placeholder="Search categories" value={search} onChange={(e) => setSearch(e.target.value)} className={`${field} w-full`} />
+        <select aria-label="Sort categories" value={sort} onChange={(e) => setSort(e.target.value as SortKey)} className={field}>
+          {(Object.keys(SORTS) as SortKey[]).map((k) => <option key={k} value={k}>{SORTS[k].label}</option>)}
         </select>
       </div>
 
-      <div className="overflow-x-auto rounded-2xl border border-neutral-200 bg-white">
-        <table className="min-w-full text-left text-sm">
-          <thead className="bg-neutral-50 text-[10px] uppercase tracking-[0.24em] text-neutral-500">
-            <tr>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Slug</th>
-              <th className="px-4 py-3">Description</th>
-              <th className="px-4 py-3">Posts</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Updated</th>
-              <th className="px-4 py-3 text-right">Actions</th>
-            </tr>
-          </thead>
+      {isError && <p role="alert" className="border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700">Couldn&apos;t load categories.</p>}
 
-          <tbody>
-            {pageItems.map((category) => (
-              <tr key={category.id} className="border-t border-neutral-200 hover:bg-neutral-50">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <span className="h-3.5 w-3.5 rounded-full border border-white shadow-sm" style={{ backgroundColor: category.color }} />
-                    <div>
-                      <div className="font-semibold text-neutral-900">{category.name}</div>
-                      <div className="mt-1 text-xs text-neutral-500">Order #{category.order}</div>
+      <div className="overflow-hidden border border-neutral-200 bg-white">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-neutral-50 text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">
+              <tr><th className="w-14 px-4 py-3.5">S.No</th><th className="px-4 py-3.5">Name</th><th className="px-4 py-3.5">Slug</th><th className="px-4 py-3.5">Description</th><th className="px-4 py-3.5">Posts</th><th className="px-4 py-3.5">Status</th><th className="px-4 py-3.5">Updated</th><th className="px-4 py-3.5 text-right">Actions</th></tr>
+            </thead>
+            <tbody>
+              {isLoading && Array.from({ length: 3 }).map((_, i) => <tr key={i} className="border-t border-neutral-200"><td colSpan={8} className="px-4 py-5"><div className="h-4 animate-pulse rounded bg-neutral-100" /></td></tr>)}
+              {!isLoading && rows.length === 0 && <tr><td colSpan={8} className="px-4 py-10 text-center text-neutral-500">{search ? "No categories match your search." : "No categories yet — add your first one."}</td></tr>}
+              {rows.map((c, i) => (
+                <tr key={c.id} className="border-t border-neutral-200 hover:bg-neutral-50/60">
+                  <td className="px-4 py-4 text-neutral-600">{i + 1}</td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-2.5">
+                      <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: c.color }} aria-hidden="true" />
+                      <div><Link href={`/dashboard/categories/${c.id}`} className="font-bold text-neutral-900 hover:underline">{c.name}</Link><div className="text-xs text-neutral-500">Order #{c.displayOrder}</div></div>
                     </div>
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <span className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs font-medium text-neutral-700">
-                    {category.slug}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-neutral-700">
-                  <p className="max-w-md leading-6">{category.description || 'No description provided.'}</p>
-                </td>
-                <td className="px-4 py-3 font-semibold text-neutral-900">{category.postCount}</td>
-                <td className="px-4 py-3">
-                  <button
-                    type="button"
-                    onClick={() => handleToggleStatus(category.id)}
-                    className={`inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-xs font-semibold transition ${
-                      category.isActive ? 'bg-success-50 text-success-700 hover:bg-success-100' : 'bg-danger-50 text-danger-700 hover:bg-danger-100'
-                    }`}
-                  >
-                    {category.isActive ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
-                    {category.isActive ? 'Active' : 'Inactive'}
-                  </button>
-                </td>
-                <td className="px-4 py-3 text-neutral-700">
-                  <div className="flex items-center gap-2">
-                    <CalendarDays size={14} className="text-neutral-400" />
-                    {formatDate(category.updatedAt)}
-                  </div>
-                </td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center justify-end gap-2">
-                    <ActionButton label="Preview" tone="primary" onClick={() => setSelectedCategory(category)}>
-                      <Eye size={16} />
-                    </ActionButton>
-                    <ActionButton label="Edit" tone="warning" onClick={() => router.push(`/dashboard/categories/${category.id}/edit`)}>
-                      <Pencil size={16} />
-                    </ActionButton>
-                    <ActionButton label="Delete" tone="danger" onClick={() => handleDeleteCategory(category.id)}>
-                      <Trash2 size={16} />
-                    </ActionButton>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {pageItems.length === 0 && (
-          <div className="flex flex-col items-center justify-center px-6 py-16 text-center">
-            <FolderOpen className="mb-3 text-neutral-300" size={36} />
-            <h3 className="text-lg font-semibold text-neutral-900">No categories found</h3>
-            <p className="mt-1 max-w-md text-sm text-neutral-500">
-              {searchTerm ? 'Try another keyword or clear the search.' : 'Create your first category to organize content.'}
-            </p>
-          </div>
-        )}
+                  </td>
+                  <td className="px-4 py-4"><span className="inline-block rounded-full bg-neutral-100 px-2.5 py-1 text-xs text-neutral-700">{c.slug}</span></td>
+                  <td className="max-w-xs px-4 py-4 text-neutral-700"><p className="line-clamp-3">{c.description || "—"}</p></td>
+                  <td className="px-4 py-4 font-bold text-neutral-900">{c.postCount}</td>
+                  <td className="px-4 py-4"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${c.isActive ? "bg-success-50 text-success-700" : "bg-neutral-100 text-neutral-600"}`}>{c.isActive ? <CheckCircle2 className="h-3.5 w-3.5" /> : <XCircle className="h-3.5 w-3.5" />}{c.isActive ? "Active" : "Inactive"}</span></td>
+                  <td className="px-4 py-4 text-neutral-700"><span className="inline-flex items-center gap-1.5"><CalendarDays className="h-3.5 w-3.5 text-neutral-400" />{fmt(c.updatedAt)}</span></td>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Link href={`/dashboard/categories/${c.id}`} aria-label={`View ${c.name}`} title="View" className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary-50 text-primary-700 transition hover:bg-primary-100"><Eye className="h-4 w-4" /></Link>
+                      <Link href={`/dashboard/categories/${c.id}/edit`} aria-label={`Edit ${c.name}`} title="Edit" className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-warning-50 text-warning-700 transition hover:bg-warning-100"><Pencil className="h-4 w-4" /></Link>
+                      <button type="button" aria-label={`Delete ${c.name}`} title="Delete" onClick={() => setRemoving(c)} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-danger-50 text-danger-700 transition hover:bg-danger-100"><Trash2 className="h-4 w-4" /></button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <Pagination currentPage={safeCurrentPage} totalPages={totalPages} onPageChange={setCurrentPage} />
-
-      {deleteDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-semibold text-neutral-900">Delete category?</h2>
-            <p className="mt-2 text-sm leading-6 text-neutral-600">
-              Remove {deleteDialog.category.name} from the category list?
-            </p>
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setDeleteDialog(null)}
-                className="rounded-2xl border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-900"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={confirmDeleteCategory}
-                className="rounded-2xl bg-danger-600 px-4 py-2 text-sm font-semibold text-white"
-              >
-                Delete category
-              </button>
-            </div>
+      <Modal isOpen={removing !== null} onClose={() => setRemoving(null)} title="Delete this category?" size="sm">
+        <div className="space-y-4 p-4">
+          <p className="text-sm text-neutral-600">“{removing?.name}” will be removed.{removing && removing.postCount > 0 ? ` It is used by ${removing.postCount} post${removing.postCount === 1 ? "" : "s"}, so the server will refuse — mark it inactive instead.` : " This can't be undone."}</p>
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setRemoving(null)} className="border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50">Cancel</button>
+            <button type="button" disabled={remove.isPending} onClick={() => removing && remove.mutate(removing)} className="bg-danger-600 px-4 py-2 text-sm font-semibold text-white hover:bg-danger-700 disabled:opacity-50">{remove.isPending ? "Deleting…" : "Delete"}</button>
           </div>
         </div>
-      )}
-
-      {selectedCategory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-xl rounded-2xl bg-white p-6 shadow-xl">
-            <div className="mb-5 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-neutral-400">Preview</p>
-                <h2 className="mt-1 text-xl font-bold text-neutral-900">{selectedCategory.name}</h2>
-              </div>
-              <button type="button" onClick={() => setSelectedCategory(null)} className="rounded-lg border border-neutral-200 p-2 text-neutral-500 hover:text-neutral-700">
-                <XCircle size={18} />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-neutral-50 p-3">
-                <span className="h-4 w-4 rounded-full" style={{ backgroundColor: selectedCategory.color }} />
-                <span className="text-sm font-medium text-neutral-700">{selectedCategory.slug}</span>
-              </div>
-
-              <div>
-                <p className="mb-1 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">Description</p>
-                <p className="text-sm leading-6 text-neutral-600">{selectedCategory.description || 'No description provided.'}</p>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">Posts</p>
-                  <p className="mt-2 text-2xl font-bold text-neutral-900">{selectedCategory.postCount}</p>
-                </div>
-                <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-neutral-400">Status</p>
-                  <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-neutral-200 px-2.5 py-1 text-xs font-semibold text-neutral-700">
-                    {selectedCategory.isActive ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
-                    {selectedCategory.isActive ? 'Active' : 'Inactive'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-neutral-200 bg-neutral-50 p-3 text-sm text-neutral-600">
-                <div className="flex items-center gap-2">
-                  <CalendarDays size={16} className="text-neutral-500" />
-                  Updated on {formatDate(selectedCategory.updatedAt)}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
-  );
-}
-
-function ActionButton({
-  label,
-  tone,
-  onClick,
-  children,
-}: {
-  label: string;
-  tone: 'primary' | 'warning' | 'danger';
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  const styles = {
-    primary: 'bg-primary-50 text-primary-700 hover:bg-primary-100',
-    warning: 'bg-warning-50 text-warning-700 hover:bg-warning-100',
-    danger: 'bg-danger-50 text-danger-700 hover:bg-danger-100',
-  };
-
-  return (
-    <button
-      type="button"
-      title={label}
-      aria-label={label}
-      onClick={onClick}
-      className={`inline-flex h-8 w-8 items-center justify-center rounded-lg transition ${styles[tone]}`}
-    >
-      {children}
-    </button>
   );
 }

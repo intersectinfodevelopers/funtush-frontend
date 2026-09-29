@@ -1,1308 +1,510 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
-import { ChevronDown, Search, Star, X, Upload, Plus } from "lucide-react";
-import categoriesData from "@/../data/categories.json";
+import { ImagePlus, Plus, Star, Trash2, Upload, X } from "lucide-react";
 
-interface ItineraryDay {
-  day: number;
-  location: string;
-  desc: string;
-  altitude: string;
-  photoUrl: string;
+import { useDestinationList } from "@/hooks/useAgencyDestinations";
+import { usePackageDetail } from "@/hooks/useAgencyPackages";
+import { uploadFile, validateUpload } from "@/lib/api/upload";
+import {
+  DIFFICULTY_LABEL,
+  PACKAGE_CATEGORIES,
+  PACKAGE_CURRENCIES,
+  addAddOn,
+  addDeparture,
+  addItineraryDay,
+  createPackage,
+  deleteAddOn,
+  deleteDeparture,
+  deleteItineraryDay,
+  publishPackage,
+  restorePackage,
+  unpublishPackage,
+  updateAddOn,
+  updateDeparture,
+  updateItineraryDay,
+  updatePackage,
+  type ApiPackageDetail,
+  type Difficulty,
+  type PackageInput,
+} from "@/lib/api/agency/packages";
+import type { ApiError } from "@/lib/api/client";
+
+const field = "mt-1 w-full border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-400 focus:border-primary-400 focus:ring-2 focus:ring-primary-100";
+const lbl = "block text-xs font-semibold text-neutral-700";
+const h2 = "text-[11px] font-bold uppercase tracking-[0.2em] text-neutral-600";
+const strip = "flex items-end justify-between gap-3 bg-neutral-50 px-5 py-3";
+const sub = "text-xs text-neutral-500";
+const btnDark = "inline-flex items-center gap-1.5 bg-primary-900 px-4 py-2 text-xs font-semibold text-white transition hover:bg-primary-800 disabled:opacity-50";
+const btnGhost = "inline-flex items-center gap-2 border border-neutral-200 bg-white px-3 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50 disabled:opacity-50";
+const errText = (e: unknown) => (e as ApiError).message || "That didn't work — please try again.";
+const PHOTO_MAX_MB = 3;
+const MAX_PHOTOS = 5;
+
+// ── Form state ──────────────────────────────────────────────────────────────
+
+interface DayRow { location: string; altitude: string; description: string }
+interface DepRow { id?: string; startDate: string; maxSlots: string; booked: number }
+interface AddOnRow { id?: string; name: string; price: string; perPerson: boolean }
+interface TierRow { minPeople: string; percentOff: string }
+interface FormState {
+  title: string; destination: string; category: string; difficulty: Difficulty;
+  durationDays: string; maxGroupSize: string; minDuration: string; maxDuration: string;
+  altMin: string; altMax: string; region: string; bestTime: string; activities: string; routes: string;
+  shortSummary: string; description: string; photos: string[];
+  days: DayRow[]; departures: DepRow[]; addOns: AddOnRow[];
+  price: string; currency: string; tiers: TierRow[];
+  published: boolean; featured: boolean;
 }
 
-interface DateSlot {
-  date: string;
-  slots: number;
-}
-
-interface PriceTier {
-  min: number;
-  max: number;
-  price: number;
-}
-
-interface AddOnItem {
-  name: string;
-  price: number;
-  perPerson: boolean;
-}
-
-export interface PackageForm {
-  id?: string;
-  title: string;
-  destination: string;
-  difficulty: "Easy" | "Moderate" | "Strenuous" | "Extreme";
-  duration: number;
-  durationMin?: number;
-  durationMax?: number;
-  maxGroup: number;
-  shortDesc: string;
-  fullDesc: string;
-  categoryId?: string;
-  itinerary: ItineraryDay[];
-  dates: DateSlot[];
-  basePrice: number;
-  currency: string;
-  pricing: PriceTier[];
-  heroImage: string;
-  gallery: string[];
-  video: string;
-  addons: AddOnItem[];
-  region?: string;
-  activities?: string[];
-  altitudeMin?: number;
-  altitudeMax?: number;
-  bestTime?: string;
-  routes?: string[];
-  status?: "published" | "draft" | "unlisted" | "archived";
-  featured?: boolean;
-}
-
-interface PackageBuilderFormProps {
-  initialData?: PackageForm | null;
-  packageId?: string;
-  isNew?: boolean;
-}
-
-const initialFormState: PackageForm = {
-  title: "",
-  destination: "",
-  difficulty: "Moderate",
-  duration: 1,
-  durationMin: undefined,
-  durationMax: undefined,
-  maxGroup: 12,
-  shortDesc: "",
-  fullDesc: "",
-  categoryId: "",
-  itinerary: [],
-  dates: [],
-  basePrice: 0,
-  currency: "NPR",
-  pricing: [],
-  heroImage: "",
-  gallery: [],
-  video: "",
-  addons: [],
-  region: "",
-  activities: [],
-  altitudeMin: undefined,
-  altitudeMax: undefined,
-  bestTime: "",
-  routes: [],
-  status: "draft",
-  featured: false,
+const EMPTY: FormState = {
+  title: "", destination: "", category: "", difficulty: "MODERATE", durationDays: "1", maxGroupSize: "12", minDuration: "", maxDuration: "",
+  altMin: "", altMax: "", region: "", bestTime: "", activities: "", routes: "", shortSummary: "", description: "", photos: [],
+  days: [], departures: [], addOns: [], price: "", currency: "NPR", tiers: [], published: false, featured: false,
 };
 
-const MAX_GALLERY_IMAGES = 5;
-const fieldClassName =
-  "w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none transition placeholder:text-neutral-400 hover:border-neutral-400 focus:border-primary-500 focus:ring-4 focus:ring-primary-50";
-const labelClassName = "block text-xs font-medium text-neutral-700 mb-1";
+const n = (v: number | null | undefined) => (v === null || v === undefined ? "" : String(v));
 
-// One consistent style for every section's action button (Add Day, Add
-// service, Add tier, etc.) so buttons stop looking different per section.
-const sectionActionButtonClassName =
-  "inline-flex items-center gap-1.5 rounded-lg bg-primary-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-primary-800";
+function toForm(p: ApiPackageDetail): FormState {
+  return {
+    title: p.title, destination: p.destination ?? "", category: p.category ?? "", difficulty: p.difficulty,
+    durationDays: String(p.durationDays), maxGroupSize: String(p.maxGroupSize), minDuration: n(p.minDurationDays), maxDuration: n(p.maxDurationDays),
+    altMin: n(p.altitudeMinM), altMax: n(p.altitudeMaxM), region: p.region ?? "", bestTime: p.bestTimeToVisit ?? "",
+    activities: (p.activities ?? []).join(", "), routes: (p.routes ?? []).join(", "), shortSummary: p.shortSummary ?? "", description: p.description ?? "",
+    photos: p.photos ?? [],
+    days: [...p.itineraries].sort((a, b) => a.dayNumber - b.dayNumber).map((d) => ({ location: d.location ?? "", altitude: n(d.altitudeM), description: d.description ?? "" })),
+    departures: [...p.departureDates].sort((a, b) => a.startDate.localeCompare(b.startDate)).map((d) => ({ id: d.id, startDate: d.startDate.slice(0, 10), maxSlots: String(d.maxSlots), booked: d.bookedSlots })),
+    addOns: p.addOns.map((a) => ({ id: a.id, name: a.name, price: String(Number(a.price)), perPerson: a.perPerson })),
+    price: String(Number(p.pricePerPerson)), currency: p.currency ?? "NPR",
+    tiers: (p.volumeDiscounts ?? []).map((t) => ({ minPeople: String(t.minPeople), percentOff: String(t.percentOff) })),
+    published: p.status === "PUBLISHED", featured: Boolean(p.isFeatured),
+  };
+}
 
-const CURRENCIES: { code: string; label: string; symbol: string }[] = [
-  { code: "NPR", label: "Nepalese Rupee", symbol: "Rs" },
-  { code: "USD", label: "US Dollar", symbol: "$" },
-  { code: "EUR", label: "Euro", symbol: "€" },
-  { code: "GBP", label: "British Pound", symbol: "£" },
-  { code: "INR", label: "Indian Rupee", symbol: "₹" },
-];
+const list = (s: string) => s.split(",").map((x) => x.trim()).filter(Boolean);
+const intOrNull = (s: string) => (s.trim() === "" ? null : Number(s));
 
-const currencySymbol = (code: string) =>
-  CURRENCIES.find((c) => c.code === code)?.symbol ?? code;
+/** Everything the form can say about the package itself (not its itinerary / departures / add-ons). */
+function toInput(f: FormState): PackageInput {
+  return {
+    title: f.title.trim(), description: f.description.trim() || undefined, durationDays: Number(f.durationDays), pricePerPerson: Number(f.price),
+    difficulty: f.difficulty, maxGroupSize: Number(f.maxGroupSize), photos: f.photos,
+    destination: f.destination.trim() || null, category: f.category || null,
+    minDurationDays: intOrNull(f.minDuration), maxDurationDays: intOrNull(f.maxDuration), altitudeMinM: intOrNull(f.altMin), altitudeMaxM: intOrNull(f.altMax),
+    region: f.region.trim() || null, bestTimeToVisit: f.bestTime.trim() || null, activities: list(f.activities), routes: list(f.routes),
+    shortSummary: f.shortSummary.trim() || null, currency: f.currency, isFeatured: f.featured,
+    volumeDiscounts: f.tiers.filter((t) => t.minPeople || t.percentOff).map((t) => ({ minPeople: Number(t.minPeople), percentOff: Number(t.percentOff) })),
+  };
+}
 
-// Consistent section wrapper used throughout the page
-function Section({
-  title,
-  description,
-  children,
-  action,
-}: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
-  action?: React.ReactNode;
-}) {
+/** Today as YYYY-MM-DD in the user's own timezone (what a date input compares against). */
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+
+type Errors = Record<string, string>;
+
+/** Every problem with the form, keyed by the input it belongs to (the server checks everything again). */
+function problems(f: FormState, original: ApiPackageDetail | null): Errors {
+  const e: Errors = {};
+  if (!f.title.trim()) e.title = "Title is required.";
+  if (!Number.isInteger(Number(f.durationDays)) || Number(f.durationDays) < 1) e.durationDays = "Enter the number of days (1 or more).";
+  if (!Number.isInteger(Number(f.maxGroupSize)) || Number(f.maxGroupSize) < 1) e.maxGroupSize = "Enter a group size (1 or more).";
+  if (f.price.trim() === "" || !(Number(f.price) >= 0)) e.pricePerPerson = "Price is required.";
+  if (f.photos.length === 0) e.photos = "Add at least one photo.";
+  for (const [v, k, l] of [[f.minDuration, "minDurationDays", "Minimum duration"], [f.maxDuration, "maxDurationDays", "Maximum duration"], [f.altMin, "altitudeMinM", "Minimum altitude"], [f.altMax, "altitudeMaxM", "Maximum altitude"]] as const) {
+    if (v.trim() !== "" && (!Number.isInteger(Number(v)) || Number(v) < 0)) e[k] = `${l} must be a whole number.`;
+  }
+  if (!e.minDurationDays && !e.maxDurationDays && f.minDuration && f.maxDuration && Number(f.minDuration) > Number(f.maxDuration)) e.minDurationDays = "Minimum can't be more than the maximum.";
+  if (!e.altitudeMinM && !e.altitudeMaxM && f.altMin && f.altMax && Number(f.altMin) > Number(f.altMax)) e.altitudeMinM = "Minimum can't be more than the maximum.";
+  const seen = new Set<string>();
+  for (const [i, d] of f.departures.entries()) {
+    if (!d.startDate) e[`departures.${i}`] = "Pick a departure date.";
+    else if (seen.has(d.startDate)) e[`departures.${i}`] = "Another departure already has this date.";
+    else {
+      seen.add(d.startDate);
+      // A new or re-dated departure can't be in the past (one that's already gone by is left alone).
+      const was = d.id ? original?.departureDates.find((o) => o.id === d.id)?.startDate.slice(0, 10) : undefined;
+      if (d.startDate !== was && d.startDate < today()) e[`departures.${i}`] = "The date can't be in the past — pick today or later.";
+    }
+    if (!e[`departures.${i}`]) {
+      if (!Number.isInteger(Number(d.maxSlots)) || Number(d.maxSlots) < 1) e[`departures.${i}`] = "Enter the number of slots (1 or more).";
+      else if (d.booked > Number(d.maxSlots)) e[`departures.${i}`] = `${d.booked} seats are already booked, so this needs at least ${d.booked} slots.`;
+    }
+  }
+  for (const [i, t] of f.tiers.entries()) if (!(Number(t.minPeople) >= 2) || !(Number(t.percentOff) > 0 && Number(t.percentOff) <= 90)) e[`tiers.${i}`] = "Use a group of 2 or more and a discount between 0 and 90%.";
+  for (const [i, a] of f.addOns.entries()) if (!a.name.trim() || a.price.trim() === "" || !(Number(a.price) >= 0)) e[`addOns.${i}`] = "An add-on needs a name and a price.";
+  return e;
+}
+
+/** Brings the server's itinerary / departures / add-ons in line with the form (only what changed). */
+/** Runs one step of the sync and, if it fails, says which itinerary day / departure / add-on it was. */
+async function step<T>(what: string, run: () => Promise<T>): Promise<T> {
+  try { return await run(); } catch (err) {
+    const e = err as ApiError;
+    throw Object.assign(new Error(`${what}: ${e.message || "couldn't be saved."}`), { status: e.status });
+  }
+}
+
+async function syncChildren(id: string, f: FormState, before: ApiPackageDetail | null) {
+  const oldDays = new Map((before?.itineraries ?? []).map((d) => [d.dayNumber, d]));
+  for (const [i, d] of f.days.entries()) {
+    const body = { location: d.location.trim() || undefined, description: d.description.trim() || undefined, altitudeM: intOrNull(d.altitude) };
+    const old = oldDays.get(i + 1);
+    if (!old) await step(`Itinerary day ${i + 1}`, () => addItineraryDay(id, { dayNumber: i + 1, ...body }));
+    else if ((old.location ?? "") !== d.location.trim() || (old.description ?? "") !== d.description.trim() || (old.altitudeM ?? null) !== body.altitudeM) {
+      await step(`Itinerary day ${i + 1}`, () => updateItineraryDay(id, i + 1, { location: d.location.trim(), description: d.description.trim(), altitudeM: body.altitudeM }));
+    }
+  }
+  for (const day of [...oldDays.keys()].filter((k) => k > f.days.length).sort((a, b) => b - a)) await step(`Itinerary day ${day}`, () => deleteItineraryDay(id, day));
+
+  const oldDeps = new Map((before?.departureDates ?? []).map((d) => [d.id, d]));
+  const keep = new Set(f.departures.map((d) => d.id).filter(Boolean));
+  for (const old of oldDeps.values()) if (!keep.has(old.id)) await step(`Departure ${old.startDate.slice(0, 10)}`, () => deleteDeparture(id, old.id));
+  for (const d of f.departures) {
+    const old = d.id ? oldDeps.get(d.id) : undefined;
+    if (!old) await step(`Departure ${d.startDate}`, () => addDeparture(id, { startDate: d.startDate, maxSlots: Number(d.maxSlots) }));
+    else if (old.startDate.slice(0, 10) !== d.startDate || old.maxSlots !== Number(d.maxSlots)) {
+      await step(`Departure ${d.startDate}`, () => updateDeparture(id, old.id, { ...(old.startDate.slice(0, 10) !== d.startDate ? { startDate: d.startDate } : {}), maxSlots: Number(d.maxSlots) }));
+    }
+  }
+
+  const oldAdd = new Map((before?.addOns ?? []).map((a) => [a.id, a]));
+  const keepAdd = new Set(f.addOns.map((a) => a.id).filter(Boolean));
+  for (const old of oldAdd.values()) if (!keepAdd.has(old.id)) await step(`Add-on “${old.name}”`, () => deleteAddOn(id, old.id));
+  for (const a of f.addOns) {
+    const old = a.id ? oldAdd.get(a.id) : undefined;
+    const body = { name: a.name.trim(), price: Number(a.price), perPerson: a.perPerson };
+    if (!old) await step(`Add-on “${body.name}”`, () => addAddOn(id, body));
+    else if (old.name !== body.name || Number(old.price) !== body.price || old.perPerson !== body.perPerson) await step(`Add-on “${body.name}”`, () => updateAddOn(id, old.id, body));
+  }
+}
+
+// ── Small pieces ────────────────────────────────────────────────────────────
+
+/** The red * that marks a required field. */
+const Req = () => <span className="ml-0.5 text-danger-600" aria-hidden="true">*</span>;
+
+function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
-    <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="mb-4 flex items-start justify-between gap-3 border-b border-neutral-100 pb-3">
+    <div>
+      <span className={lbl}>{label}</span>
+      <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)} className={`mt-2 flex h-6 w-12 items-center rounded-full p-0.5 transition ${on ? "bg-primary-900" : "bg-neutral-200"}`}>
+        <span className={`h-5 w-5 rounded-full bg-white shadow transition ${on ? "translate-x-6" : ""}`} />
+      </button>
+    </div>
+  );
+}
+
+function PhotoDrop({ photos, onChange }: { photos: string[]; onChange: (p: string[]) => void }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [over, setOver] = useState(false);
+
+  async function add(files: FileList | File[] | null) {
+    const picked = Array.from(files ?? []).slice(0, MAX_PHOTOS - photos.length);
+    if (picked.length === 0) return;
+    setBusy(true);
+    const urls: string[] = [];
+    for (const file of picked) {
+      const bad = validateUpload(file, { maxMb: PHOTO_MAX_MB });
+      if (bad) { toast.error(`${file.name}: ${bad}`); continue; }
+      try { urls.push(await uploadFile(file, { maxMb: PHOTO_MAX_MB })); } catch (e) { toast.error(`${file.name}: ${errText(e)}`); }
+    }
+    setBusy(false);
+    if (urls.length) onChange([...photos, ...urls]);
+  }
+
+  return (
+    <section className="border-b border-neutral-200">
+      <div className={strip}>
         <div>
-          <h3 className="text-base font-semibold text-neutral-900">{title}</h3>
-          {description && (
-            <p className="mt-0.5 text-xs text-neutral-500">{description}</p>
-          )}
+          <h2 className={h2}>Photos<Req /></h2>
+          <p className={sub}>At least one photo is required, up to {MAX_PHOTOS}. The first one is the featured photo — click ★ on any other to change it.</p>
         </div>
-        {action}
+        <span className={`text-xs font-semibold ${photos.length ? "text-neutral-600" : "text-danger-600"}`}>{photos.length}/{MAX_PHOTOS} photos</span>
       </div>
-      {children}
+      <div className="p-5">
+      {photos.length > 0 && (
+        <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {photos.map((u, i) => (
+            <li key={u} className="group relative overflow-hidden border border-neutral-200">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={u} alt={`Package photo ${i + 1}`} className="aspect-[4/3] w-full object-cover" />
+              {i === 0 && <span className="absolute left-2 top-2 bg-primary-900 px-2 py-0.5 text-[10px] font-semibold text-white">Featured</span>}
+              <div className="absolute inset-x-0 bottom-0 flex justify-end gap-1 bg-gradient-to-t from-black/50 p-1.5 opacity-0 transition group-hover:opacity-100 focus-within:opacity-100">
+                {i !== 0 && <button type="button" aria-label="Make featured" title="Make featured" onClick={() => onChange([u, ...photos.filter((x) => x !== u)])} className="bg-white p-1.5 text-neutral-800"><Star className="h-3.5 w-3.5" /></button>}
+                <button type="button" aria-label="Remove photo" title="Remove" onClick={() => onChange(photos.filter((x) => x !== u))} className="bg-white p-1.5 text-danger-600"><X className="h-3.5 w-3.5" /></button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {photos.length < MAX_PHOTOS && (
+        <div
+          onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+          onDragLeave={() => setOver(false)}
+          onDrop={(e) => { e.preventDefault(); setOver(false); void add(e.dataTransfer.files); }}
+          className={`mt-3 flex flex-col items-center gap-3 border-2 border-dashed p-8 text-center ${over ? "border-primary-400 bg-primary-50" : "border-neutral-200"}`}
+        >
+          <Upload className="h-6 w-6 text-neutral-400" />
+          <p className="text-xs text-neutral-500">Drag &amp; drop up to {MAX_PHOTOS - photos.length} photo{MAX_PHOTOS - photos.length === 1 ? "" : "s"} here (JPG, JPEG, PNG, WebP or GIF, up to 3 MB)</p>
+          <button type="button" disabled={busy} onClick={() => inputRef.current?.click()} className={btnDark}><ImagePlus className="h-4 w-4" />{busy ? "Uploading…" : "Choose files"}</button>
+          <input ref={inputRef} type="file" multiple accept=".jpg,.jpeg,.png,.webp,.gif,image/jpeg,image/png,image/webp,image/gif" aria-label="Choose photos" className="sr-only" onChange={(e) => { void add(e.target.files); e.target.value = ""; }} />
+        </div>
+      )}
+      </div>
     </section>
   );
 }
 
-export default function PackageBuilderForm({
-  initialData,
-  packageId,
-}: PackageBuilderFormProps) {
+function Section({ title, hint, action, children }: { title: string; hint?: string; action?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <section className="border-b border-neutral-200">
+      <div className={strip}>
+        <div>
+          <h2 className={h2}>{title}</h2>
+          {hint && <p className={sub}>{hint}</p>}
+        </div>
+        {action}
+      </div>
+      <div className="space-y-3 p-5">{children}</div>
+    </section>
+  );
+}
+
+const iconBtn = "p-2 text-danger-600 hover:bg-danger-50";
+const empty = "border border-dashed border-neutral-200 p-4 text-center text-xs text-neutral-500";
+
+// ── The form ────────────────────────────────────────────────────────────────
+
+function Builder({ initial, original, onSaved }: { initial: FormState; original: ApiPackageDetail | null; onSaved: () => void }) {
   const router = useRouter();
-  const isEditing = Boolean(packageId);
+  const qc = useQueryClient();
+  const [f, setF] = useState<FormState>(initial);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Errors>({});
+  const destinations = useDestinationList({ limit: 100 });
+  const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setF((c) => ({ ...c, [k]: v }));
+  const text = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => set(k, e.target.value as never);
+  const E = (k: string) => (errors[k] ? <p role="alert" className="mt-1 text-xs text-danger-600">{errors[k]}</p> : null);
+  const rowErrors = (prefix: string, label: string) => Object.entries(errors).filter(([k]) => k.startsWith(`${prefix}.`)).map(([k, m]) => <p key={k} role="alert" className="text-xs text-danger-600">{label} {Number(k.split(".")[1]) + 1}: {m}</p>);
+  const archived = original?.status === "ARCHIVED";
+  const editing = original !== null;
+  const wasPublished = original?.status === "PUBLISHED";
 
-  const [formData, setFormData] = useState<PackageForm>(
-    initialData || initialFormState,
-  );
+  const refresh = () => {
+    setTimeout(() => void qc.invalidateQueries({ queryKey: ["agency", "package"] }), 900); // the history entry is written just after the response
+    setTimeout(() => void qc.invalidateQueries({ queryKey: ["agency", "package-activity"] }), 900); // the bell shows who just did this (written just after the response)
+    void qc.invalidateQueries({ queryKey: ["agency", "package"] });
+    void qc.invalidateQueries({ queryKey: ["agency", "packages"] });
+    void qc.invalidateQueries({ queryKey: ["agency", "summary"] });
+  };
 
-  const [calendarInput, setCalendarInput] = useState("");
-  const [defaultSlotAllocation, setDefaultSlotAllocation] = useState(15);
-  const [dragActive, setDragActive] = useState(false);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const dragOverIndexRef = useRef<number | null>(null);
-
-  const [categoryOpen, setCategoryOpen] = useState(false);
-  const [categoryFilter, setCategoryFilter] = useState("");
-
-  const galleryCount = (formData.gallery || []).length;
-  const hasMinimumPhoto = galleryCount >= 1;
-
-  const handlePublish = () => {
-    if (!hasMinimumPhoto) {
-      toast.error("Add at least 1 photo before saving.");
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    const found = problems(f, original);
+    if (Object.keys(found).length > 0) {
+      setErrors(found);
+      const n = Object.keys(found).length;
+      setError(`Please fix ${n === 1 ? "the highlighted field" : `the ${n} highlighted fields`} and try again.`);
+      toast.error(`Can't save yet — ${n === 1 ? "one field needs" : `${n} fields need`} attention.`);
+      requestAnimationFrame(() => document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
       return;
     }
-
-    const stored = localStorage.getItem("packages");
-    const database: PackageForm[] = stored ? JSON.parse(stored) : [];
-
-    const payload: PackageForm = {
-      ...formData,
-      id: packageId || `pkg-${Date.now()}`,
-      status: "published",
-    };
-
-    let synchronizedList: PackageForm[];
-    if (packageId) {
-      synchronizedList = database.map((item) =>
-        String(item.id) === String(packageId) ? payload : item,
-      );
-    } else {
-      synchronizedList = [...database, payload];
-    }
-
+    setErrors({});
+    setError(null);
+    setBusy(true);
+    let id = original?.id ?? null;
     try {
-      localStorage.setItem("packages", JSON.stringify(synchronizedList));
-      toast.success(`Package ${packageId ? "updated" : "created"} successfully.`);
-      router.push("/dashboard/packages");
-      return;
+      if (id) await updatePackage(id, toInput(f));
+      else id = (await createPackage(toInput(f))).id;
+      await syncChildren(id, f, original);
+      if (f.published && !wasPublished && !archived) await publishPackage(id);
+      if (!f.published && wasPublished) await unpublishPackage(id);
+      const name = `“${f.title.trim()}”`;
+      toast.success(!editing ? (f.published ? `${name} was created and published` : `${name} was created as a draft`) : f.published && !wasPublished ? `${name} is now published` : !f.published && wasPublished ? `${name} was unpublished (back to draft)` : `${name} was saved`);
+      refresh();
+      if (editing) onSaved();
+      else router.replace(`/dashboard/packages/${id}/edit`);
     } catch (err) {
-      console.warn("localStorage.setItem failed, attempting trimmed save:", err);
-
-      // If we exceeded localStorage quota (large image data URLs), try
-      // saving a trimmed version without heavy binary data (gallery/heroImage).
-      try {
-        const trimmedList = synchronizedList.map((p) => {
-          const { gallery, heroImage, ...rest } = p as any;
-          return {
-            ...rest,
-            // keep metadata but drop large image payloads to reduce size
-            gallery: [],
-            heroImage: "",
-          } as PackageForm;
-        });
-
-        localStorage.setItem("packages", JSON.stringify(trimmedList));
-        toast.success(
-          `Package ${packageId ? "updated" : "created"} saved (images omitted due to storage limits).`,
-        );
-        router.push("/dashboard/packages");
-        return;
-      } catch (err2) {
-        console.error("Trimmed localStorage save failed:", err2);
-        toast.error(
-          "Failed to save package: local storage quota exceeded. Remove some images or use a smaller payload.",
-        );
-        return;
-      }
+      refresh();
+      const e = err as ApiError;
+      setErrors(e.fields ?? {});
+      setError(errText(err));
+      toast.error(errText(err));
+      // A brand-new package that was created but not fully saved continues on its own edit page.
+      if (!editing && id) { toast(`“${f.title.trim()}” was created as a draft, but a part of it couldn't be saved — finish it here.`, { duration: 6000 }); router.replace(`/dashboard/packages/${id}/edit`); }
+      else requestAnimationFrame(() => document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus());
+    } finally {
+      setBusy(false);
     }
-  };
+  }
 
-  /* ==========================================
-     ITINERARY CONTROLLERS
-     ========================================== */
-  const addItineraryDay = () => {
-    const currentDays = formData.itinerary || [];
-    const newDay: ItineraryDay = {
-      day: currentDays.length + 1,
-      location: "",
-      desc: "",
-      altitude: "",
-      photoUrl: "",
-    };
-    setFormData({ ...formData, itinerary: [...currentDays, newDay] });
-  };
-
-  const updateItineraryField = (
-    index: number,
-    key: keyof ItineraryDay,
-    value: string | number,
-  ) => {
-    const updatedDays = formData.itinerary.map((d, i) =>
-      i === index ? { ...d, [key]: value } : d,
-    );
-    setFormData({ ...formData, itinerary: updatedDays });
-  };
-
-  const removeItineraryDay = (index: number) => {
-    const filtered = formData.itinerary.filter((_, i) => i !== index);
-    const reindexed = filtered.map((d, i) => ({ ...d, day: i + 1 }));
-    setFormData({ ...formData, itinerary: reindexed });
-  };
-
-  const moveItineraryItem = (index: number, direction: "up" | "down") => {
-    const list = [...formData.itinerary];
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= list.length) return;
-
-    const temp = list[index];
-    list[index] = list[targetIndex];
-    list[targetIndex] = temp;
-
-    const reindexed = list.map((d, i) => ({ ...d, day: i + 1 }));
-    setFormData({ ...formData, itinerary: reindexed });
-  };
-
-  /* ==========================================
-     DEPARTURE DATE CONTROLLERS
-     ========================================== */
-  const handleToggleCalendarDate = () => {
-    if (!calendarInput) return;
-    const existingDates = formData.dates || [];
-    const matched = existingDates.find((d) => d.date === calendarInput);
-
-    if (matched) {
-      setFormData({
-        ...formData,
-        dates: existingDates.filter((d) => d.date !== calendarInput),
-      });
-    } else {
-      setFormData({
-        ...formData,
-        dates: [
-          ...existingDates,
-          { date: calendarInput, slots: defaultSlotAllocation },
-        ].sort(
-          (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-        ),
-      });
-    }
-    setCalendarInput("");
-  };
-
-  /* ==========================================
-     GALLERY / PHOTO UPLOAD
-     ========================================== */
-  const toDataUrl = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(String(reader.result));
-      reader.onerror = () => {
-        console.debug("toDataUrl: reader error for", file.name);
-        reject(new Error(`Failed to read file ${file.name}`));
-      };
-      try {
-        console.debug("toDataUrl: reading", file.name, file.type, file.size);
-        reader.readAsDataURL(file);
-      } catch (err) {
-        console.debug("toDataUrl: readAsDataURL threw for", file.name, err);
-        reject(err);
-      }
-    });
-
-  const MAX_FILE_SIZE = 6 * 1024 * 1024; // 6MB per file
-  type ReadResult = { ok: true; data: string } | { ok: false; reason: string };
-
-  const handleFiles = useCallback(
-    async (files: FileList | File[]) => {
-      const list = Array.from(files).slice(0, MAX_GALLERY_IMAGES);
-
-      console.debug(
-        "handleFiles: received files",
-        list.map((f) => ({ name: f.name, type: f.type, size: f.size })),
-      );
-      // Validate and read files individually so a single bad file doesn't fail all
-      const readPromises: Promise<ReadResult>[] = list.map(
-        async (file): Promise<ReadResult> => {
-          if (!file.type.startsWith("image/")) {
-            console.debug(
-              "handleFiles: unsupported type",
-              file.name,
-              file.type,
-            );
-            return { ok: false, reason: `Unsupported file type: ${file.name}` };
-          }
-          if (file.size > MAX_FILE_SIZE) {
-            console.debug("handleFiles: file too large", file.name, file.size);
-            return {
-              ok: false,
-              reason: `File too large: ${file.name} (max 6MB)`,
-            };
-          }
-          try {
-            const data = await toDataUrl(file);
-            console.debug("handleFiles: read success", file.name);
-            return { ok: true, data };
-          } catch (err) {
-            console.debug("handleFiles: read failed", file.name, err);
-            return { ok: false, reason: `Failed to read ${file.name}` };
-          }
-        },
-      );
-
-      const results = (await Promise.all(readPromises)) as ReadResult[];
-      const successful = results
-        .filter((r): r is { ok: true; data: string } => r.ok)
-        .map((r) => r.data);
-      const errors = results
-        .filter((r): r is { ok: false; reason: string } => !r.ok)
-        .map((r) => r.reason);
-
-      if (errors.length > 0) {
-        console.warn("Gallery upload errors:", errors);
-        toast.error(errors[0]);
-      }
-
-      if (successful.length === 0) return;
-
-      setFormData((prev) => {
-        const merged = Array.from(
-          new Set([...(prev.gallery || []), ...successful]),
-        ).slice(0, MAX_GALLERY_IMAGES);
-        return {
-          ...prev,
-          gallery: merged,
-          heroImage:
-            prev.heroImage && merged.includes(prev.heroImage)
-              ? prev.heroImage
-              : merged[0] || "",
-        };
-      });
-    },
-    [toDataUrl, setFormData, MAX_FILE_SIZE],
-  );
-
-  // Expose handler for debugging/testing in dev environment
-  useEffect(() => {
+  async function restore() {
+    if (!original) return;
+    setBusy(true);
     try {
-      // @ts-expect-error Expose debug handler to window for integration tests
-      window.__funtush_handleFiles = handleFiles;
-    } catch (e) {
-      // ignore
+      await restorePackage(original.id);
+      toast.success(`“${original.title}” was restored as a draft — review it, then publish`);
+      refresh();
+      onSaved();
+    } catch (err) {
+      setError(errText(err));
+      toast.error(errText(err), { duration: 6000 });
+    } finally {
+      setBusy(false);
     }
-    return () => {
-      try {
-        // @ts-expect-error Remove debug handler during cleanup
-        delete window.__funtush_handleFiles;
-      } catch (e) {}
-    };
-  }, [handleFiles]);
-
-  const handleDrag = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === "dragenter" || e.type === "dragover") setDragActive(true);
-    if (e.type === "dragleave") setDragActive(false);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    handleFiles(e.dataTransfer.files);
-  };
-
-  const onThumbDragStart = (
-    index: number,
-    e: React.DragEvent<HTMLImageElement>,
-  ) => {
-    setDragIndex(index);
-    e.dataTransfer.effectAllowed = "move";
-  };
-
-  const onThumbDragOver = (
-    index: number,
-    e: React.DragEvent<HTMLDivElement>,
-  ) => {
-    e.preventDefault();
-    dragOverIndexRef.current = index;
-  };
-
-  const onThumbDrop = () => {
-    const from = dragIndex;
-    const to = dragOverIndexRef.current;
-    if (from == null || to == null) return;
-    const gallery = Array.from(formData.gallery || []);
-    const [moved] = gallery.splice(from, 1);
-    gallery.splice(to, 0, moved);
-    const heroStillPresent = gallery.includes(formData.heroImage || "");
-    setFormData({
-      ...formData,
-      gallery,
-      heroImage: heroStillPresent ? formData.heroImage : gallery[0] || "",
-    });
-    setDragIndex(null);
-    dragOverIndexRef.current = null;
-  };
-
-  const removeGalleryImage = (index: number) => {
-    const removed = formData.gallery[index];
-    const remaining = formData.gallery.filter((_, idx) => idx !== index);
-    setFormData({
-      ...formData,
-      gallery: remaining,
-      heroImage:
-        formData.heroImage === removed
-          ? remaining[0] || ""
-          : formData.heroImage,
-    });
-  };
-
-  const setFeaturedImage = (image: string) => {
-    setFormData({ ...formData, heroImage: image });
-  };
-
-  /* ==========================================
-     CATEGORY PICKER
-     ========================================== */
-  const allCategories: { id: string; name: string }[] =
-    (
-      categoriesData as unknown as {
-        categories?: { id: string; name: string }[];
-      }
-    ).categories || [];
-
-  const selectedCategory = allCategories.find(
-    (c) => c.id === formData.categoryId,
-  );
-
-  const filteredCategories = allCategories.filter((c) =>
-    c.name.toLowerCase().includes(categoryFilter.toLowerCase()),
-  );
-
-  const selectCategory = (id: string) => {
-    setFormData({ ...formData, categoryId: id });
-    setCategoryOpen(false);
-    setCategoryFilter("");
-  };
+  }
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-5 py-2 sm:py-4">
-      <Section title="Package Builder" description="All package settings.">
-        {/* ============ BASIC INFO ============ */}
-        <div className="mb-6">
-          <div className="mb-4">
-            <h3 className="text-base font-semibold text-neutral-900">
-              Basic Information
-            </h3>
-            <p className="mt-0.5 text-xs text-neutral-500">
-              Core details that identify this package.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div>
-              <label className={labelClassName}>Trek Title</label>
-              <input
-                type="text"
-                className={fieldClassName}
-                placeholder="e.g., Manaslu Circuit Tour"
-                value={formData.title}
-                onChange={(e) =>
-                  setFormData({ ...formData, title: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <label className={labelClassName}>Destination</label>
-              <input
-                type="text"
-                list="destinations"
-                className={fieldClassName}
-                placeholder="Type or choose a destination"
-                value={formData.destination}
-                onChange={(e) =>
-                  setFormData({ ...formData, destination: e.target.value })
-                }
-              />
-              <datalist id="destinations">
-                <option value="Everest" />
-                <option value="Annapurna" />
-                <option value="Langtang" />
-                <option value="Manaslu" />
-              </datalist>
-            </div>
-
-            {/* Category */}
-            <div>
-              <label className={labelClassName}>Category</label>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCategoryOpen((o) => !o);
-                    setCategoryFilter("");
-                  }}
-                  className={`${fieldClassName} flex items-center justify-between gap-2 text-left`}
-                >
-                  <span
-                    className={
-                      selectedCategory ? "text-neutral-900" : "text-neutral-400"
-                    }
-                  >
-                    {selectedCategory
-                      ? selectedCategory.name
-                      : "Select a category"}
-                  </span>
-                  <ChevronDown
-                    size={16}
-                    className={`shrink-0 text-neutral-400 transition-transform ${categoryOpen ? "rotate-180" : ""}`}
-                  />
-                </button>
-
-                {categoryOpen && (
-                  <>
-                    <div
-                      className="fixed inset-0 z-10"
-                      onClick={() => setCategoryOpen(false)}
-                    />
-                    <div className="absolute z-20 mt-1 w-full rounded-xl border border-neutral-200 bg-white shadow-lg">
-                      <div className="relative border-b border-neutral-100 p-2">
-                        <Search
-                          size={14}
-                          className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400"
-                        />
-                        <input
-                          autoFocus
-                          value={categoryFilter}
-                          onChange={(e) => setCategoryFilter(e.target.value)}
-                          placeholder="Search categories..."
-                          className="w-full rounded-lg border border-neutral-200 py-1.5 pl-8 pr-2 text-sm outline-none focus:border-primary-400"
-                        />
-                      </div>
-                      <div className="max-h-48 overflow-y-auto py-1">
-                        {filteredCategories.length === 0 ? (
-                          <p className="px-3 py-3 text-center text-sm text-neutral-400">
-                            No categories found
-                          </p>
-                        ) : (
-                          filteredCategories.map((c) => (
-                            <button
-                              key={c.id}
-                              type="button"
-                              onClick={() => selectCategory(c.id)}
-                              className={`w-full text-left px-3 py-2 text-sm transition-colors hover:bg-neutral-50 ${
-                                formData.categoryId === c.id
-                                  ? "bg-primary-50 font-medium text-primary-700"
-                                  : "text-neutral-900"
-                              }`}
-                            >
-                              {c.name}
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className={labelClassName}>Difficulty</label>
-              <select
-                className={fieldClassName}
-                value={formData.difficulty}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    difficulty: e.target.value as PackageForm["difficulty"],
-                  })
-                }
-              >
-                <option value="Easy">Easy</option>
-                <option value="Moderate">Moderate</option>
-                <option value="Strenuous">Strenuous</option>
-                <option value="Extreme">Extreme</option>
-              </select>
-            </div>
-
-            <div>
-              <label className={labelClassName}>Duration (Days)</label>
-              <input
-                type="number"
-                min={1}
-                className={fieldClassName}
-                value={formData.duration || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    duration: parseInt(e.target.value) || 0,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label className={labelClassName}>Max Group Size</label>
-              <input
-                type="number"
-                min={1}
-                className={fieldClassName}
-                value={formData.maxGroup || ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    maxGroup: parseInt(e.target.value) || 0,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label className={labelClassName}>
-                Duration Min (days, optional)
-              </label>
-              <input
-                type="number"
-                min={0}
-                className={fieldClassName}
-                value={formData.durationMin ?? ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    durationMin: e.target.value
-                      ? parseInt(e.target.value)
-                      : undefined,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label className={labelClassName}>
-                Duration Max (days, optional)
-              </label>
-              <input
-                type="number"
-                min={0}
-                className={fieldClassName}
-                value={formData.durationMax ?? ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    durationMax: e.target.value
-                      ? parseInt(e.target.value)
-                      : undefined,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label className={labelClassName}>
-                Altitude Min (m, optional)
-              </label>
-              <input
-                type="number"
-                min={0}
-                className={fieldClassName}
-                value={formData.altitudeMin ?? ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    altitudeMin: e.target.value
-                      ? parseInt(e.target.value)
-                      : undefined,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label className={labelClassName}>
-                Altitude Max (m, optional)
-              </label>
-              <input
-                type="number"
-                min={0}
-                className={fieldClassName}
-                value={formData.altitudeMax ?? ""}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    altitudeMax: e.target.value
-                      ? parseInt(e.target.value)
-                      : undefined,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label className={labelClassName}>Region (optional)</label>
-              <input
-                className={fieldClassName}
-                value={formData.region || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, region: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <label className={labelClassName}>
-                Best Time to Visit (optional)
-              </label>
-              <input
-                className={fieldClassName}
-                value={formData.bestTime || ""}
-                onChange={(e) =>
-                  setFormData({ ...formData, bestTime: e.target.value })
-                }
-              />
-            </div>
-            <div>
-              <label className={labelClassName}>Activities (optional)</label>
-              <input
-                className={fieldClassName}
-                placeholder="Comma separated (trekking, camping)"
-                value={(formData.activities || []).join(", ")}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    activities: e.target.value
-                      .split(",")
-                      .map((s) => s.trim())
-                      .filter(Boolean),
-                  })
-                }
-              />
-            </div>
-            <div>
-              <label className={labelClassName}>
-                Routes & Trails (optional)
-              </label>
-              <input
-                className={fieldClassName}
-                placeholder="Comma separated route names"
-                value={(formData.routes || []).join(", ")}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    routes: e.target.value
-                      .split(",")
-                      .map((s) => s.trim())
-                      .filter(Boolean),
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <label className={labelClassName}>Short Summary Pitch</label>
-            <textarea
-              rows={2}
-              className={fieldClassName}
-              placeholder="Enter brief overview context..."
-              value={formData.shortDesc}
-              onChange={(e) =>
-                setFormData({ ...formData, shortDesc: e.target.value })
-              }
-            />
-          </div>
-          <div className="mt-4">
-            <label className={labelClassName}>Full Description</label>
-            <textarea
-              rows={4}
-              className={fieldClassName}
-              placeholder="Write the full itinerary overview..."
-              value={formData.fullDesc}
-              onChange={(e) =>
-                setFormData({ ...formData, fullDesc: e.target.value })
-              }
-            />
-          </div>
+    <form onSubmit={save} className="border border-neutral-200 bg-white" noValidate>
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-neutral-200 p-5">
+        <div>
+          <h2 className="text-lg font-bold text-neutral-900">Package Builder</h2>
+          <p className={sub}>{editing ? "Changes are saved when you press the button at the bottom." : "All package settings."} Fields marked <span className="text-danger-600">*</span> are required.</p>
         </div>
+      </div>
 
-        {/* ============ PHOTOS ============ */}
-        <div className="mb-6">
-          <div className="mb-4 flex items-start justify-between gap-3 border-b border-neutral-100 pb-3">
-            <div>
-              <h3 className="text-base font-semibold text-neutral-900">
-                Photos
-              </h3>
-              <p className="mt-0.5 text-xs text-neutral-500">
-                Up to 5 photos. The first one you upload becomes the featured
-                photo — hover any other to change it.
-              </p>
-            </div>
-            <div>
-              <span
-                className={`text-[11px] font-medium ${hasMinimumPhoto ? "text-neutral-500" : "text-red-600"}`}
-              >
-                {galleryCount}/{MAX_GALLERY_IMAGES} photos
-              </span>
-            </div>
-          </div>
-          <div
-            className={`rounded-2xl border-2 border-dashed bg-white p-4 transition ${
-              dragActive
-                ? "border-primary-400 bg-primary-50"
-                : "border-neutral-200"
-            }`}
-            onDragEnter={handleDrag}
-            onDragOver={handleDrag}
-            onDragLeave={handleDrag}
-            onDrop={handleDrop}
-          >
-            {galleryCount === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-                <Upload size={24} className="text-neutral-400" />
-                <p className="text-xs text-neutral-500">
-                  Drag & drop up to 5 photos here
-                </p>
-                <label
-                  htmlFor="package-gallery"
-                  className="mt-1 inline-flex cursor-pointer items-center justify-center rounded-full bg-primary-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-primary-800"
-                >
-                  Choose files
-                </label>
-              </div>
-            ) : (
-              <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                {formData.gallery.map((g, i) => {
-                  const isFeatured = formData.heroImage === g;
-                  return (
-                    <div
-                      key={i}
-                      className="group relative aspect-square overflow-hidden rounded-lg border border-neutral-200"
-                      onDragOver={(e) => onThumbDragOver(i, e)}
-                      onDrop={onThumbDrop}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        draggable
-                        onDragStart={(e) => onThumbDragStart(i, e)}
-                        src={g}
-                        alt={`Photo ${i + 1}`}
-                        className="h-full w-full cursor-move object-cover"
-                      />
-                      {isFeatured && (
-                        <span className="absolute left-1 top-1 flex items-center gap-1 rounded-full bg-primary-900 px-1.5 py-0.5 text-[9px] font-semibold text-white">
-                          <Star size={9} className="fill-white" /> Featured
-                        </span>
-                      )}
-                      <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-1 bg-black/50 p-1 opacity-0 transition-opacity group-hover:opacity-100">
-                        {!isFeatured && (
-                          <button
-                            type="button"
-                            onClick={() => setFeaturedImage(g)}
-                            title="Set as featured photo"
-                            className="rounded p-1 text-white hover:bg-white/20"
-                          >
-                            <Star size={12} />
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => removeGalleryImage(i)}
-                          title="Remove photo"
-                          className="ml-auto rounded p-1 text-white hover:bg-white/20"
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {galleryCount < MAX_GALLERY_IMAGES && (
-                  <label
-                    htmlFor="package-gallery"
-                    className="flex aspect-square cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-neutral-200 text-neutral-400 transition hover:border-primary-300 hover:text-primary-500"
-                  >
-                    <Upload size={16} />
-                    <span className="text-[10px] font-medium">Add</span>
-                  </label>
-                )}
-              </div>
-            )}
-
-            <input
-              id="package-gallery"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                const files = e.target.files;
-
-                if (files && files.length > 0) {
-                  handleFiles(files);
-                }
-
-                e.target.value = "";
-              }}
-            />
-          </div>
+      {archived && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-warning-200 bg-warning-50 px-5 py-3 text-sm text-warning-800">
+          <p>This package is <strong>archived</strong>. You can still edit it. To bring it back, restore it as a draft, then publish — its departure date must be today or later.</p>
+          <button type="button" disabled={busy} onClick={() => void restore()} className={btnDark}>Restore as draft</button>
         </div>
-
-        {/* ============ ITINERARY ============ */}
-        <div className="mb-6">
-          <div className="mb-4 flex items-start justify-between gap-3 border-b border-neutral-100 pb-3">
-            <div>
-              <h3 className="text-base font-semibold text-neutral-900">
-                Itinerary
-              </h3>
-              <p className="mt-0.5 text-xs text-neutral-700">
-                Day-by-day route plan.
-              </p>
-            </div>
-            <div>
-              <button
-                type="button"
-                className={sectionActionButtonClassName}
-                onClick={addItineraryDay}
-              >
-                <Plus size={14} /> Add Day
-              </button>
-            </div>
+      )}
+      <Section title="Basic Information" hint="Core details that identify this package.">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div><label className={lbl} htmlFor="pk-title">Trek Title<Req /></label><input id="pk-title" aria-invalid={Boolean(errors.title)} className={`${field}${errors.title ? " border-danger-500" : ""}`} placeholder="e.g., Manaslu Circuit Tour" value={f.title} onChange={text("title")} />{E("title")}</div>
+          <div>
+            <label className={lbl} htmlFor="pk-dest">Destination</label>
+            <input id="pk-dest" aria-invalid={Boolean(errors.destination)} list="pk-dest-list" className={`${field}${errors.destination ? " border-danger-500" : ""}`} placeholder="Type or choose a destination" value={f.destination} onChange={text("destination")} />{E("destination")}
+            <datalist id="pk-dest-list">{(destinations.data?.destinations ?? []).map((d) => <option key={d.id} value={d.title} />)}</datalist>
           </div>
-          {(formData.itinerary || []).length === 0 ? (
-            <p className="py-6 text-center text-xs text-neutral-400">
-              No itinerary days added yet.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {formData.itinerary.map((day, i) => (
-                <div
-                  key={i}
-                  className="relative rounded-xl border border-neutral-200 bg-white p-4"
-                >
-                  <div className="mb-3 flex items-center justify-between">
-                    <span className="rounded-md bg-blue-50 px-2.5 py-1 text-xs font-bold text-blue-600">
-                      Day {day.day}
-                    </span>
-                    <div className="flex gap-1">
-                      <button
-                        type="button"
-                        disabled={i === 0}
-                        className="rounded border p-1 text-neutral-500 hover:bg-neutral-50 disabled:opacity-30"
-                        onClick={() => moveItineraryItem(i, "up")}
-                      >
-                        ▲
-                      </button>
-                      <button
-                        type="button"
-                        disabled={i === formData.itinerary.length - 1}
-                        className="rounded border p-1 text-neutral-500 hover:bg-neutral-50 disabled:opacity-30"
-                        onClick={() => moveItineraryItem(i, "down")}
-                      >
-                        ▼
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded border border-red-200 bg-red-50/50 px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                        onClick={() => removeItineraryDay(i)}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                  <div className="mb-2 grid grid-cols-1 gap-3 md:grid-cols-2">
-                    <input
-                      className={`${fieldClassName} text-xs`}
-                      placeholder="Stop / location"
-                      value={day.location}
-                      onChange={(e) =>
-                        updateItineraryField(i, "location", e.target.value)
-                      }
-                    />
-                    <input
-                      className={`${fieldClassName} text-xs`}
-                      placeholder="Altitude (m)"
-                      value={day.altitude}
-                      onChange={(e) =>
-                        updateItineraryField(i, "altitude", e.target.value)
-                      }
-                    />
-                  </div>
-                  <textarea
-                    className={`${fieldClassName} mb-2`}
-                    placeholder="Describe this day's route and highlights..."
-                    rows={2}
-                    value={day.desc}
-                    onChange={(e) =>
-                      updateItineraryField(i, "desc", e.target.value)
-                    }
-                  />
-                  <input
-                    type="text"
-                    className={`${fieldClassName} text-xs`}
-                    placeholder="Optional banner image URL for this day"
-                    value={day.photoUrl || ""}
-                    onChange={(e) =>
-                      updateItineraryField(i, "photoUrl", e.target.value)
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          )}
+          <div>
+            <label className={lbl} htmlFor="pk-cat">Category</label>
+            <select id="pk-cat" aria-invalid={Boolean(errors.category)} className={`${field}${errors.category ? " border-danger-500" : ""}`} value={f.category} onChange={text("category")}>
+              <option value="">Select a category</option>
+              {PACKAGE_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select>{E("category")}
+          </div>
+          <div>
+            <label className={lbl} htmlFor="pk-diff">Difficulty<Req /></label>
+            <select id="pk-diff" aria-invalid={Boolean(errors.difficulty)} className={`${field}${errors.difficulty ? " border-danger-500" : ""}`} value={f.difficulty} onChange={text("difficulty")}>
+              {(Object.keys(DIFFICULTY_LABEL) as Difficulty[]).map((d) => <option key={d} value={d}>{DIFFICULTY_LABEL[d]}</option>)}
+            </select>{E("difficulty")}
+          </div>
+          <div><label className={lbl} htmlFor="pk-days">Duration (Days)<Req /></label><input id="pk-days" aria-invalid={Boolean(errors.durationDays)} type="number" min={1} className={`${field}${errors.durationDays ? " border-danger-500" : ""}`} value={f.durationDays} onChange={text("durationDays")} />{E("durationDays")}</div>
+          <div><label className={lbl} htmlFor="pk-group">Max Group Size<Req /></label><input id="pk-group" aria-invalid={Boolean(errors.maxGroupSize)} type="number" min={1} className={`${field}${errors.maxGroupSize ? " border-danger-500" : ""}`} value={f.maxGroupSize} onChange={text("maxGroupSize")} />{E("maxGroupSize")}</div>
+          <div><label className={lbl} htmlFor="pk-dmin">Duration Min (days, optional)</label><input id="pk-dmin" aria-invalid={Boolean(errors.minDurationDays)} type="number" min={1} className={`${field}${errors.minDurationDays ? " border-danger-500" : ""}`} value={f.minDuration} onChange={text("minDuration")} />{E("minDurationDays")}</div>
+          <div><label className={lbl} htmlFor="pk-dmax">Duration Max (days, optional)</label><input id="pk-dmax" aria-invalid={Boolean(errors.maxDurationDays)} type="number" min={1} className={`${field}${errors.maxDurationDays ? " border-danger-500" : ""}`} value={f.maxDuration} onChange={text("maxDuration")} />{E("maxDurationDays")}</div>
+          <div><label className={lbl} htmlFor="pk-amin">Altitude Min (m, optional)</label><input id="pk-amin" aria-invalid={Boolean(errors.altitudeMinM)} type="number" min={0} className={`${field}${errors.altitudeMinM ? " border-danger-500" : ""}`} value={f.altMin} onChange={text("altMin")} />{E("altitudeMinM")}</div>
+          <div><label className={lbl} htmlFor="pk-amax">Altitude Max (m, optional)</label><input id="pk-amax" aria-invalid={Boolean(errors.altitudeMaxM)} type="number" min={0} className={`${field}${errors.altitudeMaxM ? " border-danger-500" : ""}`} value={f.altMax} onChange={text("altMax")} />{E("altitudeMaxM")}</div>
+          <div><label className={lbl} htmlFor="pk-region">Region (optional)</label><input id="pk-region" aria-invalid={Boolean(errors.region)} className={`${field}${errors.region ? " border-danger-500" : ""}`} value={f.region} onChange={text("region")} />{E("region")}</div>
+          <div><label className={lbl} htmlFor="pk-best">Best Time to Visit (optional)</label><input id="pk-best" aria-invalid={Boolean(errors.bestTimeToVisit)} className={`${field}${errors.bestTimeToVisit ? " border-danger-500" : ""}`} value={f.bestTime} onChange={text("bestTime")} />{E("bestTimeToVisit")}</div>
+          <div><label className={lbl} htmlFor="pk-act">Activities (optional)</label><input id="pk-act" aria-invalid={Boolean(errors.activities)} className={`${field}${errors.activities ? " border-danger-500" : ""}`} placeholder="Comma separated (trekking, camping)" value={f.activities} onChange={text("activities")} />{E("activities")}</div>
+          <div><label className={lbl} htmlFor="pk-routes">Routes &amp; Trails (optional)</label><input id="pk-routes" aria-invalid={Boolean(errors.routes)} className={`${field}${errors.routes ? " border-danger-500" : ""}`} placeholder="Comma separated route names" value={f.routes} onChange={text("routes")} />{E("routes")}</div>
         </div>
-
-        {/* ============ DEPARTURE DATES ============ */}
-        <div className="mb-6">
-          <div className="mb-4 flex items-start justify-between gap-3 border-b border-neutral-100 pb-3">
-            <div>
-              <h3 className="text-base font-semibold text-neutral-900">
-                Departure Dates
-              </h3>
-              <p className="mt-0.5 text-xs text-neutral-500">
-                Scheduled batches and available slots.
-              </p>
-            </div>
-            <div>
-              <button
-                type="button"
-                className={sectionActionButtonClassName}
-                onClick={handleToggleCalendarDate}
-              >
-                <Plus size={14} /> Add Departure
-              </button>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 gap-4">
-            <div className="space-y-3 rounded-xl border border-neutral-200 bg-neutral-50/60 p-4">
-              <div>
-                <label className={labelClassName}>Departure date</label>
-                <input
-                  type="date"
-                  className={`${fieldClassName} py-2`}
-                  value={calendarInput}
-                  onChange={(e) => setCalendarInput(e.target.value)}
-                />
-              </div>
-              <div>
-                <label className={labelClassName}>Slots for this date</label>
-                <input
-                  type="number"
-                  className={`${fieldClassName} py-2`}
-                  value={defaultSlotAllocation}
-                  onChange={(e) =>
-                    setDefaultSlotAllocation(parseInt(e.target.value) || 0)
-                  }
-                />
-              </div>
-              <p className="text-[11px] text-neutral-400">
-                Picking a date already on the list removes it — use the
-                &quot;Add Departure&quot; button above.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* ============ PRICING ============ */}
-        <div className="mb-6">
-          <div className="mb-4">
-            <h3 className="text-base font-semibold text-neutral-900">
-              Pricing
-            </h3>
-            <p className="mt-0.5 text-xs text-neutral-500">
-              Base price and optional group-size discounts.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_160px]">
-            <div>
-              <label className={labelClassName}>Base Price</label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-neutral-400">
-                  {currencySymbol(formData.currency)}
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  className={`${fieldClassName} pl-9`}
-                  value={formData.basePrice || ""}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      basePrice: parseFloat(e.target.value) || 0,
-                    })
-                  }
-                />
-              </div>
-            </div>
-            <div>
-              <label className={labelClassName}>Currency</label>
-              <select
-                className={fieldClassName}
-                value={formData.currency}
-                onChange={(e) =>
-                  setFormData({ ...formData, currency: e.target.value })
-                }
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.code} ({c.symbol})
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="mt-5 border-t border-neutral-100 pt-4">
-            <div className="mb-2 flex items-center justify-between">
-              <label className="block text-xs font-semibold text-neutral-600">
-                Volume Discount Tiers (optional)
-              </label>
-              <button
-                type="button"
-                className={sectionActionButtonClassName}
-                onClick={() =>
-                  setFormData({
-                    ...formData,
-                    pricing: [
-                      ...(formData.pricing || []),
-                      { min: 1, max: 5, price: 0 },
-                    ],
-                  })
-                }
-              >
-                <Plus size={14} /> Add tier
-              </button>
-            </div>
-            <div className="space-y-2">
-              {formData.pricing?.map((tier, i) => (
-                <div
-                  key={i}
-                  className="flex flex-wrap items-center gap-2 rounded-lg border bg-white p-2"
-                >
-                  <span className="text-xs text-neutral-400">Min:</span>
-                  <input
-                    type="number"
-                    className="w-16 rounded border p-1 text-xs"
-                    value={tier.min}
-                    onChange={(e) => {
-                      const tiers = [...formData.pricing];
-                      tiers[i].min = parseInt(e.target.value) || 0;
-                      setFormData({ ...formData, pricing: tiers });
-                    }}
-                  />
-                  <span className="text-xs text-neutral-400">Max:</span>
-                  <input
-                    type="number"
-                    className="w-16 rounded border p-1 text-xs"
-                    value={tier.max}
-                    onChange={(e) => {
-                      const tiers = [...formData.pricing];
-                      tiers[i].max = parseInt(e.target.value) || 0;
-                      setFormData({ ...formData, pricing: tiers });
-                    }}
-                  />
-                  <span className="ml-auto text-xs text-neutral-400">
-                    Rate ({currencySymbol(formData.currency)}):
-                  </span>
-                  <input
-                    type="number"
-                    className="w-24 rounded border p-1 text-xs font-medium"
-                    value={tier.price}
-                    onChange={(e) => {
-                      const tiers = [...formData.pricing];
-                      tiers[i].price = parseFloat(e.target.value) || 0;
-                      setFormData({ ...formData, pricing: tiers });
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className="rounded px-1 text-red-500 hover:bg-neutral-50"
-                    onClick={() =>
-                      setFormData({
-                        ...formData,
-                        pricing: formData.pricing.filter((_, idx) => idx !== i),
-                      })
-                    }
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Add-Ons removed as requested */}
-
-        {/* ============ PUBLISH — toggles + single action ============ */}
-        <div className="mb-6">
-          <div className="mb-4">
-            <h3 className="text-base font-semibold text-neutral-900">
-              Publish
-            </h3>
-            <p className="mt-0.5 text-xs text-neutral-500">
-              Final settings before this package goes live.
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-wrap gap-10">
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-neutral-700">
-                  Published
-                </label>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData({
-                      ...formData,
-                      status:
-                        formData.status === "published" ? "draft" : "published",
-                    })
-                  }
-                  className={`relative inline-flex h-6 w-12 items-center rounded-full transition ${formData.status === "published" ? "bg-primary-900" : "bg-neutral-200"}`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${formData.status === "published" ? "translate-x-6" : "translate-x-1"}`}
-                  />
-                </button>
-              </div>
-              <div>
-                <label className="mb-1.5 block text-xs font-medium text-neutral-700">
-                  Featured
-                </label>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFormData({ ...formData, featured: !formData.featured })
-                  }
-                  className={`relative inline-flex h-6 w-12 items-center rounded-full transition ${formData.featured ? "bg-primary-900" : "bg-neutral-200"}`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition ${formData.featured ? "translate-x-6" : "translate-x-1"}`}
-                  />
-                </button>
-              </div>
-            </div>
-
-            <div className="flex justify-end border-t border-neutral-100 pt-5">
-              <button
-                type="button"
-                className="rounded-xl bg-primary-900 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-800"
-                onClick={handlePublish}
-              >
-                {isEditing ? "Update & Publish" : "Publish Package"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <div><label className={lbl} htmlFor="pk-sum">Short Summary Pitch</label><textarea id="pk-sum" aria-invalid={Boolean(errors.shortSummary)} rows={2} maxLength={300} className={`${field}${errors.shortSummary ? " border-danger-500" : ""}`} placeholder="Enter brief overview context…" value={f.shortSummary} onChange={text("shortSummary")} />{E("shortSummary")}</div>
+        <div><label className={lbl} htmlFor="pk-desc">Full Description{f.published && <Req />}</label><textarea id="pk-desc" aria-invalid={Boolean(errors.description)} rows={4} className={`${field}${errors.description ? " border-danger-500" : ""}`} placeholder="Write the full itinerary overview…" value={f.description} onChange={text("description")} />{E("description")}</div>
       </Section>
-    </div>
+
+      <PhotoDrop photos={f.photos} onChange={(p) => set("photos", p)} />
+      {E("photos") && <div className="px-5 pb-3">{E("photos")}</div>}
+
+      <Section title="Itinerary" hint="Day-by-day route plan." action={<button type="button" onClick={() => set("days", [...f.days, { location: "", altitude: "", description: "" }])} className={btnDark}><Plus className="h-4 w-4" /> Add Day</button>}>
+        {f.days.length === 0 ? <p className={empty}>No itinerary days yet — publishing needs at least one.</p> : (
+          <ol className="space-y-3">
+            {f.days.map((d, i) => (
+              <li key={i} className="border border-neutral-200 bg-neutral-50/60 p-4">
+                <div className="flex items-center justify-between"><span className="text-sm font-bold text-neutral-900">Day {i + 1}</span><button type="button" aria-label={`Remove day ${i + 1}`} onClick={() => set("days", f.days.filter((_, j) => j !== i))} className={iconBtn}><Trash2 className="h-4 w-4" /></button></div>
+                <div className="mt-2 grid gap-3 md:grid-cols-[1fr_180px]">
+                  <div><label className={lbl} htmlFor={`d-loc-${i}`}>Location</label><input id={`d-loc-${i}`} className={field} value={d.location} onChange={(e) => set("days", f.days.map((x, j) => (j === i ? { ...x, location: e.target.value } : x)))} /></div>
+                  <div><label className={lbl} htmlFor={`d-alt-${i}`}>Altitude (m)</label><input id={`d-alt-${i}`} type="number" min={0} className={field} value={d.altitude} onChange={(e) => set("days", f.days.map((x, j) => (j === i ? { ...x, altitude: e.target.value } : x)))} /></div>
+                </div>
+                <div className="mt-3"><label className={lbl} htmlFor={`d-desc-${i}`}>What happens</label><textarea id={`d-desc-${i}`} rows={2} className={field} value={d.description} onChange={(e) => set("days", f.days.map((x, j) => (j === i ? { ...x, description: e.target.value } : x)))} /></div>
+              </li>
+            ))}
+          </ol>
+        )}
+      </Section>
+
+      <Section title="Departure Date" hint="One departure date per package. Once the date has passed the package is archived automatically." action={f.departures.length === 0 ? <button type="button" onClick={() => set("departures", [{ startDate: "", maxSlots: f.maxGroupSize || "10", booked: 0 }])} className={btnDark}><Plus className="h-4 w-4" /> Add Departure</button> : undefined}>
+        {f.departures.length === 0 ? <p className={empty}>No departure date yet — publishing needs one.</p> : (
+          <ul className="space-y-3">
+            {f.departures.map((d, i) => (
+              <li key={d.id ?? i} className="grid items-end gap-3 border border-neutral-200 bg-neutral-50/60 p-4 md:grid-cols-[1fr_1fr_auto]">
+                <div><label className={lbl} htmlFor={`dp-date-${i}`}>Departure date<Req /></label><input id={`dp-date-${i}`} type="date" min={d.id && d.startDate < today() ? undefined : today()} className={field} value={d.startDate} onChange={(e) => set("departures", f.departures.map((x, j) => (j === i ? { ...x, startDate: e.target.value } : x)))} /></div>
+                <div><label className={lbl} htmlFor={`dp-slots-${i}`}>Slots for this date<Req />{d.booked > 0 ? ` (${d.booked} booked)` : ""}</label><input id={`dp-slots-${i}`} type="number" min={Math.max(1, d.booked)} className={field} value={d.maxSlots} onChange={(e) => set("departures", f.departures.map((x, j) => (j === i ? { ...x, maxSlots: e.target.value } : x)))} /></div>
+                <button type="button" aria-label={`Remove departure ${i + 1}`} disabled={d.booked > 0} title={d.booked > 0 ? "This departure has bookings" : "Remove"} onClick={() => set("departures", f.departures.filter((_, j) => j !== i))} className={`${iconBtn} disabled:opacity-30`}><Trash2 className="h-4 w-4" /></button>
+              </li>
+            ))}
+          </ul>
+        )}
+      {rowErrors("departures", "Departure")}
+      </Section>
+
+      <Section title="Pricing" hint="Base price and optional group-size discounts.">
+        <div className="grid gap-4 md:grid-cols-[1fr_200px]">
+          <div><label className={lbl} htmlFor="pk-price">Base Price<Req /></label><input id="pk-price" aria-invalid={Boolean(errors.pricePerPerson)} type="number" min={0} step="0.01" className={`${field}${errors.pricePerPerson ? " border-danger-500" : ""}`} placeholder="Price per person" value={f.price} onChange={text("price")} />{E("pricePerPerson")}</div>
+          <div>
+            <label className={lbl} htmlFor="pk-cur">Currency</label>
+            <select id="pk-cur" aria-invalid={Boolean(errors.currency)} className={`${field}${errors.currency ? " border-danger-500" : ""}`} value={f.currency} onChange={text("currency")}>{PACKAGE_CURRENCIES.map((c) => <option key={c.code} value={c.code}>{c.label}</option>)}</select>{E("currency")}
+          </div>
+        </div>
+        <div className="flex items-center justify-between border-t border-neutral-100 pt-3">
+          <span className="text-xs font-semibold text-neutral-700">Volume Discount Tiers (optional)</span>
+          <button type="button" onClick={() => set("tiers", [...f.tiers, { minPeople: "", percentOff: "" }])} className={btnDark}><Plus className="h-4 w-4" /> Add tier</button>
+        </div>
+        {f.tiers.map((t, i) => (
+          <div key={i} className="grid items-end gap-3 md:grid-cols-[1fr_1fr_auto]">
+            <div><label className={lbl} htmlFor={`t-min-${i}`}>Group of at least<Req /></label><input id={`t-min-${i}`} type="number" min={2} className={field} value={t.minPeople} onChange={(e) => set("tiers", f.tiers.map((x, j) => (j === i ? { ...x, minPeople: e.target.value } : x)))} /></div>
+            <div><label className={lbl} htmlFor={`t-off-${i}`}>Discount (%)<Req /></label><input id={`t-off-${i}`} type="number" min={1} max={90} step="0.5" className={field} value={t.percentOff} onChange={(e) => set("tiers", f.tiers.map((x, j) => (j === i ? { ...x, percentOff: e.target.value } : x)))} /></div>
+            <button type="button" aria-label={`Remove tier ${i + 1}`} onClick={() => set("tiers", f.tiers.filter((_, j) => j !== i))} className={iconBtn}><Trash2 className="h-4 w-4" /></button>
+          </div>
+        ))}
+      {rowErrors("tiers", "Discount tier")}{E("volumeDiscounts")}
+      </Section>
+
+      <Section title="Add-ons" hint="Optional extras a trekker can add to a booking." action={<button type="button" onClick={() => set("addOns", [...f.addOns, { name: "", price: "", perPerson: false }])} className={btnDark}><Plus className="h-4 w-4" /> Add add-on</button>}>
+        {f.addOns.length === 0 ? <p className={empty}>No add-ons.</p> : f.addOns.map((a, i) => (
+          <div key={a.id ?? i} className="grid items-end gap-3 md:grid-cols-[1fr_160px_auto_auto]">
+            <div><label className={lbl} htmlFor={`a-name-${i}`}>Name<Req /></label><input id={`a-name-${i}`} className={field} value={a.name} onChange={(e) => set("addOns", f.addOns.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))} /></div>
+            <div><label className={lbl} htmlFor={`a-price-${i}`}>Price<Req /></label><input id={`a-price-${i}`} type="number" min={0} step="0.01" className={field} value={a.price} onChange={(e) => set("addOns", f.addOns.map((x, j) => (j === i ? { ...x, price: e.target.value } : x)))} /></div>
+            <label className="flex items-center gap-2 pb-3 text-xs text-neutral-700"><input type="checkbox" checked={a.perPerson} onChange={(e) => set("addOns", f.addOns.map((x, j) => (j === i ? { ...x, perPerson: e.target.checked } : x)))} /> per person</label>
+            <button type="button" aria-label={`Remove add-on ${i + 1}`} onClick={() => set("addOns", f.addOns.filter((_, j) => j !== i))} className={iconBtn}><Trash2 className="h-4 w-4" /></button>
+          </div>
+        ))}
+      {rowErrors("addOns", "Add-on")}
+      </Section>
+
+      <Section title="Publish" hint="Final settings before this package goes live.">
+        <div className="flex gap-8">
+          {!archived && <Toggle label="Published" on={f.published} onChange={(v) => set("published", v)} />}
+          <Toggle label="Featured" on={f.featured} onChange={(v) => set("featured", v)} />
+        </div>
+        {f.published && <p className={sub}>Publishing needs a full description, a price, at least one itinerary day and one departure date.</p>}
+      {E("publish")}
+      </Section>
+
+      {error && <p role="alert" className="m-5 border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700">{error}</p>}
+      <div className="flex items-center justify-end gap-3 p-5">
+        <Link href="/dashboard/packages" className={btnGhost}>Cancel</Link>
+        <button type="submit" disabled={busy} className="bg-primary-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-800 disabled:opacity-50">
+          {busy ? "Saving…" : f.published ? (wasPublished ? "Save changes" : "Publish Package") : editing ? "Save changes" : "Save as draft"}
+        </button>
+      </div>
+    </form>
   );
+}
+
+export default function PackageBuilderForm({ packageId }: { packageId?: string }) {
+  const { data: pkg, isLoading, isError, refetch } = usePackageDetail(packageId ?? "");
+  const [rev, setRev] = useState(0);
+  if (!packageId) return <Builder initial={EMPTY} original={null} onSaved={() => undefined} />;
+  if (isLoading) return <div className="h-64 animate-pulse border border-neutral-200 bg-white" />;
+  if (isError || !pkg) return <p className="border border-neutral-200 bg-white p-6 text-sm text-neutral-700">This package doesn&apos;t exist (or belongs to another agency). <Link className="font-semibold text-primary-700 hover:underline" href="/dashboard/packages">Back to packages</Link></p>;
+  return <Builder key={`${pkg.id}:${rev}`} initial={toForm(pkg)} original={pkg} onSaved={() => { void refetch().then(() => setRev((r) => r + 1)); }} />;
 }

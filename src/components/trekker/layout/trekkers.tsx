@@ -1,18 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, Menu } from 'lucide-react';
+import { useUnreadCount } from '@/hooks/useTrekker';
 
 import { useAuth } from '@/hooks/useAuth';
 import { ROUTES } from '@/lib/constants/routes';
-import { getReadNotificationIds } from '@/lib/auth';
-import { loadNotifications } from '@/lib/mock/trek-content';
-import notificationsData from '../../../../data/notifications.json';
-import type { Notification } from '@/types/user';
-
-const ALL_NOTIFICATIONS = notificationsData as Notification[];
 
 function getInitials(name: string): string {
   const parts = name.trim().split(/\s+/);
@@ -24,24 +18,10 @@ function getInitials(name: string): string {
 export function TrekkerTopbar({ onMenuClick }: { onMenuClick: () => void }) {
   const pathname = usePathname();
   const { user } = useAuth();
-  const [unreadCount, setUnreadCount] = useState(0);
 
-  useEffect(() => {
-    const updateCount = () => {
-      const readIds = getReadNotificationIds();
-      const unread = loadNotifications(ALL_NOTIFICATIONS, user?.id).filter(
-        (n) => !(n.read || readIds.includes(n.id)),
-      ).length;
-      setUnreadCount(unread);
-    };
-    updateCount();
-    window.addEventListener('focus', updateCount);
-    return () => window.removeEventListener('focus', updateCount);
-  }, [pathname, user?.id]);
-
+  const unread = useUnreadCount().data ?? 0;
   const userName = user?.name ?? 'Guest';
   const initials = getInitials(userName);
-  const hasUnread = unreadCount > 0;
 
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-neutral-200 bg-white px-4 sm:gap-x-6 sm:px-6 lg:px-8">
@@ -65,17 +45,10 @@ export function TrekkerTopbar({ onMenuClick }: { onMenuClick: () => void }) {
         
         {/* Right side items */}
         <div className="flex items-center gap-x-4 lg:gap-x-6">
-          
-          {/* Notifications */}
-          <Link
-            href="/notifications"
-            className="relative rounded-full p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-500"
-          >
-            <span className="sr-only">View notifications</span>
+          <Link href="/notifications" className="relative rounded-full p-2 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-500">
+            <span className="sr-only">{unread > 0 ? `${unread} unread notifications` : 'Notifications'}</span>
             <Bell className="h-6 w-6" />
-            {hasUnread && (
-              <span className="absolute right-2 top-2 flex h-2 w-2 rounded-full bg-danger-500 ring-2 ring-white" />
-            )}
+            {unread > 0 && <span aria-hidden className="absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-danger-500 px-1 text-[10px] font-bold leading-4 text-white ring-2 ring-white">{unread > 9 ? '9+' : unread}</span>}
           </Link>
 
           {/* Separator */}

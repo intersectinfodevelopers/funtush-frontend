@@ -1,10 +1,10 @@
 'use client';
 
-
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useMemo, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSession,clearSessionEverywhere,SESSION_KEY} from '@/lib/auth';
+import { AUTH_CHANGED_EVENT, getSession, getSessionSnapshot } from '@/lib/auth';
 import { ROUTES } from '@/lib/constants/routes';
+import { logoutEverywhere } from '@/lib/api/auth';
 import type { SessionUser, UserRole } from '@/types/user';
 
 interface UseAuthReturn {
@@ -15,29 +15,29 @@ interface UseAuthReturn {
   logout: () => void;
 }
 
+function subscribe(onChange: () => void) {
+  window.addEventListener('storage', onChange); // other tabs
+  window.addEventListener(AUTH_CHANGED_EVENT, onChange); // this tab
+  return () => {
+    window.removeEventListener('storage', onChange);
+    window.removeEventListener(AUTH_CHANGED_EVENT, onChange);
+  };
+}
+
 export function useAuth(): UseAuthReturn {
   const router = useRouter();
-  const [user, setUser] = useState<SessionUser | null>(() => getSession());
 
-
-  useEffect(() => {
-    function handleStorageChange(event: StorageEvent) {
-      if (event.key === SESSION_KEY) {
-        window.setTimeout(() => {
-          setUser(getSession());
-        }, 0);
-      }
-    }
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
+  // The server (and the first client render) see "no session"; the real one
+  // appears right after hydration. Reading localStorage in the initial render
+  // instead made server and client HTML differ (a hydration error).
+  const snapshot = useSyncExternalStore(subscribe, getSessionSnapshot, () => '');
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- `snapshot` is the cache key for the stored session
+  const user = useMemo<SessionUser | null>(() => (snapshot ? getSession() : null), [snapshot]);
 
   const logout = useCallback(() => {
-    clearSessionEverywhere();
-    setUser(null);
-    router.push(ROUTES.AUTH.LOGIN);
+    // Revokes the refresh token server-side too — clearing localStorage alone
+    // would leave a stolen copy of the token usable.
+    void logoutEverywhere().finally(() => router.push(ROUTES.AUTH.LOGIN));
   }, [router]);
 
   return {

@@ -1,400 +1,136 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Check, Plus, ChevronRight } from "lucide-react";
-import {
-  DeleteOutlined,
-  EditOutlined,
-  VisibilityOutlined,
-} from "@mui/icons-material";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
+import { Eye, Pencil, RotateCcw, ShieldPlus, Trash2, UserPlus, Users } from "lucide-react";
+
+import { AnalyticsSummaryCard } from "@/components/shared/AnalyticsSummaryCard";
 import { Modal } from "@/components/ui/modal";
 import { Pagination } from "@/components/ui/pagination";
-import StaffIdCard from "@/components/agency/staff/StaffIdCard";
-import { useStaff } from "@/hooks/useStaff";
-import { roleLabel, useRoles } from "@/hooks/useRoles";
+import { useRoleList, useStaffList, teamKeys } from "@/hooks/useAgencyTeam";
+import { deactivateStaff, reactivateStaff, type StaffMember } from "@/lib/api/agency/staff";
+import type { ApiError } from "@/lib/api/client";
 
-const initials = (name: string) =>
-  name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+const PAGE_SIZE = 10;
+const field = "rounded-full border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100";
+const AVATAR_COLORS = ["bg-success-600", "bg-primary-700", "bg-warning-500", "bg-accent-600", "bg-danger-600"];
+const initialsOf = (name: string) => name.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("") || "?";
+const colorFor = (id: string) => AVATAR_COLORS[[...id].reduce((s, c) => s + c.charCodeAt(0), 0) % AVATAR_COLORS.length];
 
 export default function StaffPage() {
-  const router = useRouter();
-  const { staff, toggleActive, deleteStaff, updateStaff } = useStaff();
-  const { roles } = useRoles();
-  const [viewStaff, setViewStaff] = useState<(typeof staff)[number] | null>(
-    null,
-  );
-  const [editStaff, setEditStaff] = useState<(typeof staff)[number] | null>(
-    null,
-  );
-  const [staffToDelete, setStaffToDelete] = useState<
-    (typeof staff)[number] | null
-  >(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [editForm, setEditForm] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    role: "",
-    active: true,
+  const qc = useQueryClient();
+  const { data, isLoading, isError } = useStaffList();
+  const roles = useRoleList();
+  const [search, setSearch] = useState("");
+  const [roleId, setRoleId] = useState("");
+  const [page, setPage] = useState(1);
+  const [removing, setRemoving] = useState<StaffMember | null>(null);
+
+  const staff = data ?? [];
+  const activeCount = staff.filter((s) => s.isActive).length;
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return staff.filter((s) => (!roleId || s.roleId === roleId) && (!q || (s.name ?? "").toLowerCase().includes(q) || s.user.user.email.toLowerCase().includes(q)));
+  }, [staff, search, roleId]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const rows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  const refresh = () => { void qc.invalidateQueries({ queryKey: teamKeys.staff }); void qc.invalidateQueries({ queryKey: ["agency", "summary"] }); };
+  const deactivate = useMutation({
+    mutationFn: (s: StaffMember) => deactivateStaff(s.id),
+    onSuccess: (r, s) => { toast.success(r.deleted ? `${s.name ?? "Staff member"} was permanently deleted` : `${s.name ?? "Staff member"} was deactivated`); setRemoving(null); refresh(); },
+    onError: (e, s) => { setRemoving(null); toast.error((e as unknown as ApiError).message || `Couldn't remove ${s.name ?? "this member"}.`); },
+  });
+  const reactivate = useMutation({
+    mutationFn: (s: StaffMember) => reactivateStaff(s.id),
+    onSuccess: (_r, s) => { toast.success(`${s.name ?? "Staff member"} was reactivated`); refresh(); },
+    onError: (e, s) => toast.error((e as unknown as ApiError).message || `Couldn't reactivate ${s.name ?? "this member"}.`),
   });
 
-  const openEditStaff = (member: (typeof staff)[number]) => {
-    setEditStaff(member);
-    setEditForm({
-      name: member.name,
-      email: member.email,
-      phone: member.phone,
-      role: member.role,
-      active: member.active,
-    });
-  };
-
-  const saveStaffChanges = () => {
-    if (!editStaff) return;
-    const name = editForm.name.trim();
-    const email = editForm.email.trim();
-    const phone = editForm.phone.trim();
-    if (!name || !email || !editForm.role) {
-      toast.error("Name, email, and role are required.");
-      return;
-    }
-    try {
-      updateStaff(editStaff.id, {
-        name,
-        email,
-        phone,
-        role: editForm.role,
-        active: editForm.active,
-      });
-      toast.success("Staff member updated successfully.");
-      setEditStaff(null);
-    } catch {
-      toast.error("Could not update the staff member. Please try again.");
-    }
-  };
-
-  const removeStaff = () => {
-    if (!staffToDelete) return;
-    deleteStaff(staffToDelete.id);
-    setStaffToDelete(null);
-  };
-
-  const staffPerPage = 8;
-  const totalPages = Math.max(1, Math.ceil(staff.length / staffPerPage));
-  const paginatedStaff = staff.slice(
-    (currentPage - 1) * staffPerPage,
-    currentPage * staffPerPage,
-  );
-
   return (
-    <div className="space-y-4 w-full">
-      <h1 className="mt-2 text-2xl font-bold text-neutral-900">Staff & Roles</h1>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-sm text-neutral-500">
-            <Link href={"/dashboard/staff"}>Staff</Link>
-            <span className="text-neutral-300">
-              <ChevronRight size={15} />
-            </span>
-            <span className="font-semibold text-neutral-900">All Staff</span>
-          </div>
+    <div className="space-y-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-neutral-900">Staff &amp; Roles</h1>
+          <div className="mt-1 flex items-center gap-2 text-sm text-neutral-500"><Link href="/dashboard/staff" className="hover:text-neutral-900">Staff</Link><span className="text-neutral-300">/</span><span className="font-semibold text-neutral-900">All Staff</span></div>
         </div>
-
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/dashboard/roles/new"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-semibold text-neutral-900 shadow-sm ring-1 ring-neutral-100 hover:bg-neutral-50"
-          >
-            <Plus size={25} strokeWidth={2.5} /> Create Role
-          </Link>
-          <Link
-            href="/dashboard/staff/new"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-700"
-          >
-            <Plus size={22} /> Add Staff
-          </Link>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Link href="/dashboard/roles/new" className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-5 py-2.5 text-sm font-semibold text-neutral-900 shadow-sm hover:bg-neutral-50"><ShieldPlus className="h-4 w-4" /> Create Role</Link>
+          <Link href="/dashboard/staff/new" className="inline-flex items-center gap-2 rounded-full bg-primary-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-primary-800"><UserPlus className="h-4 w-4" /> Add Staff</Link>
         </div>
       </div>
 
-      <section className="overflow-x-auto rounded-2xl bg-white shadow-sm ring-1 ring-neutral-100">
-        <table className="min-w-full border-collapse text-left text-sm">
-          <thead className="bg-neutral-50 text-[10px] uppercase tracking-[0.24em] text-neutral-500">
-            <tr>
-              <th className="px-4 py-3">S.N</th>
-              <th className="px-4 py-3">Staff Member</th>
-              <th className="px-4 py-3">Role</th>
-              <th className="px-4 py-3">Phone Number</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginatedStaff.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-sm text-neutral-500">No staff found.</td>
-              </tr>
-            ) : (
-              paginatedStaff.map((member, index) => (
-                <tr key={member.id} className="border-b border-neutral-200 hover:bg-neutral-50">
-                  <td className="px-4 py-3 text-neutral-700">{(currentPage - 1) * staffPerPage + index + 1}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-success-500 font-semibold text-white text-sm">
-                        {initials(member.name)}
-                      </span>
-                      <span>
-                        <strong className="block text-sm text-neutral-900">{member.name}</strong>
-                        <small className="mt-1 block text-xs text-neutral-500">{member.email}</small>
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm font-semibold text-neutral-800">{roleLabel(member.role, roles)}</td>
-                  <td className="px-4 py-3 text-sm font-semibold text-neutral-800">{member.phone || '—'}</td>
-                  <td className="px-4 py-3 text-sm font-medium text-warning-600">{member.email}</td>
-                  <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => toggleActive(member.id)}
-                      className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${member.active ? 'bg-success-100 text-success-600' : 'bg-neutral-100 text-neutral-500'}`}
-                    >
-                      <Check size={14} className={`rounded-full p-0.5 ${member.active ? 'bg-success-400 text-white' : 'bg-neutral-400 text-white'}`} />
-                      {member.active ? 'Active' : 'Inactive'}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <button type="button" onClick={() => setViewStaff(member)} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary-100 text-primary-600 hover:bg-primary-200" aria-label={`View ${member.name} ID card`} title="View ID card">
-                        <VisibilityOutlined sx={{ fontSize: 16 }} />
-                      </button>
-                      <button type="button" onClick={() => router.push(`/dashboard/staff/${member.id}/edit`)} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-warning-100 text-warning-600 hover:bg-warning-200" aria-label={`Edit ${member.name}`} title="Edit staff">
-                        <EditOutlined sx={{ fontSize: 16 }} />
-                      </button>
-                      <button type="button" onClick={() => setStaffToDelete(member)} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-danger-100 text-danger-500 hover:bg-danger-200" aria-label={`Remove ${member.name}`}>
-                        <DeleteOutlined sx={{ fontSize: 16 }} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </section>
-      <div className="mt-4 w-full">
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={setCurrentPage}
-        />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <AnalyticsSummaryCard label="Active staff" value={data ? activeCount : "—"} tone="primary" icon={Users} />
+        <AnalyticsSummaryCard label="Roles" value={roles.data?.length ?? "—"} tone="success" icon={ShieldPlus} />
       </div>
 
-      <Modal
-        isOpen={!!viewStaff}
-        onClose={() => setViewStaff(null)}
-        title={viewStaff ? `${viewStaff.name} ID Card` : undefined}
-        size="xl"
-      >
-        {viewStaff && (
-          <StaffIdCard
-            staff={viewStaff}
-            roleName={roleLabel(viewStaff.role, roles)}
-          />
-        )}
-      </Modal>
+      <div className="grid gap-3 sm:grid-cols-[minmax(240px,1fr)_220px]">
+        <input type="search" aria-label="Search staff" placeholder="Search by name or email…" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className={`${field} w-full`} />
+        <select aria-label="Filter by role" value={roleId} onChange={(e) => { setRoleId(e.target.value); setPage(1); }} className={field}>
+          <option value="">All roles</option>
+          {(roles.data ?? []).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+        </select>
+      </div>
 
-      <Modal
-        isOpen={!!editStaff}
-        onClose={() => setEditStaff(null)}
-        title={editStaff ? `Edit ${editStaff.name}` : undefined}
-        size="lg"
-      >
-        {editStaff && (
-          <div className="space-y-6">
-            <div className="grid gap-6 lg:grid-cols-2">
-              <div>
-                <label
-                  className="block text-sm font-medium text-neutral-700"
-                  htmlFor="edit-staff-name"
-                >
-                  Name
-                </label>
-                <input
-                  id="edit-staff-name"
-                  value={editForm.name}
-                  onChange={(event) =>
-                    setEditForm((current) => ({
-                      ...current,
-                      name: event.target.value,
-                    }))
-                  }
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                />
-              </div>
-              <div>
-                <label
-                  className="block text-sm font-medium text-neutral-700"
-                  htmlFor="edit-staff-email"
-                >
-                  Email
-                </label>
-                <input
-                  id="edit-staff-email"
-                  type="email"
-                  value={editForm.email}
-                  onChange={(event) =>
-                    setEditForm((current) => ({
-                      ...current,
-                      email: event.target.value,
-                    }))
-                  }
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                />
-              </div>
-            </div>
+      {isError && <p role="alert" className="rounded-2xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700">Couldn&apos;t load staff. Only the agency admin can see this page.</p>}
 
-            <div className="grid gap-6 sm:grid-cols-3">
-              <div>
-                <label
-                  className="block text-sm font-medium text-neutral-700"
-                  htmlFor="edit-staff-phone"
-                >
-                  Phone
-                </label>
-                <input
-                  id="edit-staff-phone"
-                  type="tel"
-                  value={editForm.phone}
-                  onChange={(event) =>
-                    setEditForm((current) => ({
-                      ...current,
-                      phone: event.target.value,
-                    }))
-                  }
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                />
-              </div>
-              <div>
-                <label
-                  className="block text-sm font-medium text-neutral-700"
-                  htmlFor="edit-staff-role"
-                >
-                  Role
-                </label>
-                <select
-                  id="edit-staff-role"
-                  value={editForm.role}
-                  onChange={(event) =>
-                    setEditForm((current) => ({
-                      ...current,
-                      role: event.target.value,
-                    }))
-                  }
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                >
-                  <option value="">Select a role...</option>
-                  {roles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label
-                  className="block text-sm font-medium text-neutral-700"
-                  htmlFor="edit-staff-status"
-                >
-                  Status
-                </label>
-                <select
-                  id="edit-staff-status"
-                  value={editForm.active ? "active" : "inactive"}
-                  onChange={(event) =>
-                    setEditForm((current) => ({
-                      ...current,
-                      active: event.target.value === "active",
-                    }))
-                  }
-                  className="mt-2 w-full rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </div>
-            </div>
+      <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-white">
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-neutral-50 text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">
+              <tr><th className="w-14 px-4 py-3.5">S.N</th><th className="px-4 py-3.5">Staff Member</th><th className="px-4 py-3.5">Role</th><th className="px-4 py-3.5">Phone Number</th><th className="px-4 py-3.5">Email</th><th className="px-4 py-3.5">Status</th><th className="px-4 py-3.5 text-right">Actions</th></tr>
+            </thead>
+            <tbody>
+              {isLoading && Array.from({ length: 3 }).map((_, i) => <tr key={i} className="border-t border-neutral-200"><td colSpan={7} className="px-4 py-5"><div className="h-4 animate-pulse rounded bg-neutral-100" /></td></tr>)}
+              {!isLoading && rows.length === 0 && <tr><td colSpan={7} className="px-4 py-10 text-center text-neutral-500">{search || roleId ? "No staff match this filter." : "No staff yet — add your first team member."}</td></tr>}
+              {rows.map((s, index) => {
+                const name = s.name ?? "Unnamed";
+                return (
+                  <tr key={s.id} className="border-t border-neutral-200 hover:bg-neutral-50/60">
+                    <td className="px-4 py-4 text-neutral-600">{(page - 1) * PAGE_SIZE + index + 1}</td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${colorFor(s.id)}`}>{initialsOf(name)}</span>
+                        <div><Link href={`/dashboard/staff/${s.id}`} className="font-bold text-neutral-900 hover:underline">{name}</Link><div className="text-xs text-neutral-500">{s.user.user.email}</div></div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-neutral-700">{s.role?.name ?? <span className="text-neutral-400">No role</span>}</td>
+                    <td className="px-4 py-4 text-neutral-700">{s.phone ?? "—"}</td>
+                    <td className="px-4 py-4"><a href={`mailto:${s.user.user.email}`} className="text-warning-700 hover:underline">{s.user.user.email}</a></td>
+                    <td className="px-4 py-4"><span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${s.isActive ? "bg-success-50 text-success-700" : "bg-neutral-100 text-neutral-600"}`}><span className={`h-1.5 w-1.5 rounded-full ${s.isActive ? "bg-success-600" : "bg-neutral-400"}`} />{s.isActive ? "Active" : "Inactive"}</span></td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Link href={`/dashboard/staff/${s.id}`} aria-label={`View ${name}`} title="View" className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary-50 text-primary-700 transition hover:bg-primary-100"><Eye className="h-4 w-4" /></Link>
+                        <Link href={`/dashboard/staff/${s.id}/edit`} aria-label={`Edit ${name}`} title="Edit" className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-warning-50 text-warning-700 transition hover:bg-warning-100"><Pencil className="h-4 w-4" /></Link>
+                        {!s.isActive && <button type="button" aria-label={`Reactivate ${name}`} title="Reactivate" disabled={reactivate.isPending} onClick={() => reactivate.mutate(s)} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-success-50 text-success-700 transition hover:bg-success-100 disabled:opacity-50"><RotateCcw className="h-4 w-4" /></button>}
+                        <button type="button" aria-label={s.isActive ? `Deactivate ${name}` : `Delete ${name} permanently`} title={s.isActive ? "Deactivate" : "Delete permanently"} onClick={() => setRemoving(s)} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-danger-50 text-danger-700 transition hover:bg-danger-100"><Trash2 className="h-4 w-4" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-            <div className="rounded-3xl border border-neutral-200 bg-neutral-50 p-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-neutral-500">
-                Staff ID
-              </p>
-              <p className="mt-2 text-sm font-semibold text-neutral-900">
-                {editStaff.id.toUpperCase()}
-              </p>
-              <p className="mt-1 text-xs text-neutral-500">
-                Staff IDs are assigned automatically and cannot be changed.
-              </p>
-            </div>
+      <Pagination currentPage={Math.min(page, totalPages)} totalPages={totalPages} onPageChange={setPage} />
 
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-              <button
-                type="button"
-                onClick={() => setEditStaff(null)}
-                className="rounded-2xl border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={saveStaffChanges}
-                className="rounded-2xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-800"
-              >
-                Save changes
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      <Modal
-        isOpen={!!staffToDelete}
-        onClose={() => setStaffToDelete(null)}
-        title="Delete Staff"
-        size="md"
-      >
-        <div className="space-y-4">
+      <Modal isOpen={removing !== null} onClose={() => setRemoving(null)} title={removing?.isActive ? "Deactivate this staff member?" : "Permanently delete this staff member?"} size="sm">
+        <div className="space-y-4 p-4">
           <p className="text-sm text-neutral-600">
-            Are you sure you want to delete this staff member{" "}
-            <span className="font-semibold text-neutral-900">
-              {staffToDelete?.name}
-            </span>
-            ? This action cannot be undone.
+            {removing?.isActive
+              ? <>&ldquo;{removing?.name ?? "This member"}&rdquo; loses dashboard access immediately. You can reactivate them later.</>
+              : <>&ldquo;{removing?.name ?? "This member"}&rdquo; is already inactive — deleting it now removes the record for good. This can&apos;t be undone.</>}
           </p>
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={() => setStaffToDelete(null)}
-              className="rounded-2xl border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={removeStaff}
-              className="rounded-2xl bg-danger-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-danger-700"
-            >
-              Delete staff
-            </button>
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setRemoving(null)} className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50">Cancel</button>
+            <button type="button" disabled={deactivate.isPending} onClick={() => removing && deactivate.mutate(removing)} className="rounded-xl bg-danger-600 px-4 py-2 text-sm font-semibold text-white hover:bg-danger-700 disabled:opacity-50">{deactivate.isPending ? "Working…" : removing?.isActive ? "Deactivate" : "Delete permanently"}</button>
           </div>
         </div>
       </Modal>

@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 
 import { AuthLeftPanel } from '@/components/auth/AuthLeftPanel';
 import { ROUTES } from '@/lib/constants/routes';
+import { api, type ApiError } from '@/lib/api/client';
 
 function CheckEmailContent() {
   const searchParams = useSearchParams();
@@ -20,13 +21,17 @@ function CheckEmailContent() {
 
   const [isResending, setIsResending] = useState(false);
 
-  const handleResend = () => {
+  const handleResend = async () => {
+    if (!searchParams.get('email')) return toast.error('Go back and enter your email first.');
     setIsResending(true);
-    // Mock resend
-    setTimeout(() => {
+    try {
+      await api.post('/auth/forgot-password', { email });
       toast.success('Reset link sent again. Check your inbox.');
+    } catch (err) {
+      toast.error((err as ApiError).message || "We couldn't send the email. Please try again.");
+    } finally {
       setIsResending(false);
-    }, 500);
+    }
   };
 
   return (

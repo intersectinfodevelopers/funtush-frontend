@@ -1,71 +1,52 @@
 "use client";
-import {MapContainer, TileLayer,Marker,Popup} from "react-leaflet";
+
+import "leaflet/dist/leaflet.css";
+import { useMemo } from "react";
+import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 import L from "leaflet";
-import "leaflet/dist/leaflet.css"
 
-const iconUrl = "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png";
-const iconRetinaUrl = "https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon-2x.png";
-const shadowUrl = "https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png";
-
-const customIcon = new L.Icon({
-  iconUrl,
-  iconRetinaUrl,
-  shadowUrl,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-
-interface ActiveTrek {
+export interface MapPin {
   id: string;
-  name: string;
-  guide_name: string;
-  location_name: string;
   lat: number;
   lng: number;
-  last_ping: string;
-  has_sos?: boolean;
+  title: string;
+  subtitle: string;
+  tone: "sos" | "live";
 }
 
-interface SafetyMapProps {
-  treks: ActiveTrek[];
+// Default Leaflet marker icons reference image files that Next.js/webpack won't
+// resolve automatically — a divIcon sidesteps that entirely and lets the pin
+// match the app's own red/green palette instead of Leaflet's stock blue pin.
+function pinIcon(tone: MapPin["tone"]) {
+  const color = tone === "sos" ? "#DC2626" : "#16A34A";
+  return L.divIcon({
+    className: "",
+    html: `<div style="width:26px;height:26px;border-radius:50% 50% 50% 0;background:${color};transform:rotate(-45deg);border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.4);"></div>`,
+    iconSize: [26, 26],
+    iconAnchor: [13, 26],
+    popupAnchor: [0, -26],
+  });
 }
 
-export default function SafetyMap({ treks }: SafetyMapProps) {
-  const defaultCenter: [number, number] = [27.7172, 85.324];
+const NEPAL_CENTER: [number, number] = [28.3949, 84.124];
+
+export default function SafetyMap({ pins }: { pins: MapPin[] }) {
+  const center = useMemo<[number, number]>(() => {
+    if (pins.length === 0) return NEPAL_CENTER;
+    return [pins.reduce((s, p) => s + p.lat, 0) / pins.length, pins.reduce((s, p) => s + p.lng, 0) / pins.length];
+  }, [pins]);
 
   return (
-    <div className="w-full h-full min-h-[400px] rounded-xl border border-slate-200/60 shadow-inner overflow-hidden z-0">
-      <MapContainer 
-        center={defaultCenter} 
-        zoom={8} 
-        style={{ height: "100%", width: "100%" }}
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-        {treks.map((trek) => (
-          <Marker 
-            key={trek.id} 
-            position={[trek.lat, trek.lng]} 
-            icon={customIcon}
-          >
-            <Popup>
-              <div className="p-1 font-sans text-slate-800">
-                <div className="flex items-center gap-1.5 font-bold text-sm">
-                  {trek.has_sos && <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />}
-                  <span>{trek.name}</span>
-                </div>
-                <p className="text-xs text-slate-500 mt-1">Guide: <strong className="text-slate-700">{trek.guide_name}</strong></p>
-                <p className="text-xs text-slate-500">Current Position: <strong className="text-slate-700">{trek.location_name}</strong></p>
-                <p className="text-[10px] text-slate-400 mt-1">Last Update: {trek.last_ping}</p>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
-    </div>
+    <MapContainer center={center} zoom={pins.length ? 8 : 7} scrollWheelZoom={false} style={{ height: "100%", width: "100%" }}>
+      <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+      {pins.map((p) => (
+        <Marker key={p.id} position={[p.lat, p.lng]} icon={pinIcon(p.tone)}>
+          <Popup>
+            <p className="font-semibold">{p.title}</p>
+            <p className="text-xs text-neutral-600">{p.subtitle}</p>
+          </Popup>
+        </Marker>
+      ))}
+    </MapContainer>
   );
 }

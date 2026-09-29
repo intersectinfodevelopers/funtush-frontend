@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { TrekkerTopbar } from "@/components/trekker/layout/trekkers";
 import { TrekkerSidebar } from "@/components/trekker/layout/TrekkerSidebar";
+import { useSessionEndRedirect } from "@/hooks/useSessionEndRedirect";
 
 export default function TrekkerLayout({
   children,
@@ -10,6 +11,7 @@ export default function TrekkerLayout({
   children: React.ReactNode;
 }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  useSessionEndRedirect();
 
   return (
     <div className="flex h-screen overflow-hidden bg-neutral-50">

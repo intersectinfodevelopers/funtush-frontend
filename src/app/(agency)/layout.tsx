@@ -4,10 +4,13 @@ import { useState, useEffect } from 'react';
 import '../globals.css';
 import AgencySidebar from '@/components/agency/AgencySidebar';
 import DashboardTopbar from '@/components/agency/DashboardTopbar';
+import SupportBanner from '@/components/agency/SupportBanner';
+import { useSessionEndRedirect } from '@/hooks/useSessionEndRedirect';
 
 export default function AgencyLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  useSessionEndRedirect();
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 768px)');
@@ -44,7 +47,9 @@ export default function AgencyLayout({ children }: { children: React.ReactNode }
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-neutral-50">
+    <div className="flex h-screen flex-col overflow-hidden bg-neutral-50">
+      <SupportBanner />
+      <div className="flex min-h-0 flex-1 overflow-hidden">
       {/* Sidebar */}
       <AgencySidebar
         isCollapsed={isSidebarCollapsed}
@@ -53,16 +58,17 @@ export default function AgencyLayout({ children }: { children: React.ReactNode }
       />
 
       {/* Main Content */}
-      <div className="flex h-screen min-w-0 flex-1 flex-col">
+      <div className="flex h-full min-w-0 flex-1 flex-col">
         {/* Topbar - stays put, never scrolls */}
         <div className="z-30 w-full shrink-0 bg-white">
           <DashboardTopbar onMenuClick={handleMenuClick} />
         </div>
 
         {/* Page Content - the ONLY scrollable region */}
-        <main className="min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6 bg-[#F2F2F7]">
+        <main className="relative min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-4 sm:py-4 md:px-6 md:py-6 bg-[#F2F2F7]">
           {children}
         </main>
+      </div>
       </div>
     </div>
   );

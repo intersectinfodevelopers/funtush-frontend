@@ -1,31 +1,15 @@
 "use client";
 
-import { useRouter, useParams } from "next/navigation";
-import { useCoupons } from "@/hooks/useCoupons";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { CouponForm } from "@/components/agency/coupons/CouponForm";
+import { useCouponList } from "@/hooks/useAgencyCoupons";
 
 export default function EditCouponPage() {
-  const router = useRouter();
-  const params = useParams();
-  const couponId = params?.id as string;
-
-  const { getCoupon } = useCoupons();
-  const currentCoupon = getCoupon(couponId);
-
-  if (!currentCoupon) {
-    return (
-      <div className="mx-auto w-full max-w-6xl py-10">
-        <p className="text-sm text-neutral-600">Coupon not found.</p>
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard/coupons")}
-          className="mt-4 rounded-xl bg-primary-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-800"
-        >
-          Back to coupons
-        </button>
-      </div>
-    );
-  }
-
-  return <CouponForm key={currentCoupon.id} existing={currentCoupon} />;
+  const { id } = useParams<{ id: string }>();
+  const { data, isLoading } = useCouponList();
+  if (isLoading) return <div className="h-40 animate-pulse rounded-2xl border border-neutral-200 bg-white" />;
+  const coupon = data?.find((c) => c.id === id);
+  if (!coupon) return <div className="rounded-2xl border border-neutral-200 bg-white p-6 text-sm">This coupon doesn&apos;t exist. <Link className="font-semibold text-primary-700 hover:underline" href="/dashboard/coupons">Back to coupons</Link></div>;
+  return <CouponForm key={coupon.id} existing={coupon} />;
 }

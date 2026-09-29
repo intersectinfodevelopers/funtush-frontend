@@ -1,33 +1,34 @@
 'use client';
 
 import Link from 'next/link';
-import { getAgencyData } from '@/lib/agency/getAgencyData';
 import { UserCircle } from 'lucide-react';
-import users from '@/../data/users.json';
-
-type Props = { agencyId: string };
+import { useBookingList, useMoney } from '@/hooks/useAgencyDashboard';
+import { toUiBooking } from '@/lib/api/agency/bookings';
 
 const statusStyles: Record<string, string> = {
   confirmed: 'bg-green-100 text-green-700',
+  paid: 'bg-green-100 text-green-700',
+  active: 'bg-green-100 text-green-700',
   inquiry: 'bg-amber-100 text-amber-700',
+  payment_pending: 'bg-amber-100 text-amber-700',
+  alternative_proposed: 'bg-amber-100 text-amber-700',
   cancelled: 'bg-red-100 text-red-700',
+  rejected: 'bg-red-100 text-red-700',
   completed: 'bg-blue-100 text-blue-700',
 };
 
-export default function RecentBookings({ agencyId }: Props) {
-  const { bookings, packages } = getAgencyData(agencyId);
+export default function RecentBookings() {
+  const { data, isLoading } = useBookingList({ limit: 4 }); // API returns newest first
+  const money = useMoney();
 
-  const recent = bookings
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 4)
-    .map((booking) => ({
-      id: booking.id,
-      customer: users.find((u) => u.id === booking.trekker_id)?.name ?? 'Unknown',
-      packageName: packages.find((p) => p.id === booking.package_id)?.title,
-      date: booking.created_at.split('T')[0],
-      amount: booking.total_price,
-      status: booking.status,
-    }));
+  const recent = (data?.bookings ?? []).map(toUiBooking).map((b) => ({
+    id: b.id,
+    customer: b.trekker_name,
+    packageName: b.package_title ?? '—',
+    date: b.created_at.split('T')[0],
+    amount: b.total_price,
+    status: b.status,
+  }));
 
   return (
     <section className="flex flex-col gap-2 rounded-lg bg-white p-3 shadow-sm xl:col-span-1">
@@ -37,6 +38,9 @@ export default function RecentBookings({ agencyId }: Props) {
           View All
         </Link>
       </div>
+
+      {isLoading && <div className="h-16 animate-pulse rounded-md bg-neutral-100" />}
+      {!isLoading && recent.length === 0 && <p className="py-4 text-center text-xs text-neutral-500">No bookings yet.</p>}
 
       {/* Table - desktop */}
       <div className="hidden md:block">
@@ -51,9 +55,9 @@ export default function RecentBookings({ agencyId }: Props) {
               </span>
               <span className="truncate">{b.packageName}</span>
               <span>{b.date}</span>
-              <span>Rs {b.amount.toLocaleString()}</span>
+              <span>{money(b.amount)}</span>
               <span className={`w-fit rounded-full px-2 py-1 text-[10px] ${statusStyles[b.status] ?? 'bg-neutral-100 text-neutral-600'}`}>
-                {b.status}
+                {b.status.replace(/_/g, ' ')}
               </span>
             </div>
           ))}
@@ -69,13 +73,13 @@ export default function RecentBookings({ agencyId }: Props) {
                 <UserCircle size={16} className="text-neutral-400" /> {b.customer}
               </span>
               <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${statusStyles[b.status] ?? 'bg-neutral-100 text-neutral-600'}`}>
-                {b.status}
+                {b.status.replace(/_/g, ' ')}
               </span>
             </div>
             <div className="grid grid-cols-2 gap-1 text-[11px] text-neutral-600">
               <span>Package</span><span className="text-right font-medium text-neutral-800">{b.packageName}</span>
               <span>Date</span><span className="text-right font-medium text-neutral-800">{b.date}</span>
-              <span>Amount</span><span className="text-right font-medium text-neutral-800">Rs {b.amount.toLocaleString()}</span>
+              <span>Amount</span><span className="text-right font-medium text-neutral-800">{money(b.amount)}</span>
             </div>
           </div>
         ))}

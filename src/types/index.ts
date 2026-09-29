@@ -5,7 +5,6 @@
 export * from './agency';
 export * from './booking';
 export * from './user';
-export * from './trek';
 
 // Add more type exports as they are created
 // export * from './package';

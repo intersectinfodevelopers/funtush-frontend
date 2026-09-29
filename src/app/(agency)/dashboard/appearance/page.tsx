@@ -1,23 +1,75 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { ChevronRight, Palette, LayoutTemplate, Sparkles } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronRight, Palette, SearchCode, Menu, Sparkles, LayoutTemplate, Share2, Puzzle, Globe2 } from "lucide-react";
 import { SettingsToastProvider } from "@/components/agency/settings/settings-kit";
 import { BrandingTab } from "@/components/agency/appearance/BrandingTab";
+import { SeoTab } from "@/components/agency/appearance/SeoTab";
+import { NavigationTab } from "@/components/agency/appearance/NavigationTab";
 import { ComponentsTab } from "@/components/agency/appearance/ComponentsTab";
 import { TemplatesTab } from "@/components/agency/appearance/TemplatesTab";
+import { SocialTab } from "@/components/agency/appearance/SocialTab";
+import { WidgetsTab } from "@/components/agency/appearance/WidgetsTab";
+import { DomainTab } from "@/components/agency/appearance/DomainTab";
 
-type Tab = "branding" | "components" | "templates";
+// Order matches the intended build flow: get every identity/config step done
+// first (brand, SEO, nav, socials, widgets) — none of it depends on a
+// template — then pick a template and adjust it (Components lives alongside
+// Templates since both shape the actual page), and finally publish.
+type Tab = "branding" | "seo" | "navigation" | "social" | "widgets" | "templates" | "components" | "domain";
 
 const TABS: { key: Tab; label: string; icon: typeof Palette }[] = [
   { key: "branding", label: "Branding", icon: Palette },
-  { key: "components", label: "Components", icon: LayoutTemplate },
+  { key: "seo", label: "SEO", icon: SearchCode },
+  { key: "navigation", label: "Navigation", icon: Menu },
+  { key: "social", label: "Social", icon: Share2 },
+  { key: "widgets", label: "Widgets", icon: Puzzle },
   { key: "templates", label: "Templates", icon: Sparkles },
+  { key: "components", label: "Components", icon: LayoutTemplate },
+  { key: "domain", label: "Domain & Publish", icon: Globe2 },
 ];
 
+function isTab(value: string | null): value is Tab {
+  return TABS.some((t) => t.key === value);
+}
+
 export default function AppearancePage() {
-  const [tab, setTab] = useState<Tab>("branding");
+  return (
+    <Suspense fallback={null}>
+      <AppearancePageInner />
+    </Suspense>
+  );
+}
+
+function AppearancePageInner() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  // Search params are part of the URL Next already resolved server-side, so
+  // reading them straight into initial state (unlike localStorage) can't
+  // disagree with the server's render.
+  const [tab, setTab] = useState<Tab>(() => {
+    const fromQuery = searchParams.get("tab");
+    return isTab(fromQuery) ? fromQuery : "branding";
+  });
+
+  // Keeps the shown tab in sync when something OTHER than the tab bar above
+  // changes the URL — e.g. the template editor's back button returning to
+  // "?tab=components", or Components' "Continue" button linking straight to
+  // "?tab=domain" — completing the branding → ... → templates → components →
+  // domain & publish flow without landing back on the first tab each time.
+  useEffect(() => {
+    const fromQuery = searchParams.get("tab");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (isTab(fromQuery) && fromQuery !== tab) setTab(fromQuery);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  function selectTab(next: Tab) {
+    setTab(next);
+    router.replace(`/dashboard/appearance?tab=${next}`, { scroll: false });
+  }
 
   return (
     <SettingsToastProvider>
@@ -32,17 +84,19 @@ export default function AppearancePage() {
           </div>
           <h1 className="mt-2 text-2xl font-bold text-neutral-900">Appearance</h1>
           <p className="mt-1 text-sm text-neutral-600">
-            How your white-label site looks — brand, on-page components, and starter templates.
+            Everything that builds and publishes your white-label site, in one place — brand it,
+            tune SEO, navigation, socials and widgets, then choose and adjust a template, and
+            publish.
           </p>
         </div>
 
-        <div className="flex gap-1 rounded-2xl border border-neutral-200 bg-white p-1.5 shadow-sm sm:inline-flex">
+        <div className="flex flex-wrap gap-1 rounded-2xl border border-neutral-200 bg-white p-1.5 shadow-sm">
           {TABS.map((t) => (
             <button
               key={t.key}
               type="button"
-              onClick={() => setTab(t.key)}
-              className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition sm:flex-none ${
+              onClick={() => selectTab(t.key)}
+              className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-semibold transition ${
                 tab === t.key
                   ? "bg-primary-900 text-white shadow-sm"
                   : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
@@ -55,8 +109,13 @@ export default function AppearancePage() {
         </div>
 
         {tab === "branding" && <BrandingTab />}
-        {tab === "components" && <ComponentsTab />}
+        {tab === "seo" && <SeoTab />}
+        {tab === "navigation" && <NavigationTab />}
+        {tab === "social" && <SocialTab />}
+        {tab === "widgets" && <WidgetsTab />}
         {tab === "templates" && <TemplatesTab />}
+        {tab === "components" && <ComponentsTab />}
+        {tab === "domain" && <DomainTab />}
       </div>
     </SettingsToastProvider>
   );

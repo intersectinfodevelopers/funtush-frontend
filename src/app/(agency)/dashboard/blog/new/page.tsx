@@ -1,6 +1,7 @@
 "use client";
-import { BlogFormShared } from "@/components/agency/blog/BlogFormShared";
 
-export default function Page() {
-  return <BlogFormShared />;
+import BlogForm from "@/components/agency/blog/BlogForm";
+
+export default function NewBlogPage() {
+  return <BlogForm />;
 }

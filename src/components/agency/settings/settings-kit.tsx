@@ -54,7 +54,6 @@ export const useSettingsToast = () => useContext(ToastCtx);
 /* ── Persisted form state (mock: localStorage) ──────────────────────────── */
 
 function readStore<T extends object>(storageKey: string, defaults: T): T {
-  if (typeof window === "undefined") return defaults;
   try {
     const raw = localStorage.getItem(storageKey);
     return raw ? { ...defaults, ...(JSON.parse(raw) as Partial<T>) } : defaults;
@@ -64,9 +63,23 @@ function readStore<T extends object>(storageKey: string, defaults: T): T {
 }
 
 export function useSettingsForm<T extends object>(storageKey: string, defaults: T) {
-  const [value, setValue] = useState<T>(() => readStore(storageKey, defaults));
-  const [saved, setSaved] = useState<T>(() => readStore(storageKey, defaults));
+  // Starting from `defaults` (not localStorage) keeps this render identical
+  // on the server and on the client's first (hydrating) pass — a direct
+  // hard load of a settings page is genuinely server-rendered, so reading
+  // localStorage in the initial state here would disagree with the server's
+  // markup and crash hydration. The real stored value loads right after, in
+  // the mount effect below.
+  const [value, setValue] = useState<T>(defaults);
+  const [saved, setSaved] = useState<T>(defaults);
   const toast = useSettingsToast();
+
+  useEffect(() => {
+    const stored = readStore(storageKey, defaults);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setValue(stored);
+    setSaved(stored);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storageKey]);
 
   const dirty = useMemo(() => JSON.stringify(value) !== JSON.stringify(saved), [value, saved]);
 
@@ -249,10 +262,14 @@ export function SaveBar({
   dirty,
   onSave,
   onReset,
+  saving,
+  error,
 }: {
   dirty: boolean;
   onSave: () => void;
   onReset?: () => void;
+  saving?: boolean;
+  error?: string | null;
 }) {
   return (
     <div
@@ -260,9 +277,11 @@ export function SaveBar({
         dirty ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
     >
-      <span className="mr-auto text-xs font-medium text-neutral-500">
-        You have unsaved changes
-      </span>
+      {error ? (
+        <span role="alert" className="mr-auto text-xs font-medium text-danger-600">{error}</span>
+      ) : (
+        <span className="mr-auto text-xs font-medium text-neutral-500">You have unsaved changes</span>
+      )}
       {onReset && (
         <button
           type="button"
@@ -275,9 +294,10 @@ export function SaveBar({
       <button
         type="button"
         onClick={onSave}
-        className="rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-800"
+        disabled={saving}
+        className="rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-800 disabled:opacity-50"
       >
-        Save changes
+        {saving ? "Saving…" : "Save changes"}
       </button>
     </div>
   );

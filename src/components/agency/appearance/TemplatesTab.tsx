@@ -1,129 +1,51 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Search, ExternalLink, Mountain } from "lucide-react";
-import toast from "react-hot-toast";
-
-interface SiteTemplate {
-  id: string;
-  name: string;
-  sections: number;
-  description: string;
-  gradient: string;
-}
-
-const TEMPLATES: SiteTemplate[] = [
-  {
-    id: "classic-trek-operator",
-    name: "Classic Trek Operator",
-    sections: 7,
-    description: "A traditional storefront with hero slider, packages, guides and FAQ.",
-    gradient: "from-primary-600 to-accent-500",
-  },
-  {
-    id: "adventure-landing",
-    name: "Adventure Landing",
-    sections: 5,
-    description: "A minimal landing page — hero image, highlights, and a single strong CTA.",
-    gradient: "from-neutral-700 to-neutral-500",
-  },
-  {
-    id: "himalayan-story",
-    name: "Himalayan Story",
-    sections: 8,
-    description: "Blog-forward layout that leads with trip reports and photo essays.",
-    gradient: "from-success-600 to-success-400",
-  },
-  {
-    id: "expedition-pro",
-    name: "Expedition Pro",
-    sections: 9,
-    description: "Gallery-heavy design for technical climbs and multi-week expeditions.",
-    gradient: "from-warning-600 to-danger-500",
-  },
-  {
-    id: "boutique-trekking",
-    name: "Boutique Trekking",
-    sections: 6,
-    description: "An elegant, understated layout for small-group premium treks.",
-    gradient: "from-accent-700 to-primary-500",
-  },
-  {
-    id: "family-adventures",
-    name: "Family Adventures",
-    sections: 6,
-    description: "Friendly, colourful layout built around family and beginner routes.",
-    gradient: "from-danger-500 to-warning-400",
-  },
-];
+import { useState } from "react";
+import Link from "next/link";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Lock, Pencil } from "lucide-react";
+import { useSettingsToast } from "@/components/agency/settings/settings-kit";
+import { siteKeys, useSitePage, useSitePageOptions } from "@/hooks/useAgencySite";
+import { applyTemplate } from "@/lib/api/agency/site";
+import type { ApiError } from "@/lib/api/client";
 
 export function TemplatesTab() {
-  const [query, setQuery] = useState("");
+  const qc = useQueryClient();
+  const toast = useSettingsToast();
+  const page = useSitePage();
+  const options = useSitePageOptions();
+  const [error, setError] = useState<string | null>(null);
+  const apply = useMutation({
+    mutationFn: (id: string) => applyTemplate(id),
+    onSuccess: () => { setError(null); toast("Template applied"); void qc.invalidateQueries({ queryKey: [...siteKeys.all, "site-page"] }); },
+    onError: (e) => setError((e as unknown as ApiError).message || "Couldn't apply the template."),
+  });
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return TEMPLATES;
-    return TEMPLATES.filter(
-      (t) => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q),
-    );
-  }, [query]);
-
-  const addPageFromTemplate = (t: SiteTemplate) => {
-    toast.success(`"${t.name}" added as a new page (mock)`);
-  };
+  if (page.isLoading || options.isLoading) return <div className="h-64 animate-pulse rounded-2xl border border-neutral-200 bg-white" />;
+  if (page.isError || options.isError || !page.data || !options.data) return <p role="alert" className="text-sm text-danger-600">Couldn&apos;t load your templates.</p>;
+  const current = page.data.templateId;
 
   return (
-    <div className="space-y-4">
-      <div className="relative">
-        <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search templates"
-          className="w-full max-w-sm rounded-2xl border border-neutral-200 bg-white py-2.5 pl-9 pr-3 text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-        />
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div><h2 className="text-lg font-bold text-neutral-900">Templates</h2><p className="text-sm text-neutral-500">Start from a ready-made layout, then adjust it in the editor. Applying a template replaces your current sections.</p></div>
+        <Link href="/dashboard/appearance/editor" className="inline-flex items-center gap-2 rounded-xl bg-primary-900 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-800"><Pencil className="h-4 w-4" /> Open editor</Link>
       </div>
-
-      {filtered.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-neutral-200 bg-white px-6 py-16 text-center">
-          <p className="text-sm text-neutral-500">No templates match &quot;{query}&quot;.</p>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
-          {filtered.map((t) => (
-            <div
-              key={t.id}
-              className="overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-            >
-              <div className={`relative flex h-32 items-center justify-center bg-linear-to-br ${t.gradient}`}>
-                <Mountain className="h-10 w-10 text-white/70" />
-                <button
-                  type="button"
-                  onClick={() => toast(`Preview coming soon for "${t.name}"`, { icon: "👀" })}
-                  className="absolute right-3 top-3 grid h-7 w-7 place-items-center rounded-lg bg-white/20 text-white backdrop-blur hover:bg-white/30"
-                  aria-label={`Preview ${t.name}`}
-                >
-                  <ExternalLink size={14} />
-                </button>
-              </div>
-              <div className="p-4">
-                <p className="text-sm font-bold text-neutral-900">
-                  {t.name} <span className="font-normal text-neutral-400">· {t.sections} sections</span>
-                </p>
-                <p className="mt-1 text-xs leading-relaxed text-neutral-500">{t.description}</p>
-                <button
-                  type="button"
-                  onClick={() => addPageFromTemplate(t)}
-                  className="mt-3 w-full rounded-xl bg-primary-900 px-3 py-2 text-xs font-semibold text-white hover:bg-primary-800"
-                >
-                  Add Page
-                </button>
-              </div>
+      {error && <p role="alert" className="text-sm text-danger-600">{error}</p>}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {options.data.templates.map((t) => (
+          <article key={t.id} aria-label={t.name} className="flex flex-col justify-between space-y-3 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+            <div>
+              <div className="flex items-start justify-between gap-2"><h3 className="font-bold text-neutral-900">{t.name}</h3>{current === t.id && <span className="rounded-full bg-success-50 px-2 py-0.5 text-xs font-bold text-success-700">In use</span>}{t.locked && <Lock className="h-4 w-4 text-neutral-400" aria-label="Paid plan" />}</div>
+              <p className="mt-1 text-sm text-neutral-600">{t.description}</p>
+              <p className="mt-2 text-xs text-neutral-400">{t.sections.join(" · ")}</p>
             </div>
-          ))}
-        </div>
-      )}
+            {t.locked
+              ? <Link href="/dashboard/settings?tab=subscription" className="rounded-xl border border-neutral-300 px-3 py-2 text-center text-sm font-semibold hover:bg-neutral-50">Upgrade to use</Link>
+              : <button type="button" disabled={apply.isPending || current === t.id} onClick={() => { if (window.confirm(`Apply “${t.name}”? Your current sections will be replaced.`)) apply.mutate(t.id); }} className="rounded-xl bg-primary-900 px-3 py-2 text-sm font-semibold text-white hover:bg-primary-800 disabled:opacity-50">{current === t.id ? "Currently applied" : "Apply template"}</button>}
+          </article>
+        ))}
+      </div>
     </div>
   );
 }
-

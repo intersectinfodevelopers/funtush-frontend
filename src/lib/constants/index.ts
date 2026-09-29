@@ -3,4 +3,3 @@
  */
 
 export * from './routes';
-export * from './tiers';

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Bell,
   Search,
@@ -10,98 +11,49 @@ import {
   Settings,
   Menu,
   CalendarCheck,
+  Package,
   AlertTriangle,
   DollarSign,
   Star,
   UserPlus,
+  FileText,
 } from 'lucide-react';
-import usersData from '../../.././data/users.json';
+import { useAuth } from '@/hooks/useAuth';
+import { useAgencyNotifications, type AgencyNotification } from '@/hooks/useAgencyNotifications';
 
 interface DashboardTopbarProps {
   onMenuClick: () => void;
 }
 
-type Notification = {
-  id: string;
-  type: 'booking' | 'sos' | 'payment' | 'review' | 'guide';
-  title: string;
-  description: string;
-  time: string;
-  read: boolean;
-};
-
-const initialNotifications: Notification[] = [
-  {
-    id: 'n1',
-    type: 'sos',
-    title: 'Active SOS Alert',
-    description: 'Guide Bishal Tamang triggered an SOS on EBC Trek.',
-    time: '2m ago',
-    read: false,
-  },
-  {
-    id: 'n2',
-    type: 'booking',
-    title: 'New booking received',
-    description: 'Daniel S. booked Annapurna Circuit Trek for 4 people.',
-    time: '18m ago',
-    read: false,
-  },
-  {
-    id: 'n3',
-    type: 'payment',
-    title: 'Payment received',
-    description: 'Rs 45,000 received for Manaslu Circuit Trek.',
-    time: '1h ago',
-    read: false,
-  },
-  {
-    id: 'n4',
-    type: 'review',
-    title: 'New review posted',
-    description: 'Priya K. left a 5-star review for Ghorepani Poon Hill Trek.',
-    time: '3h ago',
-    read: true,
-  },
-  {
-    id: 'n5',
-    type: 'guide',
-    title: 'Guide assigned',
-    description: 'Bishal Tamang was assigned to Classic Everest Base Camp Trek.',
-    time: 'Yesterday',
-    read: true,
-  },
-];
-
-const notificationStyles: Record<Notification['type'], { icon: React.ElementType; bg: string; color: string }> = {
+const notificationStyles: Record<AgencyNotification['type'], { icon: React.ElementType; bg: string; color: string }> = {
   sos: { icon: AlertTriangle, bg: 'bg-red-100', color: 'text-red-600' },
   booking: { icon: CalendarCheck, bg: 'bg-blue-100', color: 'text-blue-600' },
   payment: { icon: DollarSign, bg: 'bg-green-100', color: 'text-green-600' },
   review: { icon: Star, bg: 'bg-amber-100', color: 'text-amber-600' },
   guide: { icon: UserPlus, bg: 'bg-indigo-100', color: 'text-indigo-600' },
+  package: { icon: Package, bg: 'bg-violet-100', color: 'text-violet-600' },
+  blog: { icon: FileText, bg: 'bg-sky-100', color: 'text-sky-600' },
 };
 
 export default function DashboardTopbar({ onMenuClick }: DashboardTopbarProps) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications);
+  const { notifications, markAsRead, markAllAsRead, markAllSeen, badgeCount } = useAgencyNotifications();
+  const { user: sessionUser } = useAuth();
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  const user = usersData[0] || { name: 'Manish Rai', role: 'Agency Admin' };
-  const userName = user.name || 'Manish Rai';
-  const userRole = user.role || 'Agency Admin';
-  const initial = userName.charAt(0).toUpperCase();
-  const avatarUrl = (user as any)?.avatarUrl ?? null;
-
-  const markAsRead = (id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+  const unreadCount = notifications.filter((n) => !n.read).length; // highlighted in the list
+  const opening = () => {
+    if (!showNotifications) markAllSeen();
+    setShowNotifications((prev) => !prev);
   };
 
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
+  // The signed-in account (this used to be the first entry of a mock users file).
+  const userName = sessionUser?.name ?? '';
+  const userRole = sessionUser?.support ? 'Support session' : sessionUser?.role === 'agency_admin' ? 'Agency Admin' : 'Staff';
+  const initial = (userName || '?').charAt(0).toUpperCase();
+  const avatarUrl: string | null = null;
 
   return (
     <header className="bg-white border-b border-neutral-200 px-3 sm:px-6 h-16 flex items-center justify-between w-full shadow-sm">
@@ -136,14 +88,14 @@ export default function DashboardTopbar({ onMenuClick }: DashboardTopbarProps) {
         {/* Notifications */}
         <div className="relative">
           <button
-            onClick={() => setShowNotifications((prev) => !prev)}
+            onClick={opening}
             className="relative p-2 rounded-full hover:bg-neutral-100 transition-colors"
             aria-label="Notifications"
           >
             <Bell size={19} className="text-neutral-600" />
-            {unreadCount > 0 && (
+            {badgeCount > 0 && (
               <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-semibold text-white ring-2 ring-white">
-                {unreadCount > 9 ? '9+' : unreadCount}
+                {badgeCount > 9 ? '9+' : badgeCount}
               </span>
             )}
           </button>
@@ -175,7 +127,7 @@ export default function DashboardTopbar({ onMenuClick }: DashboardTopbarProps) {
                       return (
                         <button
                           key={n.id}
-                          onClick={() => markAsRead(n.id)}
+                          onClick={() => { markAsRead(n.id); if (n.href) { setShowNotifications(false); router.push(n.href); } }}
                           className={`w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-neutral-50 ${
                             !n.read ? 'bg-blue-50/60' : ''
                           }`}

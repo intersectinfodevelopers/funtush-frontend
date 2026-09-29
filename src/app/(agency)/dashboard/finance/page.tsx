@@ -1,583 +1,158 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Link from "next/link";
-import finance from "../../../../../data/finance.json";
-import {
-  ArrowUp,
-  CalendarDays,
-  ChevronDown,
-  Download,
-  Landmark,
-  PackageCheck,
-  Plus,
-  ReceiptText,
-  ShieldCheck,
-  TrendingUp,
-  WalletCards,
-} from "lucide-react";
+import { useMemo } from "react";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
+import { BadgeDollarSign, Download, FileWarning, ReceiptText, Wallet } from "lucide-react";
 
-const agencyId = "ag-001";
-const currency = {
-  format: (amount: number) => `Rs. ${amount.toLocaleString("en-IN")}`,
-};
-const compactCurrency = (amount: number) =>
-  Math.abs(amount) >= 1000
-    ? `Rs. ${(amount / 1000).toFixed(1)}k`
-    : currency.format(amount);
+import { TrendStatCard } from "@/components/shared/TrendStatCard";
+import { usePnl, usePnlTrend, useInvoiceList } from "@/hooks/useAgencyFinance";
+import { useOverview, usePackageStats } from "@/hooks/useAgencyAnalytics";
+import { useCompactMoney, useMoney } from "@/hooks/useAgencyDashboard";
+import { exportCsv } from "@/lib/csvExport";
+import { growthPct as growth, splitCompare } from "@/lib/trend";
 
-function Sparkline({ color, points }: { color: string; points: number[] }) {
-  const max = Math.max(...points);
-  const min = Math.min(...points);
-  const range = max - min || 1;
-  const line = points
-    .map(
-      (point, index) =>
-        `${(index / (points.length - 1)) * 100},${35 - ((point - min) / range) * 27}`,
-    )
-    .join(" ");
-  const gradientId = `spark-${color.replace("#", "")}`;
+const monthLabel = (period: string) => new Date(`${period}-01T00:00:00.000Z`).toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
+const shortMonth = (period: string) => new Date(`${period}-01T00:00:00.000Z`).toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+const shortDay = (date: string) => new Date(`${date}T00:00:00.000Z`).toLocaleDateString("en-US", { day: "numeric", month: "short", timeZone: "UTC" });
+
+const ACCOUNT_CODE = { trekRevenue: "4000", addOnRevenue: "4100", guidePayroll: "5000", permits: "5200" };
+
+export default function FinanceOverviewPage() {
+  const money = useMoney();
+  const compact = useCompactMoney();
+  const pnl = usePnl();
+  const trend = usePnlTrend(12);
+  const packages = usePackageStats("last_30_days");
+  // last_30_days (not last_12_months) — the latter is gated to MEDIUM/LARGE tiers and 403s for everyone else.
+  const bookingsOverview = useOverview("last_30_days");
+  const invoices = useInvoiceList({ limit: 100 });
+
+  const p = pnl.data;
+  const points = trend.data ?? [];
+  const current = points[points.length - 1];
+  const previous = points[points.length - 2];
+
+  const revenueSeries = useMemo(() => points.map((pt) => ({ label: shortMonth(pt.period), v: pt.revenue })), [points]);
+  const profitSeries = useMemo(() => points.map((pt) => ({ label: shortMonth(pt.period), v: pt.netProfit })), [points]);
+  const pnlChartData = useMemo(() => points.map((pt) => ({ label: shortMonth(pt.period), netProfit: pt.netProfit })), [points]);
+
+  const dailyBookings = bookingsOverview.data?.charts.bookingsByDay ?? [];
+  const bookingsSeries = useMemo(() => dailyBookings.map((b) => ({ label: shortDay(b.date), v: b.count })), [dailyBookings]);
+  const totalBookings30d = dailyBookings.reduce((s, b) => s + b.count, 0);
+  // Split the 30-day window in half for an honest trend comparison — a "vs last month" figure
+  // needs the last_12_months period, which is gated to paid tiers and 403s for everyone else.
+  const { recent: recentHalf, prior: priorHalf } = splitCompare(bookingsSeries);
+
+  const pendingInvoices = (invoices.data?.invoices ?? []).filter((i) => i.status === "Sent" || i.status === "Overdue");
+  const pendingTotal = pendingInvoices.reduce((s, i) => s + i.total, 0);
+
+  const find = (lines: { code: string; name: string; amount: number }[], code: string) => lines.find((l) => l.code === code)?.amount ?? 0;
+  const trekRevenue = p ? find(p.revenue.lines, ACCOUNT_CODE.trekRevenue) : 0;
+  const addOnRevenue = p ? find(p.revenue.lines, ACCOUNT_CODE.addOnRevenue) : 0;
+  const guidePayroll = p ? find(p.expenses.lines, ACCOUNT_CODE.guidePayroll) : 0;
+  const permits = p ? find(p.expenses.lines, ACCOUNT_CODE.permits) : 0;
+
+  const topPackages = packages.data?.topByRevenue ?? [];
+  const maxRevenue = Math.max(1, ...topPackages.map((pk) => pk.revenue));
+  const totalBookingsThisPeriod = topPackages.reduce((s, pk) => s + pk.bookings, 0);
+  const avgRevenue = totalBookingsThisPeriod === 0 ? 0 : topPackages.reduce((s, pk) => s + pk.revenue, 0) / totalBookingsThisPeriod;
+
   return (
-    <svg
-      viewBox="0 0 100 40"
-      className="h-16 w-40 shrink-0"
-      preserveAspectRatio="none"
-      aria-hidden="true"
-    >
-      <defs>
-        <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity=".42" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon points={`0,38 ${line} 100,38`} fill={`url(#${gradientId})`} />
-      <polyline
-        points={line}
-        fill="none"
-        stroke={color}
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
+    <div className="space-y-4">
+      {(pnl.isError || trend.isError) && <p role="alert" className="rounded-2xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700">Couldn&apos;t load this month&apos;s figures.</p>}
 
-function OverviewCard({
-  label,
-  value,
-  detail,
-  icon: Icon,
-  tone,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-  icon: React.ComponentType<{ className?: string }>;
-  tone: "violet" | "rose" | "green" | "orange";
-}) {
-  const colors = {
-    violet: ["border-primary-400", "bg-primary-100", "text-primary-600"],
-    rose: ["border-danger-400", "bg-danger-100", "text-danger-500"],
-    green: ["border-success-400", "bg-success-100", "text-success-600"],
-    orange: ["border-warning-500", "bg-warning-100", "text-warning-600"],
-  }[tone];
-  return (
-    <article
-      className={`relative min-h-44 overflow-hidden rounded-xl border bg-white p-5 shadow-sm ${colors[0]}`}
-    >
-      <div
-        className={`absolute -right-7 -top-7 h-24 w-24 rounded-full opacity-70 ${colors[1]}`}
-      />
-      <div
-        className={`absolute -bottom-12 right-8 h-20 w-20 rounded-full opacity-45 ${colors[1]}`}
-      />
-      <div className="relative flex h-full flex-col">
-        <span
-          className={`ml-auto inline-flex h-10 w-10 items-center justify-center rounded-lg ${colors[1]} ${colors[2]}`}
-        >
-          <Icon className="h-5 w-5" />
-        </span>
-        <p className="-mt-9 text-sm font-semibold text-neutral-900">{label}</p>
-        <p className="mt-3 text-4xl font-bold tracking-tight text-neutral-950">
-          {value}
-        </p>
-        <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-neutral-700">
-          {tone === "violet" || tone === "green" ? (
-            <ArrowUp className="h-4 w-4" />
-          ) : null}
-          {detail}
-        </p>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-2xl border border-primary-100 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between"><p className="text-sm font-semibold text-neutral-700">Revenue{p ? ` (${monthLabel(p.period).split(" ")[0]})` : ""}</p><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-50 text-primary-700"><Wallet className="h-4 w-4" /></span></div>
+          <p className="mt-2 text-2xl font-bold text-neutral-900">{p ? compact(p.revenue.total) : "—"}</p>
+          {current && previous && growth(current.revenue, previous.revenue) && <p className="mt-1 text-xs text-neutral-600"><span className={`font-semibold ${current.revenue >= previous.revenue ? "text-success-700" : "text-danger-600"}`}>{growth(current.revenue, previous.revenue)}</span> from {shortMonth(previous.period)}</p>}
+        </div>
+        <div className="rounded-2xl border border-danger-100 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between"><p className="text-sm font-semibold text-neutral-700">Expenses{p ? ` (${monthLabel(p.period).split(" ")[0]})` : ""}</p><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-danger-50 text-danger-700"><ReceiptText className="h-4 w-4" /></span></div>
+          <p className="mt-2 text-2xl font-bold text-neutral-900">{p ? compact(p.expenses.total) : "—"}</p>
+          <p className="mt-1 text-xs text-neutral-500">{p && p.expenses.lines.length > 0 ? p.expenses.lines.slice(0, 3).map((l) => l.name).join(", ") : "No expenses recorded yet"}</p>
+        </div>
+        <div className="rounded-2xl border border-success-100 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between"><p className="text-sm font-semibold text-neutral-700">Net Profit</p><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-success-50 text-success-700"><BadgeDollarSign className="h-4 w-4" /></span></div>
+          <p className="mt-2 text-2xl font-bold text-neutral-900">{p ? compact(p.netProfit) : "—"}</p>
+          <p className="mt-1 text-xs text-neutral-600">{p ? <><span className={`font-semibold ${p.netProfitMargin >= 0 ? "text-success-700" : "text-danger-600"}`}>{p.netProfitMargin >= 0 ? "↑" : "↓"}</span> {p.netProfitMargin}% margin</> : "—"}</p>
+        </div>
+        <div className="rounded-2xl border border-warning-100 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between"><p className="text-sm font-semibold text-neutral-700">Invoices Pending</p><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-warning-50 text-warning-700"><FileWarning className="h-4 w-4" /></span></div>
+          <p className="mt-2 text-2xl font-bold text-neutral-900">{invoices.data ? pendingInvoices.length : "—"}</p>
+          <p className="mt-1 text-xs text-neutral-500">{invoices.data ? `${money(pendingTotal)} outstanding` : "—"}</p>
+        </div>
       </div>
-    </article>
-  );
-}
 
-function SummaryCard({
-  label,
-  value,
-  change,
-  color,
-  points,
-}: {
-  label: string;
-  value: string;
-  change: string;
-  color: string;
-  points: number[];
-}) {
-  return (
-    <article className="flex min-h-48 flex-col justify-between rounded-2xl bg-white p-5 shadow-sm ring-1 ring-neutral-100 sm:p-6">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold text-neutral-900">{label}</h2>
-        <Download className="h-4 w-4 text-neutral-600" aria-hidden="true" />
+      <div>
+        <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-neutral-500">Summarized Result</h2>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <TrendStatCard label="Gross Revenue" value={current ? money(current.revenue) : "—"} tone="warning" series={revenueSeries} change={current && previous ? growth(current.revenue, previous.revenue) : undefined} onExport={() => exportCsv("gross-revenue.csv", points.map((pt) => ({ period: pt.period, revenue: pt.revenue })))} />
+          <TrendStatCard label="Total Bookings" value={bookingsOverview.data ? totalBookings30d : "—"} tone="success" series={bookingsSeries} change={bookingsOverview.data ? growth(recentHalf, priorHalf) : undefined} note="vs previous 15 days" onExport={() => exportCsv("bookings-by-day.csv", dailyBookings.map((b) => ({ date: b.date, bookings: b.count })))} />
+          <TrendStatCard label="Net Profit" value={current ? money(current.netProfit) : "—"} tone="success" series={profitSeries} change={current && previous ? growth(current.netProfit, previous.netProfit) : undefined} onExport={() => exportCsv("net-profit.csv", points.map((pt) => ({ period: pt.period, netProfit: pt.netProfit })))} />
+        </div>
       </div>
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <p className="text-2xl font-bold text-neutral-900">{value}</p>
-          <p className="mt-1 text-sm font-medium text-success-600">
-            <span aria-hidden="true">up </span>
-            {change}
-          </p>
-          <p className="mt-3 text-sm text-neutral-500">vs last month</p>
-        </div>
-        <Sparkline color={color} points={points} />
-      </div>
-    </article>
-  );
-}
 
-export default function AgencyFinancePage() {
-  const [period, setPeriod] = useState("Weekly");
-  const [isPeriodOpen, setIsPeriodOpen] = useState(false);
-  const metrics = useMemo(() => {
-    const income = finance.income.filter((item) => item.agency_id === agencyId);
-    const expenses = finance.expenses.filter(
-      (item) => item.agency_id === agencyId,
-    );
-    const invoices = finance.invoices.filter(
-      (item) => item.agency_id === agencyId,
-    );
-    const totalIncome = income.reduce((sum, item) => sum + item.amount, 0);
-    const totalExpenses = expenses.reduce((sum, item) => sum + item.amount, 0);
-    const pendingInvoices = invoices.filter((item) => item.status !== "Paid");
-    const outstanding = pendingInvoices.reduce(
-      (sum, item) => sum + item.amount,
-      0,
-    );
-    const bySource = income.reduce<
-      Record<string, { revenue: number; bookings: number }>
-    >((result, item) => {
-      const key = item.source || "Other packages";
-      result[key] ??= { revenue: 0, bookings: 0 };
-      result[key].revenue += item.amount;
-      result[key].bookings += 1;
-      return result;
-    }, {});
-    const packages = Object.entries(bySource)
-      .map(([name, values]) => ({ name, ...values }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 3);
-    return {
-      income,
-      expenses,
-      totalIncome,
-      totalExpenses,
-      outstanding,
-      pendingInvoices,
-      packages,
-    };
-  }, []);
-  const profit = metrics.totalIncome - metrics.totalExpenses;
-  const profitMargin = metrics.totalIncome
-    ? Math.round((profit / metrics.totalIncome) * 100)
-    : 0;
-  const highestPackageRevenue = metrics.packages[0]?.revenue || 1;
-  const payroll = metrics.expenses
-    .filter((item) => item.category === "Guide Fee")
-    .reduce((sum, item) => sum + item.amount, 0);
-  const permits = metrics.expenses
-    .filter((item) => item.category === "Permits")
-    .reduce((sum, item) => sum + item.amount, 0);
-  const profitRows = [
-    {
-      label: "Trek Revenue",
-      value: metrics.totalIncome,
-      tone: "text-success-600",
-    },
-    { label: "Add-on Revenue", value: 0, tone: "text-success-600" },
-    { label: "Guide Payroll", value: -payroll, tone: "text-danger-500" },
-    { label: "Permits & Fees", value: -permits, tone: "text-danger-500" },
-  ];
-  const exportReport = () => {
-    const rows = [
-      ["Metric", "Amount"],
-      ["Revenue", String(metrics.totalIncome)],
-      ["Expenses", String(metrics.totalExpenses)],
-      ["Net profit", String(profit)],
-      ["Outstanding invoices", String(metrics.outstanding)],
-    ];
-    const blob = new Blob([rows.map((row) => row.join(",")).join("\n")], {
-      type: "text/csv",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "finance-overview.csv";
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
-  return (
-    <div className="w-full space-y-6 pb-6">
-      <header className="flex flex-col gap-4 border-b border-neutral-200 pb-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-neutral-900">Finance</h1>
-          <nav
-            className="mt-2 flex items-center gap-2 text-sm"
-            aria-label="Breadcrumb"
-          >
-            <span className="text-neutral-500">Finance</span>
-            <span className="text-neutral-400">›</span>
-            <span className="font-semibold text-primary-600">Overview</span>
-          </nav>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            type="button"
-            onClick={exportReport}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-neutral-300 bg-white px-4 py-2.5 text-sm font-semibold text-neutral-800 shadow-sm transition hover:bg-neutral-50"
-          >
-            <Download className="h-4 w-4" /> Export
-          </button>
-          <Link
-            href="/dashboard/finance/income"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700"
-          >
-            <Plus className="h-4 w-4" /> Record income
-          </Link>
-        </div>
-      </header>
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <OverviewCard
-          label="Revenue (August)"
-          value={compactCurrency(metrics.totalIncome)}
-          detail="8% from July"
-          icon={WalletCards}
-          tone="violet"
-        />
-        <OverviewCard
-          label="Expenses (August)"
-          value={compactCurrency(metrics.totalExpenses)}
-          detail="Guides, permits & operations"
-          icon={ReceiptText}
-          tone="rose"
-        />
-        <OverviewCard
-          label="Net Profit"
-          value={compactCurrency(profit)}
-          detail={`${profitMargin}% margin`}
-          icon={Landmark}
-          tone="green"
-        />
-        <OverviewCard
-          label="Invoices Pending"
-          value={String(metrics.pendingInvoices.length)}
-          detail={`${currency.format(metrics.outstanding)} outstanding`}
-          icon={ReceiptText}
-          tone="orange"
-        />
-      </section>
-      <section>
-        <h2 className="mb-3 text-base font-semibold text-neutral-950">
-          Summarized Result
-        </h2>
-        <div className="grid gap-4 lg:grid-cols-3">
-          <SummaryCard
-            label="Gross Revenue"
-            value={currency.format(metrics.totalIncome)}
-            change="11.9%"
-            color="#f97316"
-            points={[18, 24, 20, 30, 26, 37, 34, 51]}
-          />
-          <SummaryCard
-            label="Total Bookings"
-            value={String(metrics.income.length)}
-            change="11.9%"
-            color="#84cc16"
-            points={[16, 28, 26, 38, 32, 44, 41, 58]}
-          />
-          <SummaryCard
-            label="Net Profit"
-            value={currency.format(profit)}
-            change="8.3%"
-            color="#84cc16"
-            points={[15, 22, 20, 28, 24, 33, 31, 48]}
-          />
-        </div>
-      </section>
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.03fr)_minmax(0,1fr)]">
-        <article className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-neutral-100 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="grid gap-4 lg:grid-cols-[1.4fr_1fr]">
+        <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h2 className="text-xl font-medium text-neutral-900">
-                P&amp;L Summary{" "}
-                <span className="text-neutral-500">— August 2026</span>
-              </h2>
-              <div className="mt-2 flex items-end gap-3">
-                <p className="text-4xl font-semibold tracking-tight text-neutral-950">
-                  {currency.format(profit)}
-                </p>
-                <p className="mb-1 text-sm font-medium text-neutral-700">
-                  ↑ {profitMargin}%
-                </p>
-              </div>
+              <h2 className="font-bold text-neutral-900">P&amp;L Summary {p ? `— ${monthLabel(p.period)}` : ""}</h2>
+              <p className="mt-1 text-2xl font-bold text-neutral-900">{p ? money(p.netProfit) : "—"} {current && previous && <span className={`ml-1 text-sm font-semibold ${current.netProfit >= previous.netProfit ? "text-success-700" : "text-danger-600"}`}>{growth(current.netProfit, previous.netProfit) ?? ""}</span>}</p>
             </div>
-            <div className="flex gap-2">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setIsPeriodOpen((open) => !open)}
-                  className="inline-flex items-center gap-2 rounded-lg border border-neutral-300 px-3 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-50"
-                >
-                  {period}
-                  <ChevronDown className="h-4 w-4" />
-                </button>
-                {isPeriodOpen && (
-                  <div className="absolute right-0 z-10 mt-1 w-28 rounded-lg border border-neutral-200 bg-white p-1 shadow-lg">
-                    {["Weekly", "Monthly"].map((option) => (
-                      <button
-                        key={option}
-                        type="button"
-                        onClick={() => {
-                          setPeriod(option);
-                          setIsPeriodOpen(false);
-                        }}
-                        className="block w-full rounded px-2 py-1.5 text-left text-sm hover:bg-neutral-50"
-                      >
-                        {option}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={exportReport}
-                className="rounded-lg border border-primary-300 px-3 py-2 text-sm font-medium text-primary-600 hover:bg-primary-50"
-              >
-                Export
-              </button>
-            </div>
+            <button type="button" onClick={() => exportCsv("pnl-summary.csv", points.map((pt) => ({ period: pt.period, revenue: pt.revenue, expenses: pt.expenses, netProfit: pt.netProfit })))} className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold text-neutral-900 hover:bg-neutral-50"><Download className="h-3.5 w-3.5" /> Export</button>
           </div>
-          <div className="mt-4 border-t border-dashed border-neutral-300 pt-4">
-            <svg
-              viewBox="0 0 620 180"
-              className="h-40 w-full"
-              preserveAspectRatio="none"
-              aria-label={`${period} profit trend`}
-              role="img"
-            >
-              <defs>
-                <linearGradient id="profit-area" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor="#6c72ff" stopOpacity=".45" />
-                  <stop offset="100%" stopColor="#6c72ff" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              <line
-                x1="0"
-                y1="36"
-                x2="620"
-                y2="36"
-                stroke="#d4d4d8"
-                strokeDasharray="6 7"
-              />
-              <path
-                d="M12 154 C55 142,80 157,117 149 S172 105,216 88 S280 69,320 75 S365 76,397 60 S455 47,486 28 S550 14,608 8 L608 180 L12 180 Z"
-                fill="url(#profit-area)"
-              />
-              <path
-                d="M12 154 C55 142,80 157,117 149 S172 105,216 88 S280 69,320 75 S365 76,397 60 S455 47,486 28 S550 14,608 8"
-                fill="none"
-                stroke="#3f51f5"
-                strokeLinecap="round"
-                strokeWidth="5"
-              />
-              <line
-                x1="402"
-                y1="10"
-                x2="402"
-                y2="180"
-                stroke="#5264ff"
-                strokeWidth="1.5"
-              />
-              <circle cx="402" cy="59" r="12" fill="#3f51f5" />
-            </svg>
+          <div className="mt-4 h-48 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={pnlChartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+                <Tooltip formatter={(v) => money(Number(v))} contentStyle={{ fontSize: 12, borderRadius: 10, border: "1px solid #e5e5e5" }} />
+                <Line type="monotone" dataKey="netProfit" name="Net profit" stroke="#4338CA" strokeWidth={2} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
-          <dl className="mt-3 divide-y divide-neutral-200">
-            {profitRows.map((row) => (
-              <div
-                key={row.label}
-                className="flex items-center justify-between py-3 text-sm"
-              >
-                <dt className="font-medium text-neutral-500">{row.label}</dt>
-                <dd className={`font-semibold ${row.tone}`}>
-                  {row.value >= 0 ? "+" : "-"}
-                  {currency.format(Math.abs(row.value))}
-                </dd>
-              </div>
-            ))}
-            <div className="flex items-center justify-between pt-4 text-base">
-              <dt className="font-semibold text-neutral-950">Net Profit</dt>
-              <dd className="font-semibold text-primary-600">
-                {currency.format(profit)}
-              </dd>
-            </div>
+          <dl className="mt-4 divide-y divide-neutral-100 border-t border-neutral-100 text-sm">
+            <div className="flex items-center justify-between py-2"><dt className="text-neutral-600">Trek Revenue</dt><dd className="font-semibold text-success-700">+{money(trekRevenue)}</dd></div>
+            <div className="flex items-center justify-between py-2"><dt className="text-neutral-600">Add-on Revenue</dt><dd className="font-semibold text-success-700">+{money(addOnRevenue)}</dd></div>
+            <div className="flex items-center justify-between py-2"><dt className="text-neutral-600">Guide Payroll</dt><dd className="font-semibold text-danger-600">-{money(guidePayroll)}</dd></div>
+            <div className="flex items-center justify-between py-2"><dt className="text-neutral-600">Permits &amp; Fees</dt><dd className="font-semibold text-danger-600">-{money(permits)}</dd></div>
+            <div className="flex items-center justify-between py-2.5"><dt className="font-bold text-neutral-900">Net Profit</dt><dd className="font-bold text-neutral-900">{p ? money(p.netProfit) : "—"}</dd></div>
           </dl>
-        </article>
-        <article className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-neutral-100 sm:p-6">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-primary-600" />
-            <h2 className="text-lg font-semibold text-neutral-950">
-              Top Packages by Revenue
-            </h2>
-          </div>
-          <div className="mt-5 space-y-4">
-            {metrics.packages.length ? (
-              metrics.packages.map((item, index) => (
-                <div key={item.name}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-semibold text-neutral-900">
-                        {item.name}
-                      </p>
-                      <p className="mt-1 text-sm text-neutral-500">
-                        {item.bookings} booking{item.bookings === 1 ? "" : "s"}{" "}
-                        · avg.{" "}
-                        {currency.format(
-                          Math.round(item.revenue / item.bookings),
-                        )}
-                      </p>
-                    </div>
-                    <p className="font-semibold text-primary-600">
-                      {currency.format(item.revenue)}
-                    </p>
-                  </div>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-neutral-100">
-                    <div
-                      className="h-full rounded-full bg-linear-to-r from-danger-400 via-warning-400 to-primary-500"
-                      style={{
-                        width: `${Math.max(12, (item.revenue / highestPackageRevenue) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                  {index < metrics.packages.length - 1 && (
-                    <div className="mt-4 border-b border-neutral-100" />
-                  )}
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-neutral-500">
-                No package revenue recorded yet.
-              </p>
-            )}
-          </div>
-          <div className="mt-6 overflow-x-auto rounded-lg border border-neutral-200">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-primary-50 text-xs font-medium text-neutral-700">
-                <tr>
-                  <th className="px-3 py-3">No.</th>
-                  <th className="px-3 py-3">Package</th>
-                  <th className="px-3 py-3">Bookings</th>
-                  <th className="px-3 py-3 text-right">Revenue</th>
-                </tr>
-              </thead>
-              <tbody>
-                {metrics.packages.map((item, index) => (
-                  <tr key={item.name} className="border-t border-neutral-100">
-                    <td className="px-3 py-2.5 text-neutral-500">
-                      {index + 1}
-                    </td>
-                    <td className="px-3 py-2.5 font-medium text-neutral-700">
-                      {item.name}
-                    </td>
-                    <td className="px-3 py-2.5 text-neutral-600">
-                      {item.bookings}
-                    </td>
-                    <td className="px-3 py-2.5 text-right font-semibold text-primary-600">
-                      {currency.format(item.revenue)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <MiniStat
-              icon={PackageCheck}
-              label="Total Packages"
-              value={String(metrics.packages.length)}
-              detail="Active"
-              tone="violet"
-            />
-            <MiniStat
-              icon={CalendarDays}
-              label="Total Bookings"
-              value={String(metrics.income.length)}
-              detail="This month"
-              tone="green"
-            />
-            <MiniStat
-              icon={ShieldCheck}
-              label="Avg. Revenue"
-              value={currency.format(
-                metrics.income.length
-                  ? Math.round(metrics.totalIncome / metrics.income.length)
-                  : 0,
-              )}
-              detail="Per booking"
-              tone="violet"
-            />
-          </div>
-        </article>
-      </section>
-    </div>
-  );
-}
+        </section>
 
-function MiniStat({
-  icon: Icon,
-  label,
-  value,
-  detail,
-  tone,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string;
-  detail: string;
-  tone: "violet" | "green";
-}) {
-  const color =
-    tone === "green"
-      ? "bg-success-100 text-success-700"
-      : "bg-primary-100 text-primary-600";
-  return (
-    <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
-      <div className="flex items-center gap-2">
-        <span
-          className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${color}`}
-        >
-          <Icon className="h-5 w-5" />
-        </span>
-        <div>
-          <p className="text-xs font-semibold text-neutral-800">{label}</p>
-          <p className="mt-0.5 text-xl font-semibold text-neutral-950">
-            {value}
-          </p>
-        </div>
+        <section className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between"><h2 className="flex items-center gap-1.5 font-bold text-neutral-900">Top Packages by Revenue</h2></div>
+          {packages.isLoading && <div className="mt-3 h-24 animate-pulse rounded-xl bg-neutral-100" />}
+          {!packages.isLoading && topPackages.length === 0 && <p className="mt-3 text-sm text-neutral-500">No package revenue in the last 30 days.</p>}
+          <ul className="mt-3 space-y-4">
+            {topPackages.slice(0, 3).map((pk) => (
+              <li key={pk.package_id}>
+                <div className="flex items-center justify-between gap-2"><span className="font-semibold text-neutral-900">{pk.title ?? "Removed package"}</span><span className="font-bold text-primary-700">{money(pk.revenue)}</span></div>
+                <p className="text-xs text-neutral-500">{pk.bookings} booking{pk.bookings === 1 ? "" : "s"} · avg. {money(pk.bookings ? pk.revenue / pk.bookings : 0)}</p>
+                <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-neutral-100"><div className="h-full rounded-full bg-gradient-to-r from-danger-400 via-warning-400 to-primary-500" style={{ width: `${Math.max(6, (pk.revenue / maxRevenue) * 100)}%` }} /></div>
+              </li>
+            ))}
+          </ul>
+
+          {topPackages.length > 0 && (
+            <div className="mt-4 overflow-hidden rounded-xl border border-neutral-100">
+              <table className="w-full text-left text-xs"><thead className="bg-neutral-50 text-[10px] uppercase tracking-wide text-neutral-500"><tr><th className="px-3 py-2">No.</th><th className="px-3 py-2">Package</th><th className="px-3 py-2">Bookings</th><th className="px-3 py-2 text-right">Revenue</th></tr></thead>
+                <tbody>{topPackages.slice(0, 5).map((pk, i) => <tr key={pk.package_id} className="border-t border-neutral-100"><td className="px-3 py-2 text-neutral-500">{i + 1}</td><td className="px-3 py-2 font-semibold text-neutral-900">{pk.title ?? "Removed"}</td><td className="px-3 py-2">{pk.bookings}</td><td className="px-3 py-2 text-right font-semibold text-primary-700">{money(pk.revenue)}</td></tr>)}</tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="mt-4 grid grid-cols-3 gap-2 border-t border-neutral-100 pt-4 text-center">
+            <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-2.5"><p className="text-[11px] text-neutral-500">Total Packages</p><p className="text-lg font-bold text-neutral-900">{packages.data ? packages.data.total : "—"}</p></div>
+            <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-2.5"><p className="text-[11px] text-neutral-500">Total Bookings</p><p className="text-lg font-bold text-neutral-900">{packages.data ? totalBookingsThisPeriod : "—"}</p></div>
+            <div className="rounded-xl border border-neutral-100 bg-neutral-50 p-2.5"><p className="text-[11px] text-neutral-500">Avg Revenue</p><p className="text-lg font-bold text-neutral-900">{packages.data ? money(avgRevenue) : "—"}</p></div>
+          </div>
+        </section>
       </div>
-      <p className="mt-2 text-right text-xs text-neutral-500">{detail}</p>
+
+      <div className="flex justify-end"><Link href="/dashboard/finance/reports" className="text-sm font-semibold text-primary-700 hover:underline">View full reports →</Link></div>
     </div>
   );
 }

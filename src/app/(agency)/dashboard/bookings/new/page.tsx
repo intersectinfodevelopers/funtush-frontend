@@ -1,376 +1,198 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { discountedPerPerson } from "@/lib/pricing";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ChevronRight, Plus, Trash2, Check, ChevronDown } from "lucide-react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
 
-import { useBookings, NewBooking } from "@/hooks/useBooking";
-import usersData from "../../../../../../data/users.json";
-import packagesData from "../../../../../../data/packages.json";
-import guidesData from "../../../../../../data/guides.json";
+import { useMoney } from "@/hooks/useAgencyDashboard";
+import { usePackageDetail, usePackageList } from "@/hooks/useAgencyPackages";
+import { createManualBooking } from "@/lib/api/agency/bookings";
+import { seatsLeft } from "@/lib/api/agency/packages";
+import type { ApiError } from "@/lib/api/client";
 
-type User = { id: string; name: string };
-type Package = { id: string; title: string; price?: number };
-type Guide = { id: string; name: string };
-type AddOn = { name: string; price: number };
+const field =
+  "mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100";
+const label = "block text-sm font-medium text-neutral-700";
 
-const VISIBLE_ROWS = 4;
-const ROW_HEIGHT = 42;
-
-function SelectableList<T extends { id: string }>({
-  items,
-  selectedId,
-  onSelect,
-  renderLabel,
-  emptyLabel,
-  placeholder,
-}: {
-  items: T[];
-  selectedId: string;
-  onSelect: (id: string) => void;
-  renderLabel: (item: T) => string;
-  emptyLabel: string;
-  placeholder: string;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(e.target as Node)
-      ) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const selectedItem = items.find((item) => item.id === selectedId);
-
-  return (
-    <div ref={containerRef} className="relative">
-      <button
-        type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        className="flex w-full items-center justify-between rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-      >
-        <span
-          className={selectedItem ? "text-neutral-900" : "text-neutral-400"}
-        >
-          {selectedItem ? renderLabel(selectedItem) : placeholder}
-        </span>
-        <ChevronDown
-          className={`h-4 w-4 text-neutral-400 transition ${isOpen ? "rotate-180" : ""}`}
-        />
-      </button>
-
-      {isOpen && (
-        <div className="absolute z-10 mt-2 w-full overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-lg">
-          {items.length === 0 ? (
-            <div className="px-4 py-6 text-center text-sm text-neutral-400">
-              {emptyLabel}
-            </div>
-          ) : (
-            <div
-              className="divide-y divide-neutral-100 overflow-y-auto scrollbar-thin"
-              style={{
-                maxHeight:
-                  items.length > VISIBLE_ROWS
-                    ? VISIBLE_ROWS * ROW_HEIGHT
-                    : undefined,
-              }}
-            >
-              {items.map((item) => {
-                const isSelected = item.id === selectedId;
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => {
-                      onSelect(isSelected ? "" : item.id);
-                      setIsOpen(false);
-                    }}
-                    className={`flex w-full items-center justify-between px-4 py-2.5 text-left text-sm transition ${
-                      isSelected
-                        ? "bg-primary-50 font-semibold text-primary-900"
-                        : "text-neutral-700 hover:bg-neutral-50"
-                    }`}
-                  >
-                    <span>{renderLabel(item)}</span>
-                    {isSelected && (
-                      <Check className="h-4 w-4 text-primary-700" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
+const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
 export default function NewBookingPage() {
   const router = useRouter();
-  const { addBooking } = useBookings();
-
-  const trekkers = usersData as User[];
-  const packages = packagesData as Package[];
-  const guides = guidesData as Guide[];
+  const qc = useQueryClient();
+  const money = useMoney();
 
   const [packageId, setPackageId] = useState("");
-  const [trekkerId, setTrekkerId] = useState("");
-  const [guideId, setGuideId] = useState("");
-  const [departureDate, setDepartureDate] = useState("");
+  const [departureDateId, setDepartureDateId] = useState("");
   const [groupSize, setGroupSize] = useState(1);
-  const [addOns, setAddOns] = useState<AddOn[]>([]);
-  const [totalPrice, setTotalPrice] = useState(0);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [country, setCountry] = useState("");
+  const [requests, setRequests] = useState("");
+  const [status, setStatus] = useState<"CONFIRMED" | "INQUIRY">("CONFIRMED");
+  const [addOnIds, setAddOnIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const selectedPackage = useMemo(
-    () => packages.find((pkg) => pkg.id === packageId),
-    [packages, packageId],
+  // Only published packages can take bookings.
+  const packages = usePackageList({ status: "PUBLISHED", limit: 100 });
+  const detail = usePackageDetail(packageId);
+  const pkg = detail.data;
+
+  const today = new Date().setHours(0, 0, 0, 0);
+  const departures = useMemo(
+    () => (pkg?.departureDates ?? []).filter((d) => new Date(d.startDate).getTime() >= today),
+    [pkg, today],
   );
+  const departure = departures.find((d) => d.id === departureDateId);
+  const maxGroup = departure ? Math.min(seatsLeft(departure), pkg?.maxGroupSize ?? 1) : pkg?.maxGroupSize ?? 1;
 
-  const addOnsTotal = useMemo(
-    () => addOns.reduce((sum, addOn) => sum + (Number(addOn.price) || 0), 0),
-    [addOns],
-  );
+  // Same arithmetic the API applies, shown as an estimate (the server's figure is the real one).
+  const estimate = useMemo(() => {
+    if (!pkg) return 0;
+    const extras = (pkg.addOns ?? []).filter((a) => addOnIds.includes(a.id)).reduce((sum, a) => sum + Number(a.price) * (a.perPerson ? groupSize : 1), 0);
+    return discountedPerPerson(Number(pkg.pricePerPerson), pkg.volumeDiscounts, groupSize) * groupSize + extras;
+  }, [pkg, groupSize, addOnIds]);
 
-  const updateAddOn = (index: number, field: keyof AddOn, value: string) => {
-    setAddOns((prev) => {
-      const next = [...prev];
-      next[index] = {
-        ...next[index],
-        [field]: field === "price" ? Number(value) : value,
-      };
-      return next;
-    });
-  };
+  const create = useMutation({
+    mutationFn: () =>
+      createManualBooking({
+        packageId,
+        departureDateId,
+        groupSize,
+        trekkerName: name.trim(),
+        trekkerEmail: email.trim(),
+        trekkerPhone: phone.trim(),
+        trekkerCountry: country.trim() || undefined,
+        specialRequests: requests.trim() || undefined,
+        addOnIds: addOnIds.length ? addOnIds : undefined,
+        status,
+      }),
+    onSuccess: (res) => {
+      void qc.invalidateQueries({ queryKey: ["agency", "bookings"] });
+      void qc.invalidateQueries({ queryKey: ["agency", "summary"] });
+      void qc.invalidateQueries({ queryKey: ["agency", "package", packageId] });
+      toast.success("Booking created");
+      router.push(`/dashboard/bookings/${res.id}`);
+    },
+    onError: (e) => setError((e as unknown as ApiError).message || "Couldn't create the booking."),
+  });
 
-  const addAddOnRow = () => {
-    setAddOns((prev) => [...prev, { name: "", price: 0 }]);
-  };
+  function submit() {
+    setError(null);
+    if (!packageId || !departureDateId) return setError("Choose a package and a departure date.");
+    if (!name.trim() || !email.trim() || !phone.trim()) return setError("Traveller name, email and phone are required.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return setError("Enter a valid email address.");
+    if (!Number.isInteger(groupSize) || groupSize < 1 || groupSize > maxGroup) return setError(`Group size must be between 1 and ${maxGroup}.`);
+    create.mutate();
+  }
 
-  const removeAddOnRow = (index: number) => {
-    setAddOns((prev) => prev.filter((_, idx) => idx !== index));
-  };
-
-  const handleSave = () => {
-    if (!packageId || !trekkerId || !departureDate) {
-      setError("Please fill in package, trekker, and departure date.");
-      return;
-    }
-
-    const cleanedAddOns = addOns.filter((addOn) => addOn.name.trim() !== "");
-
-    const booking: NewBooking = {
-      package_id: packageId,
-      trekker_id: trekkerId,
-      agency_id: "ag-001", // TODO: replace with real logged-in agency id
-      guide_id: guideId || null,
-      departure_date: departureDate,
-      group_size: groupSize,
-      add_ons: cleanedAddOns,
-      total_price: totalPrice || addOnsTotal,
-      status: "inquiry",
-    };
-
-    addBooking(booking);
-    router.push("/dashboard/bookings");
-  };
+  const list = packages.data?.data ?? [];
 
   return (
     <div className="mx-auto w-full max-w-6xl py-2 sm:py-4">
       <div className="mb-7 border-b border-neutral-200 pb-6">
         <div className="flex items-center gap-2 text-sm text-neutral-500">
-          <Link href="/dashboard" className="hover:text-neutral-900">
-            Dashboard
-          </Link>
+          <Link href="/dashboard" className="hover:text-neutral-900">Dashboard</Link>
           <span className="text-neutral-300">/</span>
-          <Link href="/dashboard/bookings" className="hover:text-neutral-900">
-            Bookings
-          </Link>
+          <Link href="/dashboard/bookings" className="hover:text-neutral-900">Bookings</Link>
           <span className="text-neutral-300">/</span>
           <span className="font-semibold text-neutral-900">New booking</span>
         </div>
-        <h1 className="mt-2 text-2xl font-bold text-neutral-900">
-          Create booking
-        </h1>
-        <p className="mt-1 text-sm text-neutral-600">
-          Fill in the details below to create a new booking.
-        </p>
+        <h1 className="mt-2 text-2xl font-bold text-neutral-900">Create booking</h1>
+        <p className="mt-1 text-sm text-neutral-600">For phone and walk-in customers. It skips the email verification the public site uses.</p>
       </div>
 
       <div className="w-full space-y-6 rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm sm:p-6">
         <div className="grid gap-6 lg:grid-cols-3">
           <div>
-            <label className="block text-sm font-medium text-neutral-700">
-              Package
-            </label>
-            <div className="mt-2">
-              <SelectableList
-                items={packages}
-                selectedId={packageId}
-                onSelect={setPackageId}
-                renderLabel={(pkg) => pkg.title}
-                emptyLabel="No packages available."
-                placeholder="Select a package"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-neutral-700">
-              Trekker
-            </label>
-            <SelectableList
-              items={trekkers}
-              selectedId={trekkerId}
-              onSelect={setTrekkerId}
-              renderLabel={(user) => user.name}
-              emptyLabel="No trekkers available."
-              placeholder="Select a trekker"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-neutral-700">
-              Guide (optional)
-            </label>
-            <SelectableList
-              items={guides}
-              selectedId={guideId}
-              onSelect={setGuideId}
-              renderLabel={(guide) => guide.name}
-              emptyLabel="No guides available."
-              placeholder="Unassigned"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-neutral-700">
-              Departure date
-            </label>
-            <input
-              type="date"
-              value={departureDate}
-              onChange={(e) => setDepartureDate(e.target.value)}
-              className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-neutral-700">
-              Group size
-            </label>
-            <input
-              type="number"
-              min={1}
-              value={groupSize}
-              onChange={(e) => setGroupSize(Number(e.target.value))}
-              className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-neutral-700">
-              Total price (Rs.)
-            </label>
-            <input
-              type="number"
-              min={0}
-              placeholder={
-                selectedPackage?.price ? String(selectedPackage.price) : "0"
-              }
-              value={totalPrice || ""}
-              onChange={(e) => setTotalPrice(Number(e.target.value))}
-              className="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-            />
-            <p className="mt-1 text-xs text-neutral-500">
-              Leave blank to auto-use add-ons total (Rs.{" "}
-              {addOnsTotal.toLocaleString("en-IN")}).
-            </p>
-          </div>
-        </div>
-
-        <div className="space-y-3 rounded-xl border border-neutral-300 bg-neutral-50 p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-neutral-900">Add-ons</p>
-              <p className="text-xs text-neutral-500">
-                Optional extras for this booking.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={addAddOnRow}
-              className="inline-flex items-center gap-1 rounded-2xl bg-primary-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-primary-800"
+            <label className={label} htmlFor="pkg">Package</label>
+            <select
+              id="pkg"
+              value={packageId}
+              onChange={(e) => {
+                setPackageId(e.target.value);
+                setDepartureDateId("");
+                setAddOnIds([]);
+                setGroupSize(1);
+              }}
+              className={field}
             >
-              <Plus className="h-3.5 w-3.5" />
-              Add
-            </button>
+              <option value="">{packages.isLoading ? "Loading…" : list.length ? "Select a package" : "No published packages"}</option>
+              {list.map((p) => (
+                <option key={p.id} value={p.id}>{p.title}</option>
+              ))}
+            </select>
           </div>
 
-          {addOns.length === 0 ? (
-            <p className="text-xs text-neutral-400">No add-ons yet.</p>
-          ) : (
-            <div className="space-y-3">
-              {addOns.map((addOn, index) => (
-                <div
-                  key={index}
-                  className="grid gap-3 sm:grid-cols-[1fr_140px_auto]"
-                >
-                  <input
-                    placeholder="Add-on name"
-                    value={addOn.name}
-                    onChange={(e) => updateAddOn(index, "name", e.target.value)}
-                    className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                  />
-                  <input
-                    type="number"
-                    min={0}
-                    placeholder="Price"
-                    value={addOn.price || ""}
-                    onChange={(e) =>
-                      updateAddOn(index, "price", e.target.value)
-                    }
-                    className="rounded-xl border border-neutral-300 bg-white px-3 py-2 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeAddOnRow(index)}
-                    className="inline-flex items-center justify-center rounded-2xl border border-danger-200 bg-danger-50 px-3 text-danger-700 transition hover:bg-danger-100"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
+          <div>
+            <label className={label} htmlFor="dep">Departure date</label>
+            <select id="dep" value={departureDateId} onChange={(e) => setDepartureDateId(e.target.value)} disabled={!pkg} className={field}>
+              <option value="">{!pkg ? "Choose a package first" : departures.length ? "Select a departure" : "No upcoming departures"}</option>
+              {departures.map((d) => (
+                <option key={d.id} value={d.id} disabled={seatsLeft(d) === 0}>
+                  {fmt(d.startDate)} — {seatsLeft(d) === 0 ? "full" : `${seatsLeft(d)} seats left`}
+                </option>
               ))}
-            </div>
-          )}
+            </select>
+          </div>
+
+          <div>
+            <label className={label} htmlFor="size">Group size</label>
+            <input id="size" type="number" min={1} max={maxGroup} value={groupSize} onChange={(e) => setGroupSize(Number(e.target.value))} className={field} />
+            {departure && <p className="mt-1 text-xs text-neutral-500">Up to {maxGroup} on this departure.</p>}
+          </div>
+
+          <div><label className={label} htmlFor="tname">Traveller name</label><input id="tname" value={name} onChange={(e) => setName(e.target.value)} className={field} /></div>
+          <div><label className={label} htmlFor="temail">Email</label><input id="temail" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={field} /></div>
+          <div><label className={label} htmlFor="tphone">Phone</label><input id="tphone" value={phone} onChange={(e) => setPhone(e.target.value)} className={field} /></div>
+          <div><label className={label} htmlFor="tcountry">Country (optional)</label><input id="tcountry" value={country} onChange={(e) => setCountry(e.target.value)} className={field} /></div>
+
+          <div className="lg:col-span-2">
+            <label className={label} htmlFor="req">Special requests (optional)</label>
+            <textarea id="req" rows={2} value={requests} onChange={(e) => setRequests(e.target.value)} className={field} />
+          </div>
         </div>
 
-        {error && <p className="text-sm text-danger-600">{error}</p>}
+        {(pkg?.addOns.length ?? 0) > 0 && (
+          <fieldset className="space-y-2 rounded-xl border border-neutral-300 bg-neutral-50 p-5">
+            <legend className="px-1 text-sm font-semibold text-neutral-900">Add-ons</legend>
+            {pkg!.addOns.map((a) => (
+              <label key={a.id} className="flex items-center justify-between gap-3 text-sm text-neutral-800">
+                <span className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={addOnIds.includes(a.id)}
+                    onChange={(e) => setAddOnIds((cur) => (e.target.checked ? [...cur, a.id] : cur.filter((x) => x !== a.id)))}
+                  />
+                  {a.name}
+                </span>
+                <span className="text-neutral-500">{money(Number(a.price), pkg?.currency)}{a.perPerson ? " / person" : ""}</span>
+              </label>
+            ))}
+          </fieldset>
+        )}
+
+        <fieldset className="flex flex-wrap items-center gap-6 text-sm">
+          <legend className="mb-1 font-medium text-neutral-700">Create as</legend>
+          <label className="flex items-center gap-2"><input type="radio" name="st" checked={status === "CONFIRMED"} onChange={() => setStatus("CONFIRMED")} /> Confirmed (reserves the seats now)</label>
+          <label className="flex items-center gap-2"><input type="radio" name="st" checked={status === "INQUIRY"} onChange={() => setStatus("INQUIRY")} /> Inquiry (accept it later)</label>
+        </fieldset>
+
+        {pkg && (
+          <p className="rounded-xl bg-primary-50 px-4 py-3 text-sm text-primary-900">
+            Estimated total: <strong>{money(estimate, pkg.currency)}</strong> <span className="text-primary-700">({money(discountedPerPerson(Number(pkg.pricePerPerson), pkg.volumeDiscounts, groupSize), pkg.currency)} × {groupSize}{addOnIds.length ? " + add-ons" : ""})</span>
+          </p>
+        )}
+
+        {error && <p role="alert" className="text-sm text-danger-600">{error}</p>}
 
         <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard/bookings")}
-            className="rounded-xl border border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            className="min-h-11 rounded-2xl bg-primary-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary-800"
-          >
-            Create Booking
+          <button type="button" onClick={() => router.push("/dashboard/bookings")} className="rounded-xl border border-neutral-300 px-3 py-2 text-sm font-semibold text-neutral-900 transition hover:bg-neutral-50">Cancel</button>
+          <button type="button" onClick={submit} disabled={create.isPending} className="min-h-11 rounded-2xl bg-primary-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary-800 disabled:opacity-50">
+            {create.isPending ? "Creating…" : "Create Booking"}
           </button>
         </div>
       </div>

@@ -24,6 +24,12 @@ export interface SessionUser {
   member_since: string;
   country: string;
   token: string;
+  /** Set for agency users — the agency's display name. */
+  agency_name?: string;
+  /** For invited staff: the permission keys their role grants. Undefined = the agency owner (everything). */
+  permissions?: string[];
+  /** True while a platform admin is acting as this agency (a support session). */
+  support?: boolean;
 }
 
 // ─── Emergency Contact ────────────────────────────────

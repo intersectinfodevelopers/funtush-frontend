@@ -1,332 +1,138 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
-// Link not used here
-import { useRouter } from "next/navigation";
-import destinationsJson from "@/../data/destinations.json";
-import { AnalyticsSummaryCard } from '@/components/shared/AnalyticsSummaryCard';
-import Toggle from '@/components/ui/Toggle';
-import { Compass, Mountain, Star, Eye, Edit3, Trash2 } from 'lucide-react';
-import { Pagination } from '@/components/ui/pagination';
+import { useState } from "react";
+import Link from "next/link";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "react-hot-toast";
+import { Eye, Globe2, Mountain, Pencil, Plus, Star, Trash2 } from "lucide-react";
 
-interface Destination {
-  id: string;
-  title: string;
-  slug?: string;
-  category?: string;
-  shortDesc?: string;
-  longDesc?: string;
-  region?: string;
-  difficulty?: string;
-  maxAltitude?: string | number;
-  bestSeason?: string;
-  featured?: boolean;
-  published?: boolean;
-  image?: { url?: string; width?: number; height?: number };
-  gallery?: Array<{ url: string; caption?: string; order?: number }>;
-  rating?: number;
-  reviewCount?: number;
-  activities?: string[];
-  duration?: { min?: number; max?: number };
-  altitude?: { min?: number; max?: number };
-  bestTime?: string;
-  routes?: Array<Record<string, unknown>>;
-  engagement?: { views?: number; saves?: number };
-  createdAt?: string;
-  updatedAt?: string;
-}
+import { AnalyticsSummaryCard } from "@/components/shared/AnalyticsSummaryCard";
+import { Modal } from "@/components/ui/modal";
+import { Pagination } from "@/components/ui/pagination";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useDestinationList } from "@/hooks/useAgencyDestinations";
+import { DESTINATION_CATEGORIES, deleteDestination, updateDestination, type Destination } from "@/lib/api/agency/destinations";
+import type { ApiError } from "@/lib/api/client";
 
-const destinationRows: Destination[] = (destinationsJson as Destination[])
-  .slice()
-  .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+const PAGE_SIZE = 20;
+const field = "rounded-full border border-neutral-200 bg-white px-4 py-2.5 text-sm text-neutral-900 outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100";
 
 export default function DestinationsPage() {
-  const router = useRouter();
-
+  const qc = useQueryClient();
   const [search, setSearch] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [destinations, setDestinations] = useState<Destination[]>(destinationRows);
-  const [actionDialog, setActionDialog] = useState<null | { type: 'delete' | 'edit' | 'feature'; destination: Destination }>(null);
-  const [previewDest, setPreviewDest] = useState<Destination | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [category, setCategory] = useState("");
+  const [page, setPage] = useState(1);
+  const [removing, setRemoving] = useState<Destination | null>(null);
+  const debounced = useDebouncedValue(search.trim());
 
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("destinations");
-      if (!stored) return;
-      const parsed = JSON.parse(stored) as Destination[];
-      // defer setState to avoid synchronous state update inside effect
-      setTimeout(() => setDestinations(parsed.sort((a, b) => (a.title || '').localeCompare(b.title || ''))), 0);
-    } catch {
-      // ignore and use defaults
-    }
-  }, []);
+  const { data, isLoading, isError, isFetching } = useDestinationList({ search: debounced || undefined, category: category || undefined, page, limit: PAGE_SIZE });
+  const stats = data?.stats;
+  const rows = data?.destinations ?? [];
+  const totalPages = Math.max(1, Math.ceil((data?.total ?? 0) / PAGE_SIZE));
+  const refresh = () => qc.invalidateQueries({ queryKey: ["agency", "destinations"] });
+  const reset = <T,>(set: (v: T) => void) => (v: T) => { set(v); setPage(1); };
 
-  const categories = useMemo(() => {
-    return Array.from(new Set(destinations.map((d) => d.category).filter(Boolean))) as string[];
-  }, [destinations]);
+  // "% from last month": destinations now vs when this month began — real counts only.
+  const growth = !stats ? undefined : stats.totalBeforeMonth === 0 ? (stats.total > 0 ? `${stats.total} new` : undefined) : `${stats.total >= stats.totalBeforeMonth ? "+" : ""}${(((stats.total - stats.totalBeforeMonth) / stats.totalBeforeMonth) * 100).toFixed(1)}%`;
+  const share = (n?: number) => (n === undefined || !stats?.total ? undefined : `${Math.round((n / stats.total) * 1000) / 10}%`);
 
-  const filtered = useMemo(() => {
-    return destinations
-      .filter((d) => {
-        const matchesSearch =
-          (d.title || '').toLowerCase().includes(search.toLowerCase()) ||
-          (d.shortDesc || '').toLowerCase().includes(search.toLowerCase()) ||
-          (d.region || '').toLowerCase().includes(search.toLowerCase());
-        const matchesCategory = selectedCategory ? d.category === selectedCategory : true;
-        return matchesSearch && matchesCategory;
-      })
-      .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-  }, [destinations, search, selectedCategory]);
-
-  
-
-  const perPage = 8;
-  const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
-  const safePage = Math.min(currentPage, totalPages);
-  const paginated = useMemo(() => {
-    const start = (safePage - 1) * perPage;
-    return filtered.slice(start, start + perPage);
-  }, [filtered, safePage]);
+  const toggle = useMutation({
+    mutationFn: ({ d, key }: { d: Destination; key: "published" | "featured" }) => updateDestination(d.id, { [key]: !d[key] }),
+    onSuccess: (_r, { d, key }) => {
+      toast.success(key === "published" ? (d.published ? `“${d.title}” was unpublished` : `“${d.title}” is now published`) : (d.featured ? `“${d.title}” is no longer featured` : `“${d.title}” is now featured`));
+      void refresh();
+    },
+    onError: (e, { d }) => toast.error(`“${d.title}”: ${(e as unknown as ApiError).message || "that didn't work — please try again."}`, { duration: 6000 }),
+  });
+  const remove = useMutation({
+    mutationFn: (d: Destination) => deleteDestination(d.id),
+    onSuccess: (_r, d) => { toast.success(`“${d.title}” was deleted`); setRemoving(null); void refresh(); },
+    onError: (e, d) => { setRemoving(null); toast.error(`Couldn't delete “${d.title}”: ${(e as unknown as ApiError).message || "please try again."}`); },
+  });
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-2 text-sm text-neutral-500">
-            <button type="button" onClick={() => router.push('/dashboard')} className="transition hover:text-neutral-900">Dashboard</button>
-            <span className="text-neutral-300">/</span>
-            <span className="font-semibold text-neutral-900">Destinations</span>
-          </div>
+          <div className="flex items-center gap-2 text-sm text-neutral-500"><Link href="/dashboard" className="hover:text-neutral-900">Dashboard</Link><span className="text-neutral-300">/</span><span className="font-semibold text-neutral-900">Destinations</span></div>
           <h1 className="text-2xl font-bold text-neutral-900">Destinations</h1>
-          <p className="text-sm leading-6 text-neutral-600">Manage trekking destinations and seasonal information.</p>
+          <p className="text-sm text-neutral-600">Manage trekking destinations and seasonal information.</p>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => router.push('/dashboard/destinations/new')}
-            className="inline-flex items-center gap-2 rounded-2xl bg-primary-900 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-800 shadow-sm"
-          >
-            + New Destination
-          </button>
-        </div>
+        <Link href="/dashboard/destinations/new" className="inline-flex items-center gap-2 self-start rounded-xl bg-primary-900 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-800"><Plus className="h-4 w-4" /> New Destination</Link>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        <AnalyticsSummaryCard label="Total Destinations" value={destinations.length} tone="primary" icon={Compass} />
-        <AnalyticsSummaryCard label="Published" value={destinations.filter((d) => d.published).length} tone="accent" icon={Eye} />
-        <AnalyticsSummaryCard label="Featured" value={destinations.filter((d) => d.featured).length} tone="success" icon={Star} />
-        <AnalyticsSummaryCard label="Regions" value={new Set(destinations.map((d) => d.region)).size} tone="warning" icon={Mountain} />
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <AnalyticsSummaryCard label="Total Destinations" value={stats?.total ?? "—"} tone="primary" icon={Globe2} change={growth} />
+        <AnalyticsSummaryCard label="Published" value={stats?.published ?? "—"} tone="primary" icon={Eye} change={share(stats?.published)} note="of all destinations" />
+        <AnalyticsSummaryCard label="Featured" value={stats?.featured ?? "—"} tone="success" icon={Star} change={share(stats?.featured)} note="of all destinations" />
+        <AnalyticsSummaryCard label="Regions" value={stats?.regions ?? "—"} tone="warning" icon={Mountain} />
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-[minmax(240px,1fr)_180px]">
-        <label className="relative block">
-          <input
-            className="w-full rounded-2xl border border-neutral-200 bg-white py-2.5 pl-4 pr-3 text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-            placeholder="Search destinations"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-          />
-        </label>
-        <select
-          className="rounded-2xl border border-neutral-200 bg-white px-3 py-2.5 text-sm text-neutral-900 outline-none transition focus:border-primary-400 focus:ring-2 focus:ring-primary-100"
-          value={selectedCategory}
-          onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
-        >
+      <div className="grid gap-3 sm:grid-cols-[minmax(240px,1fr)_200px]">
+        <input type="search" aria-label="Search destinations" placeholder="Search destinations" value={search} onChange={(e) => reset(setSearch)(e.target.value)} className={`${field} w-full`} />
+        <select aria-label="Filter by category" value={category} onChange={(e) => reset(setCategory)(e.target.value)} className={field}>
           <option value="">All categories</option>
-          {categories.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
+          {(data?.categories ?? [...DESTINATION_CATEGORIES]).map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
 
-      <div className="overflow-x-auto border-t border-neutral-200 bg-white/90">
-        <table className="min-w-full border-collapse text-left text-sm">
-          <thead className="bg-neutral-50 text-[10px] uppercase tracking-[0.24em] text-neutral-500">
-            <tr>
-              <th className="px-4 py-3">Image</th>
-              <th className="px-4 py-3">Name</th>
-              <th className="px-4 py-3">Category</th>
-              <th className="px-4 py-3">Rating</th>
-              <th className="px-4 py-3">Engagement</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-sm text-neutral-500">No destinations found.</td>
-              </tr>
-            ) : (
-              paginated.map((d) => (
-                <tr key={d.id} className="border-b border-neutral-200 hover:bg-neutral-50">
-                  <td className="px-4 py-3">
-                    {d.image?.url ? (
+      {isError && <p role="alert" className="rounded-2xl border border-danger-200 bg-danger-50 px-4 py-3 text-sm text-danger-700">Couldn&apos;t load destinations.</p>}
+
+      <div className={`overflow-hidden border border-neutral-200 bg-white ${isFetching && !isLoading ? "opacity-70" : ""}`}>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-neutral-50 text-[10px] font-bold uppercase tracking-[0.2em] text-neutral-500">
+              <tr><th className="w-14 px-4 py-3.5">S.No</th><th className="px-4 py-3.5">Image</th><th className="px-4 py-3.5">Name</th><th className="px-4 py-3.5">Category</th><th className="px-4 py-3.5">Rating</th><th className="px-4 py-3.5">Engagement</th><th className="px-4 py-3.5">Status</th><th className="px-4 py-3.5">Actions</th></tr>
+            </thead>
+            <tbody>
+              {isLoading && Array.from({ length: 3 }).map((_, i) => <tr key={i} className="border-t border-neutral-200"><td colSpan={8} className="px-4 py-5"><div className="h-4 animate-pulse rounded bg-neutral-100" /></td></tr>)}
+              {!isLoading && rows.length === 0 && <tr><td colSpan={8} className="px-4 py-10 text-center text-neutral-500">{search || category ? "No destinations match this filter." : "No destinations yet — add your first one."}</td></tr>}
+              {rows.map((d, index) => (
+                <tr key={d.id} className="border-t border-neutral-200 hover:bg-neutral-50/60">
+                  <td className="px-4 py-4 text-neutral-600">{(page - 1) * PAGE_SIZE + index + 1}</td>
+                  <td className="px-4 py-4">
+                    {d.featuredImage ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={d.image.url} alt={d.title} className="h-10 w-16 object-cover rounded" />
+                      <img src={d.featuredImage} alt="" className="h-12 w-16 rounded-md object-cover" />
                     ) : (
-                      <div className="h-10 w-16 bg-neutral-100 flex items-center justify-center rounded text-xs text-neutral-400">No image</div>
+                      <span className="flex h-12 w-16 items-center justify-center rounded-md bg-neutral-100 text-[10px] text-neutral-400">No image</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-neutral-900">
-                    <div className="font-semibold">{d.title}</div>
-                    {d.shortDesc && <div className="text-xs text-neutral-500 mt-1">{d.shortDesc}</div>}
-                  </td>
-                  <td className="px-4 py-3 text-neutral-700">{d.category ?? '-'}</td>
-                  <td className="px-4 py-3 text-neutral-700">
+                  <td className="px-4 py-4"><Link href={`/dashboard/destinations/${d.id}`} className="font-bold text-neutral-900 hover:underline">{d.title}</Link>{d.region && <div className="text-xs text-neutral-500">{d.region}</div>}</td>
+                  <td className="px-4 py-4 text-neutral-700">{d.category ?? "-"}</td>
+                  <td className="px-4 py-4 text-neutral-700"><span className="inline-flex items-center gap-1.5"><Star className="h-4 w-4 text-amber-400" />{d.rating != null ? d.rating.toFixed(1) : "-"}<span className="text-xs text-neutral-400">({d.reviewCount})</span></span></td>
+                  <td className="px-4 py-4 text-xs text-neutral-600"><div>Views: {d.engagement.views}</div><div>Saves: {d.engagement.saves}</div></td>
+                  <td className="px-4 py-4">
                     <div className="flex items-center gap-2">
-                      <Star className="h-4 w-4 text-warning-400" />
-                      <div className="text-sm">{typeof d.rating === 'number' ? (d.rating as number).toFixed(1) : (d.rating ? String(d.rating) : '-')}</div>
-                      <div className="text-xs text-neutral-400">({d.reviewCount ?? 0})</div>
+                      <button type="button" role="switch" aria-checked={d.published} aria-label={`Published: ${d.title}`} disabled={toggle.isPending} onClick={() => toggle.mutate({ d, key: "published" })} className={`flex h-6 w-11 items-center rounded-full p-0.5 transition disabled:opacity-50 ${d.published ? "bg-primary-900" : "bg-neutral-200"}`}><span className={`h-5 w-5 rounded-full bg-white shadow transition ${d.published ? "translate-x-5" : ""}`} /></button>
+                      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${d.published ? "bg-success-50 text-success-700" : "bg-neutral-100 text-neutral-600"}`}><span className={`h-1.5 w-1.5 rounded-full ${d.published ? "bg-success-600" : "bg-neutral-400"}`} />{d.published ? "Published" : "Draft"}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-neutral-700">
-                    <div className="text-xs">Views: {d.engagement?.views ?? 0}</div>
-                    <div className="text-xs">Saves: {d.engagement?.saves ?? 0}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="inline-flex items-center gap-2">
-                        <Toggle
-                          checked={!!d.published}
-                          onChange={() => {
-                            const updated = destinations.map((item) => (item.id === d.id ? { ...item, published: !d.published } : item));
-                            setDestinations(updated);
-                            try { localStorage.setItem('destinations', JSON.stringify(updated)); } catch {}
-                          }}
-                        />
-                        <span className={`inline-flex items-center gap-2 rounded-full px-2 py-0.5 text-sm font-semibold ${d.published ? 'text-success-700 bg-success-50' : 'text-neutral-700 bg-neutral-100'}`}>
-                          <span className={`h-2 w-2 rounded-full ${d.published ? 'bg-success-600' : 'bg-neutral-400'}`} />
-                          <span>{d.published ? 'Published' : 'Draft'}</span>
-                        </span>
-                      </div>
-                      {/* Featured indicated by star action in Actions column; no text label here */}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        aria-label={`Preview ${d.title}`}
-                        onClick={() => { setPreviewDest(d); }}
-                        className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-md bg-primary-50 text-primary-700 transition hover:bg-primary-100"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`Edit ${d.title}`}
-                        onClick={() => router.push(`/dashboard/destinations/${d.id}/edit`)}
-                        className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-md bg-warning-50 text-warning-700 transition hover:bg-warning-100"
-                      >
-                        <Edit3 className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        title={d.featured ? 'Unfeature destination' : 'Feature destination'}
-                        onClick={() => setActionDialog({ type: 'feature', destination: d })}
-                        className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-md transition"
-                      >
-                        <Star className={`h-4 w-4 ${d.featured ? 'text-warning-500' : 'text-neutral-400'}`} />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`Delete ${d.title}`}
-                        onClick={() => setActionDialog({ type: 'delete', destination: d })}
-                        className="inline-flex h-7.5 w-7.5 items-center justify-center rounded-md bg-danger-50 text-danger-700 transition hover:bg-danger-100"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                  <td className="px-4 py-4">
+                    <div className="flex items-center gap-1.5">
+                      <Link href={`/dashboard/destinations/${d.id}`} aria-label={`View ${d.title}`} title="View" className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary-50 text-primary-700 transition hover:bg-primary-100"><Eye className="h-4 w-4" /></Link>
+                      <Link href={`/dashboard/destinations/${d.id}/edit`} aria-label={`Edit ${d.title}`} title="Edit" className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-warning-50 text-warning-700 transition hover:bg-warning-100"><Pencil className="h-4 w-4" /></Link>
+                      <button type="button" aria-label={d.featured ? `Remove ${d.title} from featured` : `Feature ${d.title}`} title={d.featured ? "Featured — click to remove" : "Feature this destination"} disabled={toggle.isPending} onClick={() => toggle.mutate({ d, key: "featured" })} className="inline-flex h-8 w-8 items-center justify-center rounded-md text-neutral-400 transition hover:bg-amber-50 disabled:opacity-50"><Star className={`h-4 w-4 ${d.featured ? "fill-amber-400 text-amber-500" : ""}`} /></button>
+                      <button type="button" aria-label={`Delete ${d.title}`} title="Delete" onClick={() => setRemoving(d)} className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-danger-50 text-danger-700 transition hover:bg-danger-100"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+      <Pagination currentPage={Math.min(page, totalPages)} totalPages={totalPages} onPageChange={setPage} />
 
-      <Pagination currentPage={safePage} totalPages={totalPages} onPageChange={setCurrentPage} />
-
-      {actionDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-lg font-semibold text-neutral-900">
-              {actionDialog.type === 'delete' ? 'Delete destination?' : actionDialog.type === 'feature' ? (actionDialog.destination.featured ? 'Remove featured status?' : 'Feature destination?') : 'Edit destination?'}
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-neutral-600">
-              {actionDialog.type === 'delete' ?
-                `This will remove ${actionDialog.destination.title} from your destinations list. This action cannot be undone.` :
-                actionDialog.type === 'feature' ?
-                  (actionDialog.destination.featured ? `Are you sure you want to remove ${actionDialog.destination.title} from featured destinations?` : `Are you sure you want to feature ${actionDialog.destination.title}?`) :
-                  `Open ${actionDialog.destination.title} in the destination editor?`}
-            </p>
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setActionDialog(null)}
-                className="rounded-2xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!actionDialog) return;
-                  if (actionDialog.type === 'edit') {
-                    router.push(`/dashboard/destinations/${actionDialog.destination.id}/edit`);
-                  } else if (actionDialog.type === 'feature') {
-                    const dest = actionDialog.destination;
-                    const updated = destinations.map((item) => (item.id === dest.id ? { ...item, featured: !dest.featured } : item));
-                    setDestinations(updated);
-                    try { localStorage.setItem('destinations', JSON.stringify(updated)); } catch {}
-                  } else {
-                    const next = destinations.filter((item) => item.id !== actionDialog.destination.id);
-                    setDestinations(next);
-                    try { localStorage.setItem('destinations', JSON.stringify(next)); } catch {}
-                  }
-                  setActionDialog(null);
-                }}
-                className={`rounded-2xl px-4 py-2 text-sm font-semibold text-white ${actionDialog?.type === 'delete' ? 'bg-danger-600 hover:bg-danger-700' : 'bg-primary-900 hover:bg-primary-800'}`}
-              >
-                {actionDialog?.type === 'delete' ? 'Delete destination' : actionDialog?.type === 'feature' ? (actionDialog.destination.featured ? 'Remove feature' : 'Feature destination') : 'Continue to edit'}
-              </button>
-            </div>
+      <Modal isOpen={removing !== null} onClose={() => setRemoving(null)} title="Delete this destination?" size="sm">
+        <div className="space-y-4 p-4">
+          <p className="text-sm text-neutral-600">“{removing?.title}” is removed from your site and can&apos;t be restored.</p>
+          <div className="flex justify-end gap-2">
+            <button type="button" onClick={() => setRemoving(null)} className="rounded-xl border border-neutral-200 bg-white px-4 py-2 text-sm font-semibold text-neutral-900 hover:bg-neutral-50">Cancel</button>
+            <button type="button" disabled={remove.isPending} onClick={() => removing && remove.mutate(removing)} className="rounded-xl bg-danger-600 px-4 py-2 text-sm font-semibold text-white hover:bg-danger-700 disabled:opacity-50">{remove.isPending ? "Deleting…" : "Delete"}</button>
           </div>
         </div>
-      )}
-
-      {/* Preview Modal */}
-      {previewDest && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl">
-            <div className="mb-4 flex items-start justify-between">
-              <h2 className="text-lg font-semibold text-neutral-900">{previewDest.title}</h2>
-              <button onClick={() => setPreviewDest(null)} className="text-neutral-500">Close</button>
-            </div>
-            {previewDest.image?.url && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={previewDest.image.url} alt={previewDest.title} className="w-full h-48 object-cover rounded" />
-            )}
-            <div className="mt-4 space-y-3">
-              <p className="text-sm text-neutral-700">{previewDest.shortDesc}</p>
-              {previewDest.longDesc && <p className="text-sm text-neutral-500">{previewDest.longDesc}</p>}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-xs font-semibold text-neutral-500">Rating</p>
-                  <p className="text-sm">{(previewDest.rating ?? 0).toFixed(1)} ({previewDest.reviewCount ?? 0})</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-neutral-500">Difficulty</p>
-                  <p className="text-sm">{previewDest.difficulty ?? '-'}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   );
 }

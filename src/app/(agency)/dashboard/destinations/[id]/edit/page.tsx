@@ -1,56 +1,31 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import DestinationForm from "@/components/agency/destinations/DestinationForm";
-import destinationsJson from "@/../data/destinations.json";
+import { useDestination } from "@/hooks/useAgencyDestinations";
 
 export default function EditDestinationPage() {
-  const params = useParams();
-  const router = useRouter();
-  const id = params.id as string | undefined;
-
-  const [initialData, setInitialData] = useState<any | null>(null);
-
-  useEffect(() => {
-    if (!id) return;
-
-    try {
-      const stored = localStorage.getItem("destinations");
-      if (stored) {
-        const list = JSON.parse(stored) as any[];
-        const found = list.find((d) => String(d.id) === String(id));
-        if (found) {
-          setInitialData({
-            ...found,
-            name: found.name ?? found.title ?? "",
-            featuredImage: found.featuredImage ?? "",
-            bestTimeToVisit: found.bestTimeToVisit ?? found.bestSeason ?? "",
-          });
-          return;
-        }
-      }
-    } catch (e) {
-      // ignore
-    }
-
-    // fallback to static data
-    const raw = (destinationsJson as any[]).find((d) => String(d.id) === String(id));
-    if (raw) {
-      setInitialData({
-        ...raw,
-        name: raw.title || "",
-        featuredImage: raw.featuredImage || "",
-        bestTimeToVisit: raw.bestSeason || "",
-      });
-      return;
-    }
-
-    router.push("/dashboard/destinations");
-  }, [id, router]);
-
-  if (!initialData) return <div className="p-4">Loading destination editor...</div>;
-
-  return <DestinationForm isNew={false} initialData={initialData} destinationId={id} />;
+  const { id } = useParams<{ id: string }>();
+  const { data, isLoading } = useDestination(id);
+  if (isLoading) return <div className="mx-auto h-40 max-w-6xl animate-pulse rounded-2xl border border-neutral-200 bg-white" />;
+  if (!data) return <div className="mx-auto max-w-6xl rounded-2xl border border-neutral-200 bg-white p-6 text-sm text-neutral-700">This destination doesn&apos;t exist. <Link className="font-semibold text-primary-700 hover:underline" href="/dashboard/destinations">Back to destinations</Link></div>;
+  return (
+    <div className="mx-auto w-full max-w-6xl space-y-4 py-2 sm:py-4">
+      <div className="border-b border-neutral-200 pb-5">
+        <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-xs text-neutral-500">
+          <Link href="/dashboard" className="hover:text-neutral-900">Dashboard</Link>
+          <span className="text-neutral-300">/</span>
+          <Link href="/dashboard/destinations" className="hover:text-neutral-900">Destinations</Link>
+          <span className="text-neutral-300">/</span>
+          <Link href={`/dashboard/destinations/${id}`} className="hover:text-neutral-900">{data.title}</Link>
+          <span className="text-neutral-300">/</span>
+          <span className="font-semibold text-primary-900">Edit</span>
+        </nav>
+        <h1 className="mt-2 text-2xl font-bold text-neutral-900">Edit destination</h1>
+        <p className="mt-1 text-sm text-neutral-600">Update this destination&apos;s details.</p>
+      </div>
+      <DestinationForm destination={data} />
+    </div>
+  );
 }
-
